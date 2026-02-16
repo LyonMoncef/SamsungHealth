@@ -6,24 +6,27 @@ Samsung Health data is locked inside the mobile app with no open API. Visualizin
 
 ## Solution
 
-An end-to-end pipeline that automatically syncs Samsung Health data (starting with sleep) via the Android SDK, stores it in a database, and serves an interactive web visualization — a calendar grid where each row is a day and each column is an hour, showing sleep patterns at a glance.
+An end-to-end pipeline that automatically syncs Samsung Health data via Android Health Connect, stores it in a database, and serves an interactive web dashboard with tabs for sleep, steps, heart rate, exercise, and trends.
 
 ## Features
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| Sleep API (POST/GET) | `server/routers/sleep.py`, `server/models.py` | `6200a93` |
-| SQLite database | `server/database.py` | `6200a93` |
-| Sleep calendar grid | `static/index.html`, `static/style.css`, `static/app.js` | `6200a93` |
-| CSV import tool | `scripts/import_csv.py` | `6200a93` |
-| Sample data generator | `scripts/generate_sample.py` | `6200a93` |
+| Sleep API + stage-aware calendar | `server/routers/sleep.py`, `static/app.js` | `8d5cfb0` |
+| Steps API + bar chart | `server/routers/steps.py`, `static/app.js` | `242040a` |
+| Heart rate API + range chart | `server/routers/heartrate.py`, `static/app.js` | `242040a` |
+| Exercise API + card list | `server/routers/exercise.py`, `static/app.js` | `242040a` |
+| Tabbed dashboard + trends | `static/index.html`, `static/app.js`, `static/style.css` | `242040a` |
+| Android Health Connect sync | `android-app/` | `242040a` |
+| Sample data generator | `scripts/generate_sample.py` | `242040a` |
 
 ## Architecture
 
 ```
-Samsung Health ←SDK→ Android App →HTTP→ Python Backend (FastAPI) →→ SQLite
-                                              ↓
-                                       Web UI (sleep grid)
+Samsung Health → Health Connect ← Android App →HTTP→ FastAPI Backend →→ SQLite (health.db)
+                                                            ↓
+                                                   Tabbed Web Dashboard
+                                            (Sleep | Steps | HR | Exercise | Trends)
 ```
 
 ### Components
@@ -31,10 +34,10 @@ Samsung Health ←SDK→ Android App →HTTP→ Python Backend (FastAPI) →→ 
 | Component | Tech | Status |
 |-----------|------|--------|
 | Backend API | Python, FastAPI | Done |
-| Database | SQLite | Done |
-| Sleep visualization | HTML/CSS/JS | Done |
-| Data import (CLI) | Python | Done |
-| Android app | Kotlin, Samsung Health SDK | Planned |
+| Database | SQLite (`health.db`) | Done |
+| Web dashboard | HTML/CSS/JS (5 tabs) | Done |
+| Android app | Kotlin, Jetpack Compose, Health Connect | Done |
+| Sample data generator | Python | Done |
 
 ## Setup
 
@@ -47,7 +50,7 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-# Generate sample sleep data
+# Generate sample data (sleep, steps, HR, exercise)
 python scripts/generate_sample.py
 
 # Start the server

@@ -64,14 +64,24 @@
 ## Phase 3 — Expansion
 
 ### 3.1 Additional data types
-- [ ] Steps (daily totals + hourly breakdown)
-- [ ] Heart rate
-- [ ] Exercise sessions
+- [x] Steps API + hourly granularity storage
+- [x] Heart rate API + hourly min/max/avg
+- [x] Exercise sessions API
 
 ### 3.2 Enhanced visualizations
-- [ ] Multi-data dashboard
-- [ ] Trends and statistics
-- [ ] Correlation views (sleep vs. activity)
+- [x] Tabbed dashboard (Sleep, Steps, Heart Rate, Exercise, Trends)
+- [x] Steps bar chart (green bars, daily totals)
+- [x] Heart rate range bars (min-max with avg marker)
+- [x] Exercise card list grouped by date
+- [x] Trends stat cards (avg sleep, daily steps, resting HR, exercise count)
+
+### 3.3 Android sync expansion
+- [x] Read steps, heart rate, exercise from Health Connect
+- [x] Hourly aggregation on device before POST
+- [x] Combined sync status (Sleep/Steps/HR/Exercise)
+
+### 3.4 Sample data
+- [x] Generator produces all 4 data types with realistic patterns
 
 ---
 
@@ -81,6 +91,6 @@
 |-------|--------|--------|
 | Phase 1 | **Done** | — |
 | Phase 2 | **Done** | — |
-| Phase 3 | Not started | — |
+| Phase 3 | **Done** | — |
 
 _Last updated: 2026-02-16_
