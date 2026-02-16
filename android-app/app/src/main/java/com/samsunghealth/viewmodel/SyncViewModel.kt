@@ -60,7 +60,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 val since = if (lastSync > 0) {
                     Instant.ofEpochMilli(lastSync)
                 } else {
-                    Instant.now().minus(30, ChronoUnit.DAYS)
+                    Instant.ofEpochMilli(0)
                 }
 
                 val sessions = healthConnect.readSleepSessions(since)
