@@ -4,12 +4,31 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
 
 ---
 
 ## Changelog
+
+### 2026-02-16 `8d5cfb0`
+Add Phase 2: sleep stages, color-coded calendar, and Android Health Connect app
+- Added `sleep_stages` table in `server/database.py` with FK to `sleep_sessions`, cascade delete, session index
+- Added `UNIQUE(sleep_start, sleep_end)` constraint on `sleep_sessions` for duplicate handling
+- Added `SleepStageIn`, `SleepStageOut` Pydantic models; added optional `stages` field to session models
+- Updated `POST /api/sleep` to insert stages via `cursor.lastrowid`, uses `INSERT OR IGNORE` for dedup, returns `{inserted, skipped}`
+- Updated `GET /api/sleep` with `?include_stages=true` query param to join stages per session
+- Added CSS stage classes: `.stage-light` (blue), `.stage-deep` (dark blue), `.stage-rem` (purple), `.stage-awake` (orange)
+- Updated `app.js` to fetch with `include_stages=true`, compute dominant stage per hour-cell by overlap duration, show stage breakdown in tooltips
+- Updated `scripts/generate_sample.py` to generate realistic ~90min sleep cycles (light → deep → light → REM, occasional awake)
+- Created `android-app/` Gradle project with Jetpack Compose, Health Connect client, Retrofit + kotlinx-serialization
+- `HealthConnectManager.kt` reads `SleepSessionRecord` with stages, maps HC stage constants to string types
+- `ApiClient.kt` provides configurable Retrofit client (default `http://10.0.2.2:8000` for emulator)
+- `PreferencesManager.kt` persists backend URL and last sync timestamp via DataStore
+- `SyncViewModel.kt` orchestrates read-from-HC → POST-to-backend flow (last 30 days or since last sync)
+- `SyncScreen.kt` and `SettingsScreen.kt` Compose UI with sync button, progress, status, and backend URL config
+- Updated `ROADMAP.md` to mark Phase 1 as done
 
 ### 2026-02-16 `6200a93`
 Add Phase 1: FastAPI backend, SQLite DB, sleep calendar UI, and import scripts
