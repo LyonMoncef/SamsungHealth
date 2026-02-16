@@ -1,6 +1,6 @@
 # Roadmap
 
-## Phase 1 — Backend + Database + Visualization (current)
+## Phase 1 — Backend + Database + Visualization
 
 ### 1.1 Project scaffolding
 - [x] Git repo + GitHub remote
@@ -27,20 +27,37 @@
 
 ---
 
-## Phase 2 — Android App (Samsung Health SDK)
+## Phase 2 — Android App (Health Connect) + Sleep Stages
 
-### 2.1 Android project setup
-- [ ] Android Studio project (Kotlin)
-- [ ] Samsung Health SDK integration + permissions
+### 2.1 Sleep stages backend
+- [x] `sleep_stages` table with FK to sessions
+- [x] Stage models (SleepStageIn/Out) + optional stages on session models
+- [x] `POST /api/sleep` inserts stages, dedup via UNIQUE constraint
+- [x] `GET /api/sleep?include_stages=true` returns stages per session
 
-### 2.2 Sleep data sync
-- [ ] Read sleep sessions from Samsung Health
-- [ ] Push to backend API
-- [ ] Background sync (periodic or on-demand)
+### 2.2 Stage-aware visualization
+- [x] Color-coded calendar cells by dominant stage (light/deep/REM/awake)
+- [x] Tooltip shows stage breakdown per hour
 
-### 2.3 App UI
-- [ ] Minimal UI: sync button + status + last sync time
-- [ ] Settings: backend URL configuration
+### 2.3 Android project setup
+- [x] Android Studio project (Kotlin, Jetpack Compose)
+- [x] Health Connect integration (replaced deprecated Samsung Health SDK)
+- [x] Gradle build with Health Connect client, Retrofit, DataStore
+
+### 2.4 Sleep data sync
+- [x] Read sleep sessions + stages from Health Connect
+- [x] Map Health Connect stage constants to backend format
+- [x] Push to backend API via Retrofit
+- [x] Incremental sync (since last sync timestamp)
+- [x] Full historical fetch on first sync
+
+### 2.5 App UI
+- [x] Sync screen: sync button, progress, status, last sync time
+- [x] Settings screen: backend URL configuration
+- [x] Permission flow for Health Connect READ_SLEEP
+
+### 2.6 Sample data
+- [x] Generator produces realistic sleep cycles with stages
 
 ---
 
@@ -63,7 +80,7 @@
 | Phase | Status | Target |
 |-------|--------|--------|
 | Phase 1 | **Done** | — |
-| Phase 2 | Not started | — |
+| Phase 2 | **Done** | — |
 | Phase 3 | Not started | — |
 
 _Last updated: 2026-02-16_
