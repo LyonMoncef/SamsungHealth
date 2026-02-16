@@ -12,6 +12,12 @@
 
 ## Changelog
 
+### 2026-02-16 `92eae41`
+Fix Gradle sync and fetch all available sleep data on initial sync
+- Fixed `settings.gradle.kts`: renamed `dependencyResolution` to `dependencyResolutionManagement` with `FAIL_ON_PROJECT_REPOS`
+- Added `gradle-wrapper.properties` with Gradle 8.11.1
+- Changed initial sync to fetch from epoch 0 (all available data) instead of last 30 days
+
 ### 2026-02-16 `8d5cfb0`
 Add Phase 2: sleep stages, color-coded calendar, and Android Health Connect app
 - Added `sleep_stages` table in `server/database.py` with FK to `sleep_sessions`, cascade delete, session index
