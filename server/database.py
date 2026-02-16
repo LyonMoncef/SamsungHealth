@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "sleep.db"
+DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
 
 
 def get_connection() -> sqlite3.Connection:
@@ -39,6 +39,34 @@ def init_db():
     """)
     conn.execute("""
         CREATE INDEX IF NOT EXISTS idx_stages_session ON sleep_stages(session_id)
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS steps_hourly (
+            date TEXT NOT NULL,
+            hour INTEGER NOT NULL,
+            step_count INTEGER NOT NULL,
+            UNIQUE(date, hour)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS heart_rate_hourly (
+            date TEXT NOT NULL,
+            hour INTEGER NOT NULL,
+            min_bpm INTEGER NOT NULL,
+            max_bpm INTEGER NOT NULL,
+            avg_bpm INTEGER NOT NULL,
+            sample_count INTEGER NOT NULL,
+            UNIQUE(date, hour)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS exercise_sessions (
+            exercise_type TEXT NOT NULL,
+            exercise_start TEXT NOT NULL,
+            exercise_end TEXT NOT NULL,
+            duration_minutes REAL NOT NULL,
+            UNIQUE(exercise_start, exercise_end)
+        )
     """)
     conn.commit()
     conn.close()

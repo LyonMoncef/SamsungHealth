@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate ~30 days of realistic sample sleep data with stages."""
+"""Generate ~30 days of realistic sample health data."""
 
 import sys
 from pathlib import Path
@@ -12,6 +12,8 @@ from server.database import init_db, get_connection
 
 
 STAGE_TYPES = ["light", "deep", "rem", "awake"]
+
+EXERCISE_TYPES = ["running", "walking", "cycling", "swimming", "hiking", "yoga", "strength_training"]
 
 
 def generate_stages(sleep_start: datetime, sleep_end: datetime) -> list[dict]:
@@ -74,6 +76,80 @@ def generate_stages(sleep_start: datetime, sleep_end: datetime) -> list[dict]:
     return stages
 
 
+def generate_steps(conn, base_date: datetime, num_days: int):
+    """Generate hourly step data for num_days. Low at night, peak midday."""
+    for day_offset in range(num_days):
+        date = base_date + timedelta(days=day_offset)
+        date_str = date.strftime("%Y-%m-%d")
+        for hour in range(24):
+            if hour < 6:
+                steps = random.randint(0, 10)
+            elif hour < 8:
+                steps = random.randint(100, 400)
+            elif hour < 12:
+                steps = random.randint(300, 800)
+            elif hour < 14:
+                steps = random.randint(500, 1200)
+            elif hour < 18:
+                steps = random.randint(300, 900)
+            elif hour < 21:
+                steps = random.randint(200, 600)
+            else:
+                steps = random.randint(20, 150)
+            conn.execute(
+                "INSERT OR IGNORE INTO steps_hourly (date, hour, step_count) VALUES (?, ?, ?)",
+                (date_str, hour, steps),
+            )
+
+
+def generate_heart_rate(conn, base_date: datetime, num_days: int):
+    """Generate hourly heart rate data. Lower at night, higher during day."""
+    for day_offset in range(num_days):
+        date = base_date + timedelta(days=day_offset)
+        date_str = date.strftime("%Y-%m-%d")
+        for hour in range(24):
+            if hour < 6:
+                avg = random.randint(55, 65)
+                spread = random.randint(3, 8)
+            elif hour < 9:
+                avg = random.randint(65, 80)
+                spread = random.randint(5, 15)
+            elif hour < 18:
+                avg = random.randint(72, 95)
+                spread = random.randint(8, 25)
+            elif hour < 22:
+                avg = random.randint(65, 82)
+                spread = random.randint(5, 15)
+            else:
+                avg = random.randint(58, 70)
+                spread = random.randint(3, 10)
+            min_bpm = max(40, avg - spread)
+            max_bpm = min(180, avg + spread)
+            sample_count = random.randint(5, 30)
+            conn.execute(
+                "INSERT OR IGNORE INTO heart_rate_hourly (date, hour, min_bpm, max_bpm, avg_bpm, sample_count) VALUES (?, ?, ?, ?, ?, ?)",
+                (date_str, hour, min_bpm, max_bpm, avg, sample_count),
+            )
+
+
+def generate_exercise(conn, base_date: datetime, num_days: int):
+    """Generate 10-15 exercise sessions spread across num_days."""
+    num_sessions = random.randint(10, 15)
+    used_days = random.sample(range(num_days), min(num_sessions, num_days))
+    for day_offset in used_days:
+        date = base_date + timedelta(days=day_offset)
+        ex_type = random.choice(EXERCISE_TYPES)
+        start_hour = random.randint(6, 19)
+        start_minute = random.choice([0, 15, 30, 45])
+        duration = random.randint(20, 90)
+        ex_start = date.replace(hour=start_hour, minute=start_minute, second=0)
+        ex_end = ex_start + timedelta(minutes=duration)
+        conn.execute(
+            "INSERT OR IGNORE INTO exercise_sessions (exercise_type, exercise_start, exercise_end, duration_minutes) VALUES (?, ?, ?, ?)",
+            (ex_type, ex_start.isoformat(), ex_end.isoformat(), duration),
+        )
+
+
 def generate():
     init_db()
     conn = get_connection()
@@ -81,9 +157,15 @@ def generate():
 
     conn.execute("DELETE FROM sleep_stages")
     conn.execute("DELETE FROM sleep_sessions")
+    conn.execute("DELETE FROM steps_hourly")
+    conn.execute("DELETE FROM heart_rate_hourly")
+    conn.execute("DELETE FROM exercise_sessions")
 
     base_date = datetime(2026, 1, 15)
-    for day_offset in range(30):
+    num_days = 30
+
+    # Sleep data
+    for day_offset in range(num_days):
         date = base_date + timedelta(days=day_offset)
 
         # Bedtime: 22:00–01:00 (next day)
@@ -122,11 +204,24 @@ def generate():
                 (session_id, st["stage_type"], st["start"].isoformat(), st["end"].isoformat()),
             )
 
+    # Steps, heart rate, exercise
+    generate_steps(conn, base_date, num_days)
+    generate_heart_rate(conn, base_date, num_days)
+    generate_exercise(conn, base_date, num_days)
+
     conn.commit()
+
     session_count = conn.execute("SELECT COUNT(*) FROM sleep_sessions").fetchone()[0]
     stage_count = conn.execute("SELECT COUNT(*) FROM sleep_stages").fetchone()[0]
+    step_count = conn.execute("SELECT COUNT(*) FROM steps_hourly").fetchone()[0]
+    hr_count = conn.execute("SELECT COUNT(*) FROM heart_rate_hourly").fetchone()[0]
+    ex_count = conn.execute("SELECT COUNT(*) FROM exercise_sessions").fetchone()[0]
     conn.close()
-    print(f"Inserted {session_count} sleep sessions with {stage_count} stages into sleep.db")
+    print(f"Inserted into health.db:")
+    print(f"  {session_count} sleep sessions with {stage_count} stages")
+    print(f"  {step_count} steps_hourly records")
+    print(f"  {hr_count} heart_rate_hourly records")
+    print(f"  {ex_count} exercise sessions")
 
 
 if __name__ == "__main__":

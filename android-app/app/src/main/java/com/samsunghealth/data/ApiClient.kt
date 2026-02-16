@@ -30,20 +30,69 @@ data class BulkPayload(
 )
 
 @Serializable
+data class StepsHourlyPayload(
+    val date: String,
+    val hour: Int,
+    val step_count: Int,
+)
+
+@Serializable
+data class StepsBulkPayload(
+    val records: List<StepsHourlyPayload>,
+)
+
+@Serializable
+data class HeartRateHourlyPayload(
+    val date: String,
+    val hour: Int,
+    val min_bpm: Int,
+    val max_bpm: Int,
+    val avg_bpm: Int,
+    val sample_count: Int,
+)
+
+@Serializable
+data class HeartRateBulkPayload(
+    val records: List<HeartRateHourlyPayload>,
+)
+
+@Serializable
+data class ExercisePayload(
+    val exercise_type: String,
+    val exercise_start: String,
+    val exercise_end: String,
+    val duration_minutes: Double,
+)
+
+@Serializable
+data class ExerciseBulkPayload(
+    val sessions: List<ExercisePayload>,
+)
+
+@Serializable
 data class InsertResponse(
     val inserted: Int,
     val skipped: Int,
 )
 
-interface SleepApi {
+interface HealthApi {
     @POST("/api/sleep")
-    suspend fun postSessions(@Body body: BulkPayload): InsertResponse
+    suspend fun postSleep(@Body body: BulkPayload): InsertResponse
+
+    @POST("/api/steps")
+    suspend fun postSteps(@Body body: StepsBulkPayload): InsertResponse
+
+    @POST("/api/heartrate")
+    suspend fun postHeartRate(@Body body: HeartRateBulkPayload): InsertResponse
+
+    @POST("/api/exercise")
+    suspend fun postExercise(@Body body: ExerciseBulkPayload): InsertResponse
 }
 
 object ApiClient {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun create(baseUrl: String): SleepApi {
+    fun create(baseUrl: String): HealthApi {
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -55,6 +104,6 @@ object ApiClient {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
 
-        return retrofit.create(SleepApi::class.java)
+        return retrofit.create(HealthApi::class.java)
     }
 }

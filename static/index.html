@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sleep Calendar</title>
+    <title>Health Dashboard</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -13,15 +13,32 @@
             <h1 id="month-label"></h1>
             <button id="next-month">&rarr;</button>
         </header>
-        <div id="grid-wrapper">
-            <table id="sleep-grid">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <nav class="tabs">
+            <button class="tab active" data-tab="sleep">Sleep</button>
+            <button class="tab" data-tab="steps">Steps</button>
+            <button class="tab" data-tab="heartrate">Heart Rate</button>
+            <button class="tab" data-tab="exercise">Exercise</button>
+            <button class="tab" data-tab="trends">Trends</button>
+        </nav>
+        <div id="panel-sleep" class="panel active">
+            <div id="grid-wrapper">
+                <table id="sleep-grid">
+                    <thead><tr><th>Date</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="panel-steps" class="panel">
+            <div id="steps-chart"></div>
+        </div>
+        <div id="panel-heartrate" class="panel">
+            <div id="hr-chart"></div>
+        </div>
+        <div id="panel-exercise" class="panel">
+            <div id="exercise-list"></div>
+        </div>
+        <div id="panel-trends" class="panel">
+            <div id="trends-grid"></div>
         </div>
         <div id="tooltip" class="tooltip"></div>
     </div>

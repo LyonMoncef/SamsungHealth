@@ -32,3 +32,59 @@ class SleepSessionOut(BaseModel):
 
 class SleepBulkIn(BaseModel):
     sessions: list[SleepSessionIn]
+
+
+class StepsHourlyIn(BaseModel):
+    date: str
+    hour: int
+    step_count: int
+
+
+class StepsHourlyOut(BaseModel):
+    date: str
+    hour: int
+    step_count: int
+
+
+class StepsBulkIn(BaseModel):
+    records: list[StepsHourlyIn]
+
+
+class HeartRateHourlyIn(BaseModel):
+    date: str
+    hour: int
+    min_bpm: int
+    max_bpm: int
+    avg_bpm: int
+    sample_count: int
+
+
+class HeartRateHourlyOut(BaseModel):
+    date: str
+    hour: int
+    min_bpm: int
+    max_bpm: int
+    avg_bpm: int
+    sample_count: int
+
+
+class HeartRateBulkIn(BaseModel):
+    records: list[HeartRateHourlyIn]
+
+
+class ExerciseSessionIn(BaseModel):
+    exercise_type: str
+    exercise_start: str
+    exercise_end: str
+    duration_minutes: float
+
+
+class ExerciseSessionOut(BaseModel):
+    exercise_type: str
+    exercise_start: str
+    exercise_end: str
+    duration_minutes: float
+
+
+class ExerciseBulkIn(BaseModel):
+    sessions: list[ExerciseSessionIn]
