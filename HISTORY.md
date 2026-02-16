@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Phase 3: Steps, heart rate, exercise + tabbed dashboard | `server/`, `static/`, `scripts/`, `android-app/` | [`242040a`](#2026-02-16-242040a) |
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
@@ -11,6 +12,28 @@
 ---
 
 ## Changelog
+
+### 2026-02-16 `242040a`
+Add Phase 3: steps, heart rate, exercise data types + tabbed dashboard
+- Renamed DB from `sleep.db` to `health.db` in `server/database.py`
+- Added `steps_hourly`, `heart_rate_hourly`, `exercise_sessions` tables with UNIQUE constraints
+- Added 6 new Pydantic models (In/Out/Bulk) for steps, heart rate, exercise in `server/models.py`
+- Created `server/routers/steps.py` — `POST /api/steps` (bulk INSERT OR IGNORE), `GET /api/steps?from=&to=`
+- Created `server/routers/heartrate.py` — `POST /api/heartrate`, `GET /api/heartrate?from=&to=`
+- Created `server/routers/exercise.py` — `POST /api/exercise`, `GET /api/exercise?from=&to=`
+- Included all 3 new routers in `server/main.py`
+- Updated `scripts/generate_sample.py` to generate 30 days of steps (hourly, realistic day/night patterns), heart rate (hourly with night/day variance), and 10-15 exercise sessions
+- Added `READ_STEPS`, `READ_HEART_RATE`, `READ_EXERCISE` permissions to `AndroidManifest.xml`
+- Extended `HealthConnectManager.kt` with `readSteps()`, `readHeartRate()`, `readExerciseSessions()` methods with hourly aggregation
+- Renamed `SleepApi` to `HealthApi` in `ApiClient.kt`, added `postSteps()`, `postHeartRate()`, `postExercise()` endpoints
+- Updated `SyncViewModel.kt` to sync all 4 data types sequentially with combined status messages
+- Added 5-tab navigation (Sleep, Steps, Heart Rate, Exercise, Trends) in `static/index.html`
+- Refactored `static/app.js` with shared month navigation, tab switching, and 5 render functions
+- Steps tab: green horizontal bar chart per day showing daily totals
+- Heart Rate tab: min-max range bars with avg marker per day
+- Exercise tab: card list grouped by date with type, time, duration
+- Trends tab: stat cards grid (avg sleep, daily step avg, resting HR, exercise count)
+- Added tab styles, step bar, HR range bar, exercise card, and stat card styles in `static/style.css`
 
 ### 2026-02-16 `92eae41`
 Fix Gradle sync and fetch all available sleep data on initial sync
