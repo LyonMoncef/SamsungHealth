@@ -12,11 +12,11 @@ An end-to-end pipeline that automatically syncs Samsung Health data (starting wi
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| Sleep API (POST/GET) | `server/routers/sleep.py`, `server/models.py` | — |
-| SQLite database | `server/database.py` | — |
-| Sleep calendar grid | `static/index.html`, `static/style.css`, `static/app.js` | — |
-| CSV import tool | `scripts/import_csv.py` | — |
-| Sample data generator | `scripts/generate_sample.py` | — |
+| Sleep API (POST/GET) | `server/routers/sleep.py`, `server/models.py` | `6200a93` |
+| SQLite database | `server/database.py` | `6200a93` |
+| Sleep calendar grid | `static/index.html`, `static/style.css`, `static/app.js` | `6200a93` |
+| CSV import tool | `scripts/import_csv.py` | `6200a93` |
+| Sample data generator | `scripts/generate_sample.py` | `6200a93` |
 
 ## Architecture
 
