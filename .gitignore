@@ -1,0 +1,32 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Database
+*.db
+
+# Android
+android-app/build/
+android-app/.gradle/
+android-app/local.properties
+android-app/app/build/
+android-app/app/release/
+
+# OS
+.DS_Store
+Thumbs.db
