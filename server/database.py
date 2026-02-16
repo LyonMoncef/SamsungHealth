@@ -13,16 +13,32 @@ def get_connection() -> sqlite3.Connection:
 
 def init_db():
     conn = get_connection()
+    conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sleep_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sleep_start TEXT NOT NULL,
             sleep_end TEXT NOT NULL,
-            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(sleep_start, sleep_end)
         )
     """)
     conn.execute("""
         CREATE INDEX IF NOT EXISTS idx_sleep_start ON sleep_sessions(sleep_start)
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sleep_stages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            stage_type TEXT NOT NULL,
+            stage_start TEXT NOT NULL,
+            stage_end TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (session_id) REFERENCES sleep_sessions(id) ON DELETE CASCADE
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_stages_session ON sleep_stages(session_id)
     """)
     conn.commit()
     conn.close()

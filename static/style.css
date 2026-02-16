@@ -87,6 +87,38 @@ h1 {
     background: #7b2ff7;
 }
 
+#sleep-grid td.stage-light {
+    background: #4a90d9;
+}
+
+#sleep-grid td.stage-light:hover {
+    background: #5da0e9;
+}
+
+#sleep-grid td.stage-deep {
+    background: #1a3a6e;
+}
+
+#sleep-grid td.stage-deep:hover {
+    background: #254a8e;
+}
+
+#sleep-grid td.stage-rem {
+    background: #7b2ff7;
+}
+
+#sleep-grid td.stage-rem:hover {
+    background: #9b5ff9;
+}
+
+#sleep-grid td.stage-awake {
+    background: #d4731a;
+}
+
+#sleep-grid td.stage-awake:hover {
+    background: #e8932a;
+}
+
 .tooltip {
     display: none;
     position: fixed;

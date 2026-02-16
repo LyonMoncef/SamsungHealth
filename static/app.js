@@ -22,16 +22,14 @@ function parseLocalDate(isoStr) {
     return new Date(isoStr);
 }
 
-// Build a map: "YYYY-MM-DD" -> Set of hours (0-23) that have sleep
-// Also track which sessions overlap each (date, hour) for tooltips
+// Build a map: "YYYY-MM-DD" -> { hour: { sessions: [...], stages: [...] } }
 function buildSleepMap(sessions) {
-    const hourMap = {}; // "YYYY-MM-DD" -> { hour: [session, ...] }
+    const hourMap = {};
 
     for (const s of sessions) {
         const start = parseLocalDate(s.sleep_start);
         const end = parseLocalDate(s.sleep_end);
 
-        // Walk hour by hour from start to end
         let cursor = new Date(start);
         cursor.setMinutes(0, 0, 0);
 
@@ -43,8 +41,22 @@ function buildSleepMap(sessions) {
             const dateKey = formatDate(y, m, d);
 
             if (!hourMap[dateKey]) hourMap[dateKey] = {};
-            if (!hourMap[dateKey][h]) hourMap[dateKey][h] = [];
-            hourMap[dateKey][h].push(s);
+            if (!hourMap[dateKey][h]) hourMap[dateKey][h] = { sessions: [], stages: [] };
+            hourMap[dateKey][h].sessions.push(s);
+
+            // Find stages overlapping this hour
+            if (s.stages) {
+                const hourStart = cursor.getTime();
+                const hourEnd = hourStart + 3600000;
+                for (const st of s.stages) {
+                    const stStart = parseLocalDate(st.stage_start).getTime();
+                    const stEnd = parseLocalDate(st.stage_end).getTime();
+                    if (stStart < hourEnd && stEnd > hourStart) {
+                        const overlap = Math.min(hourEnd, stEnd) - Math.max(hourStart, stStart);
+                        hourMap[dateKey][h].stages.push({ type: st.stage_type, duration: overlap });
+                    }
+                }
+            }
 
             cursor = new Date(cursor.getTime() + 3600000);
         }
@@ -53,12 +65,41 @@ function buildSleepMap(sessions) {
     return hourMap;
 }
 
+function dominantStage(stages) {
+    if (!stages || stages.length === 0) return null;
+    const totals = {};
+    for (const s of stages) {
+        totals[s.type] = (totals[s.type] || 0) + s.duration;
+    }
+    let best = null;
+    let bestTime = 0;
+    for (const [type, time] of Object.entries(totals)) {
+        if (time > bestTime) {
+            best = type;
+            bestTime = time;
+        }
+    }
+    return best;
+}
+
 function formatTime(isoStr) {
     const d = parseLocalDate(isoStr);
     return d.toLocaleString(undefined, {
         month: "short", day: "numeric",
         hour: "2-digit", minute: "2-digit",
     });
+}
+
+function stageBreakdown(stages) {
+    if (!stages || stages.length === 0) return "";
+    const totals = {};
+    for (const s of stages) {
+        totals[s.type] = (totals[s.type] || 0) + s.duration;
+    }
+    const parts = Object.entries(totals)
+        .sort((a, b) => b[1] - a[1])
+        .map(([type, ms]) => `${type}: ${Math.round(ms / 60000)}m`);
+    return parts.join(", ");
 }
 
 async function render() {
@@ -77,7 +118,7 @@ async function render() {
     const prevDay = new Date(year, month, 0);
     const from = formatDate(prevDay.getFullYear(), prevDay.getMonth(), prevDay.getDate());
 
-    const resp = await fetch(`/api/sleep?from=${from}&to=${lastDay}`);
+    const resp = await fetch(`/api/sleep?from=${from}&to=${lastDay}&include_stages=true`);
     const sessions = await resp.json();
     const hourMap = buildSleepMap(sessions);
 
@@ -102,14 +143,22 @@ async function render() {
 
         for (let h = 0; h < 24; h++) {
             const td = document.createElement("td");
-            const sessionsAtHour = hourMap[dateKey]?.[h];
+            const cell = hourMap[dateKey]?.[h];
 
-            if (sessionsAtHour && sessionsAtHour.length > 0) {
-                td.classList.add("sleep");
+            if (cell && cell.sessions.length > 0) {
+                const dominant = dominantStage(cell.stages);
+                if (dominant && dominant !== "unknown") {
+                    td.classList.add(`stage-${dominant}`);
+                } else {
+                    td.classList.add("sleep");
+                }
+
                 td.addEventListener("mouseenter", (e) => {
-                    const lines = sessionsAtHour.map(
+                    const lines = cell.sessions.map(
                         (s) => `${formatTime(s.sleep_start)} → ${formatTime(s.sleep_end)}`
                     );
+                    const breakdown = stageBreakdown(cell.stages);
+                    if (breakdown) lines.push(`Stages: ${breakdown}`);
                     tooltip.textContent = lines.join("\n");
                     tooltip.classList.add("visible");
                 });
@@ -147,5 +196,4 @@ nextBtn.addEventListener("click", () => {
     render();
 });
 
-// Start on current month
 render();

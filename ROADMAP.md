@@ -5,25 +5,25 @@
 ### 1.1 Project scaffolding
 - [x] Git repo + GitHub remote
 - [x] Documentation files (README, NOTES, HISTORY, ROADMAP)
-- [ ] Python project structure + dependencies
-- [ ] SQLite database schema (sleep_sessions table, extensible for future data)
+- [x] Python project structure + dependencies
+- [x] SQLite database schema (sleep_sessions table, extensible for future data)
 
 ### 1.2 Backend API
-- [ ] FastAPI app with endpoints:
+- [x] FastAPI app with endpoints:
   - `POST /api/sleep` — ingest sleep sessions
   - `GET /api/sleep?from=&to=` — query sleep data by date range
   - `GET /` — serve web UI
-- [ ] Data validation (Pydantic models)
+- [x] Data validation (Pydantic models)
 
 ### 1.3 Sleep calendar visualization
-- [ ] HTML/CSS grid: rows = days, columns = 24 hours
-- [ ] Color cells for hours asleep, handle midnight crossover
-- [ ] Date range navigation (month selector)
-- [ ] Hover tooltips with exact sleep/wake times
+- [x] HTML/CSS grid: rows = days, columns = 24 hours
+- [x] Color cells for hours asleep, handle midnight crossover
+- [x] Date range navigation (month selector)
+- [x] Hover tooltips with exact sleep/wake times
 
 ### 1.4 Data import CLI
-- [ ] Script to import Samsung Health CSV exports into the database
-- [ ] Script to generate test/sample data for development
+- [x] Script to import Samsung Health CSV exports into the database
+- [x] Script to generate test/sample data for development
 
 ---
 
@@ -62,7 +62,7 @@
 
 | Phase | Status | Target |
 |-------|--------|--------|
-| Phase 1 | **In progress** | — |
+| Phase 1 | **Done** | — |
 | Phase 2 | Not started | — |
 | Phase 3 | Not started | — |
 
