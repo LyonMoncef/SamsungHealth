@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Calendar</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button id="prev-month">&larr;</button>
+            <h1 id="month-label"></h1>
+            <button id="next-month">&rarr;</button>
+        </header>
+        <div id="grid-wrapper">
+            <table id="sleep-grid">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="tooltip" class="tooltip"></div>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
