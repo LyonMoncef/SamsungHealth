@@ -1,0 +1,48 @@
+name: review-complete
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  check:
+    name: Review tests complete
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Check tested label
+        run: |
+          BRANCH="${{ github.head_ref }}"
+
+          # Release and hotfix branches skip (prod tests via /smoke)
+          if [[ "$BRANCH" =~ ^(release|hotfix)/ ]]; then
+            echo "Branch '$BRANCH' is release/hotfix — skipping"
+            exit 0
+          fi
+
+          # docs-only PRs skip
+          HAS_DOCS=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json labels \
+            --jq '[.labels[].name] | contains(["docs-only"])' 2>/dev/null || echo "false")
+          if [ "$HAS_DOCS" = "true" ]; then
+            echo "Label 'docs-only' — skipping"
+            exit 0
+          fi
+
+          HAS_TESTED=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json labels \
+            --jq '[.labels[].name] | contains(["tested"])' 2>/dev/null || echo "false")
+
+          if [ "$HAS_TESTED" = "true" ]; then
+            echo "Label 'tested' present — review gate passed"
+            exit 0
+          else
+            echo "::error::Label 'tested' absent. Workflow: /review → test manually → add 'tested' label → merge"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

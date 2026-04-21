@@ -1,0 +1,35 @@
+name: Bug
+description: Quelque chose ne fonctionne pas
+labels: ["bug", "P1"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Ce qui se passe vs ce qui devrait se passer
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité
+      options: [P0 — bloquant, P1 — courant, P2 — suivant, P3 — backlog]
+      default: 1
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: Taille estimée
+      options: [XS ~1h, S ~3h, M ~1j, L ~3j, XL ~1 semaine]
+    validations:
+      required: true
