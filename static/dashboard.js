@@ -334,6 +334,7 @@
 
   let focusIdx = 0;
   let currentView = "dashboard";
+  let driftDemoMode = false;
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -563,30 +564,62 @@
     return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${legend}${center}</svg>`;
   }
 
+  function generateDemoSessions(n) {
+    const sessions = [];
+    const now = Date.now();
+    for (let i = n - 1; i >= 0; i--) {
+      const nominal = new Date(now - i * 86400000); nominal.setHours(0, 0, 0, 0);
+      const doy = Math.floor((nominal - new Date(nominal.getFullYear(), 0, 0)) / 86400000);
+      const seasonal = Math.sin(((doy - 80) / 365) * 2 * Math.PI) * 42;
+      const jitter = (Math.random() - 0.5) * 68;
+      const bedMins = 22 * 60 + 30 + seasonal + jitter;
+      const bedTime = new Date(nominal.getTime() + bedMins * 60000);
+      const durMs = (7 * 60 + (Math.random() - 0.5) * 60) * 60000;
+      const wakeTime = new Date(bedTime.getTime() + durMs);
+      const wk = wakeTime;
+      sessions.push({
+        sleep_start: bedTime, sleep_end: wakeTime, stages: [],
+        duration_ms: durMs, duration_hours: durMs / 3600000,
+        score: 65 + Math.round(Math.random() * 25),
+        date_key: `${wk.getFullYear()}-${String(wk.getMonth()+1).padStart(2,"0")}-${String(wk.getDate()).padStart(2,"0")}`,
+        totals: { deep: 0, light: 0, rem: 0, awake: 0 }, efficiency: 0.88, id: 9000 + i,
+      });
+    }
+    return sessions;
+  }
+
   function chapterDriftClock() {
-    const src = D.sessionsFull || D.sessions;
+    const realSrc = D.sessionsFull || D.sessions;
+    const src = driftDemoMode ? generateDemoSessions(365) : realSrc;
+    const demoLabel = driftDemoMode
+      ? `<span class="drift-demo-badge">Demo — regular schedule</span>`
+      : "";
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">10</span><span class="eyebrow">Sleep clock drift</span></div>
         <h2>Your nights, mapped <em>around the clock</em>.</h2>
-        <p class="chapter-desc">Three readings of the same 2+ years of sleep — each revealing a different dimension of the pattern.</p>
+        <p class="chapter-desc">
+          Three readings of ${driftDemoMode ? "a simulated regular schedule" : `your ${src.length} nights`} — each revealing a different dimension of the pattern.
+          <button class="history-toggle" id="drift-demo-toggle">${driftDemoMode ? "← Your data" : "Demo (regular schedule) →"}</button>
+          ${demoLabel}
+        </p>
       </div>
       <div class="panel">
         <div class="drift-grid">
           <div class="drift-option">
             <div class="drift-option-label">A — Frequency density</div>
             ${driftDensitySVG(src)}
-            <div class="drift-option-desc">Opacity = fraction of nights asleep during each 15-min slot. Fuzziness at the edges shows variability.</div>
+            <div class="drift-option-desc">Opacity = % of nights asleep at each 15-min slot. <em>Dense arc</em> = your core sleep window. <em>Fuzziness</em> at edges = bedtime variability. Irregular schedule → full ring.</div>
           </div>
           <div class="drift-option">
             <div class="drift-option-label">B — Trajectories (drift)</div>
             ${driftSpaghettiSVG(src)}
-            <div class="drift-option-desc">Every session drawn as an arc. Violet = oldest nights, amber = most recent. Density reveals the core window; colour reveals temporal drift.</div>
+            <div class="drift-option-desc">Every session as an arc. Violet = oldest, amber = newest. <em>Colour shift in position</em> = temporal drift. If violet and amber arcs don't overlap, your schedule has moved.</div>
           </div>
           <div class="drift-option">
             <div class="drift-option-label">C — 7-night rolling average</div>
             ${driftRollingAvgSVG(src)}
-            <div class="drift-option-desc">Each stroke is the average bedtime→wake over a 7-night window. Violet = 2023, amber = 2026. Read the drift as a shifting arc.</div>
+            <div class="drift-option-desc">Each stroke = avg bedtime→wake over 7 nights. Violet = start of period, amber = end. <em>Arc that rotates clockwise</em> = progressively later schedule.</div>
           </div>
         </div>
       </div>
@@ -880,6 +913,10 @@
     });
     document.getElementById("timeline-to-history")?.addEventListener("click", () => {
       navigateTo("history/timeline");
+    });
+    document.getElementById("drift-demo-toggle")?.addEventListener("click", () => {
+      driftDemoMode = !driftDemoMode;
+      render();
     });
     const tip = document.getElementById("hover-tip");
     document.querySelectorAll("[data-tip]").forEach((el) => {
