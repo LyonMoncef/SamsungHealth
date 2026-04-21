@@ -285,7 +285,7 @@
     if (curKey !== null) groups.push({ label: curLabel, rows: curRows, nights: curNights });
 
     const groupsHtml = groups.map((g) =>
-      `<div class="timeline-month-sep"><span class="timeline-month-sep-label">${g.label}</span><span class="timeline-month-count">${g.nights} nights</span></div>${g.rows.join("")}`
+      `<div class="timeline-month-sep"><span class="timeline-month-sep-label">${g.label}</span><span class="timeline-month-count">${g.nights} nights</span></div><div class="timeline-axis timeline-axis-month">${timelineTicks()}</div>${g.rows.join("")}`
     ).join("");
 
     app.innerHTML = `
@@ -296,11 +296,9 @@
           <h2 class="history-view-title">All <em>${src.length} nights</em></h2>
         </div>
       </div>
-      <div class="history-timeline-sticky">
-        <div class="timeline-axis">${timelineTicks()}</div>
-      </div>
       <div class="panel history-panel">
         <div class="timeline">
+          <div class="timeline-axis">${timelineTicks()}</div>
           ${groupsHtml}
         </div>
       </div>
