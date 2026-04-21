@@ -354,16 +354,17 @@
 
   function renderHistoryScatter() {
     const src = D.sessionsFull || D.sessions;
+    const nights = groupByNight(src);
     const w = 1000, h = 400, padL = 50, padR = 20, padT = 20, padB = 40;
     const innerW = w - padL - padR, innerH = h - padT - padB;
     const yMin = 18 * 60, yRange = 24 * 60;
-    const first = src[0].sleep_end.getTime(), last = src[src.length - 1].sleep_end.getTime();
+    const first = nights[0].mainSeg.sleep_end.getTime(), last = nights[nights.length - 1].mainSeg.sleep_end.getTime();
     const timeRange = last - first || 1;
     let dots = "";
-    for (const s of src) {
-      let m = s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes();
+    for (const n of nights) {
+      let m = n.mainSeg.sleep_start.getHours() * 60 + n.mainSeg.sleep_start.getMinutes();
       if (m < 12 * 60) m += 24 * 60;
-      const x = padL + ((s.sleep_end.getTime() - first) / timeRange) * innerW;
+      const x = padL + ((n.mainSeg.sleep_end.getTime() - first) / timeRange) * innerW;
       const y = padT + ((m - yMin) / yRange) * innerH;
       dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="oklch(0.68 0.14 295)" opacity="0.45"/>`;
     }
@@ -377,8 +378,7 @@
       yTicks += `<line x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,${isMaj ? 0.06 : 0.03})"/>`;
     }
     let xTicks = "";
-    const startD = new Date(first);
-    let cur = new Date(startD.getFullYear(), startD.getMonth(), 1);
+    let cur = new Date(nights[0].mainSeg.sleep_end.getFullYear(), nights[0].mainSeg.sleep_end.getMonth(), 1);
     let mCount = 0;
     while (cur.getTime() <= last) {
       const x = padL + ((cur.getTime() - first) / timeRange) * innerW;
@@ -390,12 +390,12 @@
       cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
       mCount++;
     }
-    const vals = src.map((s) => { let m = s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes(); if (m < 12 * 60) m += 24 * 60; return m; });
+    const vals = nights.map((n) => { let m = n.mainSeg.sleep_start.getHours() * 60 + n.mainSeg.sleep_start.getMinutes(); if (m < 12 * 60) m += 24 * 60; return m; });
     const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
     const meanY = padT + ((mean - yMin) / yRange) * innerH;
     const meanLine = `<line x1="${padL}" x2="${w - padR}" y1="${meanY}" y2="${meanY}" stroke="rgba(255,255,255,0.18)" stroke-dasharray="3 4"/>`;
     const svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block">${yTicks}${xTicks}${meanLine}${dots}</svg>`;
-    app.innerHTML = historyViewShell("Bedtime regularity", `<em>${src.length} nights</em> — bedtime across time`, svg, "history-back");
+    app.innerHTML = historyViewShell("Bedtime regularity", `<em>${nights.length} nights</em> — bedtime across time`, svg, "history-back");
     document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
   }
 
@@ -406,14 +406,15 @@
 
   function renderHistoryDebt() {
     const src = D.sessionsFull || D.sessions;
-    const rows = src.map((s) => {
-      const diff = s.duration_hours - 8;
+    const nights = groupByNight(src);
+    const rows = nights.map((n) => {
+      const diff = n.totalHours - 8;
       const pct = Math.min(48, Math.abs(diff) * 12);
       const side = diff < 0 ? "deficit" : "surplus";
       const style = diff < 0 ? `right:50%;width:${pct}%` : `left:50%;width:${pct}%`;
-      return `<div class="debt-row debt-row-full"><span class="debt-date">${s.sleep_end.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span><div class="debt-bar-track"><div class="debt-bar ${side}" style="${style}"></div></div><span class="debt-val" style="color:${diff<0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${diff>=0?"+":""}${diff.toFixed(1)}h</span></div>`;
+      return `<div class="debt-row debt-row-full"><span class="debt-date">${n.mainSeg.sleep_end.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span><div class="debt-bar-track"><div class="debt-bar ${side}" style="${style}"></div></div><span class="debt-val" style="color:${diff<0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${diff>=0?"+":""}${diff.toFixed(1)}h</span></div>`;
     }).join("");
-    const totalDebt = src.reduce((a, s) => a + (8 - s.duration_hours), 0);
+    const totalDebt = nights.reduce((a, n) => a + (8 - n.totalHours), 0);
     const debtSign = totalDebt <= 0 ? "+" : "";
     const content = `
       <div class="debt-summary-row">
@@ -422,7 +423,7 @@
       </div>
       <div class="debt-full-list">${rows}</div>
     `;
-    app.innerHTML = historyViewShell("Sleep debt", `<em>${src.length} nights</em> — all history`, content, "history-back");
+    app.innerHTML = historyViewShell("Sleep debt", `<em>${nights.length} nights</em> — all history`, content, "history-back");
     document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
   }
 
@@ -1103,6 +1104,22 @@
     `;
   }
 
+  function groupByNight(sessions) {
+    const map = new Map();
+    for (const s of sessions) {
+      const d = new Date(s.sleep_start);
+      if (d.getHours() < 12) d.setDate(d.getDate() - 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(s);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, segs]) => {
+      const totalMs = segs.reduce((a, s) => a + s.duration_ms, 0);
+      const main = segs.reduce((a, b) => a.duration_ms >= b.duration_ms ? a : b);
+      return { totalMs, totalHours: totalMs / 3600000, mainSeg: main, segments: segs };
+    });
+  }
+
   function metricsAvailableMonths() {
     const src = D.sessionsFull || D.sessions;
     const months = new Set();
@@ -1130,27 +1147,28 @@
   }
 
   function computeMetricsSummary(sessions) {
-    const n = sessions.length;
-    if (!n) return { debt: 0, regularity: 100, bedtimeStdDev: 0, avgRem: 0, avgDeep: 0, avgLight: 0, avgAwake: 0, avgRestingHR: 0 };
+    if (!sessions.length) return { debt: 0, regularity: 100, bedtimeStdDev: 0, avgRem: 0, avgDeep: 0, avgLight: 0, avgAwake: 0, avgRestingHR: 0 };
+    const nights = groupByNight(sessions);
+    const nN = nights.length;
     let debt = 0;
-    for (const s of sessions) debt += 8 - s.duration_hours;
-    const bedMins = sessions.map((s) => {
-      let m = s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes();
+    for (const n of nights) debt += 8 - n.totalHours;
+    const bedMins = nights.map((n) => {
+      let m = n.mainSeg.sleep_start.getHours() * 60 + n.mainSeg.sleep_start.getMinutes();
       if (m < 12 * 60) m += 24 * 60;
       return m;
     });
-    const meanBed = bedMins.reduce((a, b) => a + b, 0) / n;
-    const bedtimeStdDev = Math.sqrt(bedMins.reduce((a, b) => a + (b - meanBed) ** 2, 0) / n);
+    const meanBed = bedMins.reduce((a, b) => a + b, 0) / nN;
+    const bedtimeStdDev = Math.sqrt(bedMins.reduce((a, b) => a + (b - meanBed) ** 2, 0) / nN);
     const regularity = Math.max(0, 100 - bedtimeStdDev * 0.8);
     const dateKeys = new Set(sessions.map((s) => s.date_key));
     const hrVals = Object.entries(D.hr).filter(([k]) => dateKeys.has(k)).map(([, v]) => v);
     const avgRestingHR = hrVals.length ? hrVals.reduce((a, b) => a + b, 0) / hrVals.length : 0;
     return {
       debt, regularity, bedtimeStdDev,
-      avgRem: sessions.reduce((a, s) => a + s.totals.rem, 0) / n / 3600000,
-      avgDeep: sessions.reduce((a, s) => a + s.totals.deep, 0) / n / 3600000,
-      avgLight: sessions.reduce((a, s) => a + s.totals.light, 0) / n / 3600000,
-      avgAwake: sessions.reduce((a, s) => a + s.totals.awake, 0) / n / 3600000,
+      avgRem: sessions.reduce((a, s) => a + s.totals.rem, 0) / nN / 3600000,
+      avgDeep: sessions.reduce((a, s) => a + s.totals.deep, 0) / nN / 3600000,
+      avgLight: sessions.reduce((a, s) => a + s.totals.light, 0) / nN / 3600000,
+      avgAwake: sessions.reduce((a, s) => a + s.totals.awake, 0) / nN / 3600000,
       avgRestingHR,
     };
   }
@@ -1162,14 +1180,15 @@
   }
 
   function bedtimeScatterSVG(sessions) {
+    const nights = groupByNight(sessions);
     const w = 500, h = 200, padL = 40, padR = 10, padT = 10, padB = 10;
     const innerW = w - padL - padR, innerH = h - padT - padB;
     const yMin = 18 * 60, yRange = 24 * 60;
-    const n = sessions.length;
+    const n = nights.length;
     let dots = "";
     const values = [];
     for (let i = 0; i < n; i++) {
-      let m = sessions[i].sleep_start.getHours() * 60 + sessions[i].sleep_start.getMinutes();
+      let m = nights[i].mainSeg.sleep_start.getHours() * 60 + nights[i].mainSeg.sleep_start.getMinutes();
       if (m < 12 * 60) m += 24 * 60;
       values.push(m);
       const x = padL + (n > 1 ? (i / (n - 1)) : 0.5) * innerW;
@@ -1211,9 +1230,10 @@
   }
 
   function debtBars(sessions) {
-    return sessions.map((s) => {
-      const wake = new Date(s.sleep_end);
-      const diff = s.duration_hours - 8;
+    const nights = groupByNight(sessions);
+    return nights.map((n) => {
+      const wake = n.mainSeg.sleep_end;
+      const diff = n.totalHours - 8;
       const pct = Math.min(50, Math.abs(diff) * 14);
       const side = diff < 0 ? "deficit" : "surplus";
       const style = diff < 0 ? `right:50%;width:${pct}%` : `left:50%;width:${pct}%`;
