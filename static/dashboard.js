@@ -192,6 +192,10 @@
       .map(([key, ss]) => ({ date_key: key, date: ss[0].sleep_end, sessions: ss, isEmpty: false }));
   }
 
+  function localKey(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   function buildCalendarDays(sessions) {
     if (!sessions.length) return [];
     const map = new Map();
@@ -204,7 +208,7 @@
     const last = new Date(); last.setHours(0, 0, 0, 0);
     let cur = new Date(first);
     while (cur <= last) {
-      const key = cur.toISOString().slice(0, 10);
+      const key = localKey(cur);
       days.push({ date_key: key, date: new Date(cur), sessions: map.get(key) || [], isEmpty: !map.has(key) });
       cur = new Date(cur.getTime() + 86400000);
     }
@@ -294,9 +298,7 @@
     `;
 
     document.getElementById("history-back")?.addEventListener("click", () => {
-      currentView = "dashboard";
-      window.scrollTo(0, 0);
-      renderApp();
+      navigateTo("dashboard");
     });
     const tip = document.getElementById("hover-tip");
     document.querySelectorAll("[data-tip]").forEach((el) => {
@@ -306,9 +308,25 @@
     });
   }
 
+  function navigateTo(view) {
+    currentView = view;
+    window.location.hash = view === "dashboard" ? "" : view;
+    window.scrollTo(0, 0);
+    renderApp();
+  }
+
+  async function renderHistoryTimelineAsync() {
+    if (!D.sessionsFull) {
+      app.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:60vh;font-family:'Geist Mono',monospace;font-size:12px;color:#6a6488;letter-spacing:0.12em;">Loading full history…</div>`;
+      await (window.loadFullSessions ? window.loadFullSessions() : Promise.resolve());
+      D = window.SleepData;
+    }
+    renderHistoryTimeline();
+  }
+
   function renderApp() {
     if (currentView === "history/timeline") {
-      renderHistoryTimeline();
+      renderHistoryTimelineAsync();
     } else {
       render();
     }
@@ -861,9 +879,7 @@
       });
     });
     document.getElementById("timeline-to-history")?.addEventListener("click", () => {
-      currentView = "history/timeline";
-      window.scrollTo(0, 0);
-      renderApp();
+      navigateTo("history/timeline");
     });
     const tip = document.getElementById("hover-tip");
     document.querySelectorAll("[data-tip]").forEach((el) => {
@@ -910,9 +926,18 @@
   });
   try { window.parent.postMessage({ type: "__edit_mode_available" }, "*"); } catch (e) {}
 
+  window.addEventListener("hashchange", () => {
+    const hash = window.location.hash.replace("#", "");
+    currentView = hash || "dashboard";
+    window.scrollTo(0, 0);
+    renderApp();
+  });
+
   window.render = function () {
     D = window.SleepData;
     focusIdx = Math.min(Math.max(0, PREFS.focusNightIndex), D.sessions.length - 1);
+    const hash = window.location.hash.replace("#", "");
+    if (hash) currentView = hash;
     renderApp();
   };
 })();

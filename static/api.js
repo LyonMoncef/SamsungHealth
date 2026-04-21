@@ -6,7 +6,7 @@
   }
 
   function dateKey(d) {
-    return d.toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
   function computeSession(raw, id) {
@@ -129,19 +129,27 @@
     `;
   }
 
-  try {
-    const sleepRes = await fetch("/api/sleep?include_stages=true");
-    const allSessions = await sleepRes.json();
+  async function loadFullSessions() {
+    if (window.SleepData.sessionsFull) return;
+    try {
+      const res = await fetch("/api/sleep?include_stages=true");
+      const allRaw = await res.json();
+      window.SleepData.sessionsFull = allRaw.map((s, i) => computeSession(s, i));
+    } catch (e) {
+      console.warn("Nightfall: could not load full history", e);
+    }
+  }
+  window.loadFullSessions = loadFullSessions;
 
-    if (!Array.isArray(allSessions) || allSessions.length === 0) {
+  try {
+    const sleepRes = await fetch(`/api/sleep?include_stages=true&limit=${MAX_SESSIONS}`);
+    const rawSessions = await sleepRes.json();
+
+    if (!Array.isArray(rawSessions) || rawSessions.length === 0) {
       showEmptyState();
       return;
     }
 
-    // Take the last MAX_SESSIONS nights
-    const rawSessions = allSessions.slice(-MAX_SESSIONS);
-
-    // Fetch steps and HR scoped to the date range of those sessions
     const fromDate = rawSessions[0].sleep_start.slice(0, 10);
     const toDate = rawSessions[rawSessions.length - 1].sleep_end.slice(0, 10);
 
@@ -154,13 +162,12 @@
     const rawHR = hrRes.ok ? await hrRes.json() : [];
 
     const sessions = rawSessions.map((s, i) => computeSession(s, i));
-    const sessionsFull = allSessions.map((s, i) => computeSession(s, i));
     const steps = aggregateSteps(rawSteps);
     const hr = aggregateHR(rawHR);
 
     window.SleepData = {
       sessions,
-      sessionsFull,
+      sessionsFull: null,
       steps,
       hr,
       summary: computeSummary(sessions, steps, hr),

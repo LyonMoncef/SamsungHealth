@@ -37,6 +37,7 @@ def get_sleep_sessions(
     from_date: str = Query(None, alias="from"),
     to_date: str = Query(None, alias="to"),
     include_stages: bool = Query(False),
+    limit: int = Query(None),
 ) -> list[SleepSessionOut]:
     conn = get_connection()
     query = "SELECT id, sleep_start, sleep_end, created_at FROM sleep_sessions"
@@ -52,8 +53,13 @@ def get_sleep_sessions(
         query += " WHERE sleep_start < date(?, '+1 day')"
         params = [to_date]
 
-    query += " ORDER BY sleep_start"
-    rows = conn.execute(query, params).fetchall()
+    if limit:
+        query += " ORDER BY sleep_start DESC LIMIT ?"
+        params = params + [limit]
+        rows = list(reversed(conn.execute(query, params).fetchall()))
+    else:
+        query += " ORDER BY sleep_start"
+        rows = conn.execute(query, params).fetchall()
 
     sessions = []
     for r in rows:
