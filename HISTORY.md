@@ -4,6 +4,9 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Samsung Health CSV import — full DB schema (21 tables) | `server/database.py`, `scripts/import_samsung_csv.py`, `scripts/explore_samsung_export.py` | [`d032741`](#2026-04-21-d032741) |
+| Dev mobile — WSL2 port forwarding + Android cleartext | `scripts/dev-mobile.ps1`, `Makefile`, `android-app/` | [`646aeaa`](#2026-04-21-646aeaa) |
+| Nightfall sleep dashboard | `static/index.html`, `static/dashboard.css`, `static/dashboard.js`, `static/api.js` | [`b5cacc7`](#2026-04-21-b5cacc7) |
 | Workflow bootstrap — CI, labels, hooks, tests | `.github/`, `.githooks/`, `Makefile`, `tests/` | [`939f5ef`](#2026-04-21-939f5ef) |
 | Phase 3: Steps, heart rate, exercise + tabbed dashboard | `server/`, `static/`, `scripts/`, `android-app/` | [`242040a`](#2026-02-16-242040a) |
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
@@ -13,6 +16,34 @@
 ---
 
 ## Changelog
+
+### 2026-04-21 `d032741`
+feat(data): Samsung Health CSV import pipeline + full DB schema (21 tables)
+- Added `scripts/explore_samsung_export.py` — reads Samsung Health CSV export, outputs schema only (column names + type tokens), no personal values
+- Added `scripts/import_samsung_csv.py` — idempotent bulk import (INSERT OR IGNORE / upsert) from CSV export into SQLite; handles Samsung's metadata-line-1 format, prefixed HC column names, Unix-ms timestamps, sleep stage code remapping (40001-40004 → awake/light/deep/rem)
+- Extended `server/database.py` with 16 new tables: `steps_daily`, `stress`, `spo2`, `respiratory_rate`, `hrv`, `skin_temperature`, `weight`, `height`, `blood_pressure`, `mood`, `water_intake`, `activity_daily`, `vitality_score`, `floors_daily`, `activity_level`, `ecg`
+- Added `_add_col()` migration helper for ALTER TABLE ADD COLUMN IF NOT EXISTS
+- Extended `sleep_sessions` with 7 optional columns (sleep_score, efficiency, sleep_duration_min, sleep_cycle, mental_recovery, physical_recovery, sleep_type) via migration
+- Extended `exercise_sessions` with 6 optional columns (calorie_kcal, distance_m, mean/max/min heart_rate, mean_speed_ms)
+- Added `CREATE UNIQUE INDEX IF NOT EXISTS` on sleep_stages(stage_start, stage_end) for idempotent re-import
+
+### 2026-04-21 `646aeaa`
+chore(dev): dev-mobile script + fix Android cleartext HTTP
+- Ajout `scripts/dev-mobile.ps1` — détecte auto les IPs WSL2/Windows, configure port forwarding 8001 et règle firewall
+- Ajout `make dev-mobile` — affiche les instructions pour tester depuis le téléphone
+- Ajout `android-app/res/xml/network_security_config.xml` — autorise HTTP cleartext (app locale uniquement, pas de données sensibles en transit)
+- Référencé dans `AndroidManifest.xml` via `android:networkSecurityConfig`
+- Fix `PreferencesManager.kt` — `DEFAULT_URL` sur port 8001
+
+### 2026-04-21 `b5cacc7`
+feat(frontend): Nightfall sleep dashboard branché sur l'API réelle
+- Remplacé `static/index.html` par la structure Nightfall (fonts Instrument Serif + Geist, `#app`, `#cursor-glow`)
+- Copié `dashboard.css` et `dashboard.js` du handoff Claude Design (inchangés)
+- Exposé `window.render` dans `dashboard.js` pour découpler chargement des données et rendu
+- Créé `static/api.js` — fetch `GET /api/sleep?include_stages=true`, agrège steps + HR, calcule `totals`/`efficiency`/`score`/`summary`, expose `window.SleepData` puis appelle `render()`
+- Stratégie "30 dernières sessions disponibles" au lieu d'une fenêtre calendaire fixe
+- État vide géré si DB sans données (message sync Android)
+- Ajouté `tests/test_sleep_api_shape.py` — 7 tests de contrat sur le shape de l'API (ISO strings, ordre, filtre, stages)
 
 ### 2026-04-21 `939f5ef`
 chore(workflow): bootstrap project template — CI, labels, hooks, tests

@@ -17,7 +17,7 @@ class PreferencesManager(private val context: Context) {
     companion object {
         private val KEY_BACKEND_URL = stringPreferencesKey("backend_url")
         private val KEY_LAST_SYNC = longPreferencesKey("last_sync_epoch_millis")
-        const val DEFAULT_URL = "http://10.0.2.2:8000"
+        const val DEFAULT_URL = "http://10.0.2.2:8001"
     }
 
     val backendUrl: Flow<String> = context.dataStore.data.map { prefs ->

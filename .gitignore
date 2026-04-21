@@ -31,3 +31,6 @@ android-app/app/release/
 # OS
 .DS_Store
 Thumbs.db
+
+# Design handoff exports
+*.zip
