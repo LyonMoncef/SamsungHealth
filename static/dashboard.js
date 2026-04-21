@@ -335,6 +335,7 @@
   let focusIdx = 0;
   let currentView = "dashboard";
   let driftDemoMode = false;
+  let driftPlayback = { playing: false, frame: 0, windowSize: 14, rafId: null, frames: null, _src: null };
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -533,35 +534,96 @@
     return mins;
   }
 
-  function driftRollingAvgSVG(sessions) {
-    const w = 400, cx = w / 2, cy = w / 2, rO = w * 0.43, rI = w * 0.29;
-    const WINDOW = 7, n = sessions.length;
-    const rMid = (rO + rI) / 2;
-    let arcs = "";
-    for (let i = WINDOW - 1; i < n; i++) {
-      const slice = sessions.slice(i - WINDOW + 1, i + 1);
-      const t = (n > WINDOW) ? (i - WINDOW + 1) / (n - WINDOW) : 0;
+  function computeDriftFrames(sessions, windowSize) {
+    const n = sessions.length;
+    const frames = [];
+    for (let i = windowSize - 1; i < n; i++) {
+      const slice = sessions.slice(i - windowSize + 1, i + 1);
       const bedMins = slice.map(s => s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes());
       const wakeMins = slice.map(s => s.sleep_end.getHours() * 60 + s.sleep_end.getMinutes());
-      const avgBed = circularMeanMinutes(bedMins);
-      const avgWake = circularMeanMinutes(wakeMins);
-      const hue = 275 - t * 215;
-      const lum = (0.55 + t * 0.23).toFixed(2);
-      const color = `oklch(${lum} 0.16 ${hue.toFixed(0)})`;
-      const a0 = -Math.PI / 2 + (avgBed / (24 * 60)) * Math.PI * 2;
-      const a1 = -Math.PI / 2 + (avgWake / (24 * 60)) * Math.PI * 2;
+      frames.push({
+        avgBed: circularMeanMinutes(bedMins),
+        avgWake: circularMeanMinutes(wakeMins),
+        date: slice[slice.length - 1].sleep_end,
+        t: (n > windowSize) ? (i - windowSize + 1) / (n - windowSize) : 0,
+      });
+    }
+    return frames;
+  }
+
+  function driftPlaybackSVG(frames, windowSize) {
+    const w = 400, cx = w / 2, cy = w / 2, rO = w * 0.43, rI = w * 0.29, rMid = (rO + rI) / 2;
+    const step = Math.max(1, Math.floor(frames.length / 60));
+    let ghosts = "";
+    for (let i = 0; i < frames.length; i += step) {
+      const f = frames[i];
+      const a0 = -Math.PI / 2 + (f.avgBed / (24 * 60)) * Math.PI * 2;
+      const a1 = -Math.PI / 2 + (f.avgWake / (24 * 60)) * Math.PI * 2;
       let span = a1 - a0; if (span <= 0) span += Math.PI * 2;
-      const largeArc = span > Math.PI ? 1 : 0;
+      const la = span > Math.PI ? 1 : 0;
       const x0 = cx + Math.cos(a0) * rMid, y0 = cy + Math.sin(a0) * rMid;
       const x1 = cx + Math.cos(a1) * rMid, y1 = cy + Math.sin(a1) * rMid;
-      arcs += `<path d="M${x0},${y0} A${rMid},${rMid} 0 ${largeArc} 1 ${x1},${y1}" fill="none" stroke="${color}" stroke-width="2.5" opacity="${(0.18 + t * 0.55).toFixed(3)}" stroke-linecap="round"/>`;
+      const hue = 275 - f.t * 215;
+      ghosts += `<path d="M${x0.toFixed(2)},${y0.toFixed(2)} A${rMid},${rMid} 0 ${la} 1 ${x1.toFixed(2)},${y1.toFixed(2)}" fill="none" stroke="oklch(0.6 0.08 ${hue.toFixed(0)})" stroke-width="1" opacity="0.09" stroke-linecap="round"/>`;
     }
-    const yr0 = new Date(sessions[0].sleep_start).getFullYear();
-    const yr1 = new Date(sessions[n - 1].sleep_start).getFullYear();
-    const ly = w - 22, lx1 = cx - 56, lx2 = cx + 56;
-    const legend = `<defs><linearGradient id="drgrd"><stop offset="0%" stop-color="oklch(0.55 0.16 275)"/><stop offset="100%" stop-color="oklch(0.78 0.16 60)"/></linearGradient></defs><rect x="${lx1}" y="${ly}" width="${lx2 - lx1}" height="3" fill="url(#drgrd)" rx="1.5"/><text x="${lx1}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="start">${yr0}</text><text x="${lx2}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="end">${yr1}</text>`;
-    const center = `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Instrument Serif" font-size="32" fill="#e8e4f5">${WINDOW}d avg</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="Geist Mono" font-size="9" fill="#6a6488" letter-spacing="0.12em">ROLLING</text>`;
-    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${legend}${center}</svg>`;
+    const f0 = frames[driftPlayback.frame] || frames[0];
+    const a0i = -Math.PI / 2 + (f0.avgBed / (24 * 60)) * Math.PI * 2;
+    const a1i = -Math.PI / 2 + (f0.avgWake / (24 * 60)) * Math.PI * 2;
+    let spani = a1i - a0i; if (spani <= 0) spani += Math.PI * 2;
+    const lai = spani > Math.PI ? 1 : 0;
+    const x0i = cx + Math.cos(a0i) * rMid, y0i = cy + Math.sin(a0i) * rMid;
+    const x1i = cx + Math.cos(a1i) * rMid, y1i = cy + Math.sin(a1i) * rMid;
+    const di = `M${x0i.toFixed(2)},${y0i.toFixed(2)} A${rMid},${rMid} 0 ${lai} 1 ${x1i.toFixed(2)},${y1i.toFixed(2)}`;
+    const hue0 = 275 - f0.t * 215, lum0 = (0.55 + f0.t * 0.23).toFixed(2);
+    const col0 = `oklch(${lum0} 0.18 ${hue0.toFixed(0)})`;
+    const bedH = Math.floor(f0.avgBed / 60), bedM = Math.round(f0.avgBed % 60);
+    const wkH = Math.floor(f0.avgWake / 60), wkM = Math.round(f0.avgWake % 60);
+    const center = `
+      <text id="drift-pb-bed" x="${cx}" y="${cy - 12}" text-anchor="middle" font-family="Geist Mono" font-size="17" fill="#e8e4f5" letter-spacing="0.04em">${pad(bedH)}:${pad(bedM)}</text>
+      <text x="${cx}" y="${cy + 3}" text-anchor="middle" font-family="Geist Mono" font-size="8" fill="#6a6488" letter-spacing="0.14em">BED · WAKE</text>
+      <text id="drift-pb-wake" x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="Geist Mono" font-size="17" fill="#e8e4f5" letter-spacing="0.04em">${pad(wkH)}:${pad(wkM)}</text>`;
+    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg">
+      <circle cx="${cx}" cy="${cy}" r="${rMid}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>
+      ${ghosts}
+      <path id="drift-pb-arc-glow" d="${di}" fill="none" stroke="${col0}" stroke-width="14" opacity="0.18" stroke-linecap="round"/>
+      <path id="drift-pb-arc" d="${di}" fill="none" stroke="${col0}" stroke-width="5" opacity="1" stroke-linecap="round"/>
+      <circle id="drift-pb-dot-bed" cx="${x0i.toFixed(2)}" cy="${y0i.toFixed(2)}" r="4.5" fill="${col0}"/>
+      <circle id="drift-pb-dot-wake" cx="${x1i.toFixed(2)}" cy="${y1i.toFixed(2)}" r="4.5" fill="${col0}"/>
+      ${clockTicks(cx, cy, rO)}
+      ${center}
+    </svg>`;
+  }
+
+  function updateDriftArc(frameObj) {
+    const cx = 200, cy = 200, rMid = 144;
+    const a0 = -Math.PI / 2 + (frameObj.avgBed / (24 * 60)) * Math.PI * 2;
+    const a1 = -Math.PI / 2 + (frameObj.avgWake / (24 * 60)) * Math.PI * 2;
+    let span = a1 - a0; if (span <= 0) span += Math.PI * 2;
+    const la = span > Math.PI ? 1 : 0;
+    const x0 = cx + Math.cos(a0) * rMid, y0 = cy + Math.sin(a0) * rMid;
+    const x1 = cx + Math.cos(a1) * rMid, y1 = cy + Math.sin(a1) * rMid;
+    const d = `M${x0.toFixed(2)},${y0.toFixed(2)} A${rMid},${rMid} 0 ${la} 1 ${x1.toFixed(2)},${y1.toFixed(2)}`;
+    const hue = 275 - frameObj.t * 215;
+    const lum = (0.55 + frameObj.t * 0.23).toFixed(2);
+    const color = `oklch(${lum} 0.18 ${hue.toFixed(0)})`;
+    const arcEl = document.getElementById("drift-pb-arc");
+    if (arcEl) { arcEl.setAttribute("d", d); arcEl.setAttribute("stroke", color); }
+    const glowEl = document.getElementById("drift-pb-arc-glow");
+    if (glowEl) { glowEl.setAttribute("d", d); glowEl.setAttribute("stroke", color); }
+    const bedDot = document.getElementById("drift-pb-dot-bed");
+    if (bedDot) { bedDot.setAttribute("cx", x0.toFixed(2)); bedDot.setAttribute("cy", y0.toFixed(2)); bedDot.setAttribute("fill", color); }
+    const wakeDot = document.getElementById("drift-pb-dot-wake");
+    if (wakeDot) { wakeDot.setAttribute("cx", x1.toFixed(2)); wakeDot.setAttribute("cy", y1.toFixed(2)); wakeDot.setAttribute("fill", color); }
+    const bedH = Math.floor(frameObj.avgBed / 60), bedM = Math.round(frameObj.avgBed % 60);
+    const wkH = Math.floor(frameObj.avgWake / 60), wkM = Math.round(frameObj.avgWake % 60);
+    const bedEl = document.getElementById("drift-pb-bed");
+    if (bedEl) bedEl.textContent = `${pad(bedH)}:${pad(bedM)}`;
+    const wakeEl = document.getElementById("drift-pb-wake");
+    if (wakeEl) wakeEl.textContent = `${pad(wkH)}:${pad(wkM)}`;
+    const dateEl = document.getElementById("drift-pb-date");
+    if (dateEl) dateEl.textContent = frameObj.date.toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
+    const scrubEl = document.getElementById("drift-pb-scrub");
+    if (scrubEl) scrubEl.value = driftPlayback.frame;
   }
 
   function generateDemoSessions(n) {
@@ -594,6 +656,16 @@
     const demoLabel = driftDemoMode
       ? `<span class="drift-demo-badge">Demo — regular schedule</span>`
       : "";
+    if (!driftPlayback.frames || driftPlayback._src !== src) {
+      driftPlayback.frames = computeDriftFrames(src, driftPlayback.windowSize);
+      driftPlayback._src = src;
+      driftPlayback.frame = Math.min(driftPlayback.frame, Math.max(0, driftPlayback.frames.length - 1));
+    }
+    const frames = driftPlayback.frames;
+    const nf = frames.length;
+    const curFrame = frames[driftPlayback.frame];
+    const curDateStr = curFrame ? curFrame.date.toLocaleDateString("fr-FR", { month: "short", year: "numeric" }) : "—";
+    const w = driftPlayback.windowSize;
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">10</span><span class="eyebrow">Sleep clock drift</span></div>
@@ -617,9 +689,17 @@
             <div class="drift-option-desc">Every session as an arc. Violet = oldest, amber = newest. <em>Colour shift in position</em> = temporal drift. If violet and amber arcs don't overlap, your schedule has moved.</div>
           </div>
           <div class="drift-option">
-            <div class="drift-option-label">C — 7-night rolling average</div>
-            ${driftRollingAvgSVG(src)}
-            <div class="drift-option-desc">Each stroke = avg bedtime→wake over 7 nights. Violet = start of period, amber = end. <em>Arc that rotates clockwise</em> = progressively later schedule.</div>
+            <div class="drift-option-label">C — Playback</div>
+            ${driftPlaybackSVG(frames, w)}
+            <div class="drift-pb-controls">
+              <button class="drift-pb-play" id="drift-pb-play">${driftPlayback.playing ? "⏸" : "▶"}</button>
+              <input type="range" class="drift-pb-scrub" id="drift-pb-scrub" min="0" max="${nf - 1}" value="${driftPlayback.frame}">
+              <span class="drift-pb-date" id="drift-pb-date">${curDateStr}</span>
+            </div>
+            <div class="drift-window-pills">
+              ${[7, 14, 30].map(n => `<button class="drift-pill${w === n ? " active" : ""}" data-drift-window="${n}">${n}n</button>`).join("")}
+            </div>
+            <div class="drift-option-desc">Press ▶ to watch your bedtime arc move around the clock. Ghost trails = all ${w}-night windows. Window size changes the smoothing.</div>
           </div>
         </div>
       </div>
@@ -891,6 +971,7 @@
   }
 
   function render() {
+    if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
     app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterRidgeline() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
@@ -916,7 +997,57 @@
     });
     document.getElementById("drift-demo-toggle")?.addEventListener("click", () => {
       driftDemoMode = !driftDemoMode;
+      driftPlayback.frames = null;
+      driftPlayback.frame = 0;
       render();
+    });
+    document.getElementById("drift-pb-play")?.addEventListener("click", () => {
+      driftPlayback.playing = !driftPlayback.playing;
+      const btn = document.getElementById("drift-pb-play");
+      if (btn) btn.textContent = driftPlayback.playing ? "⏸" : "▶";
+      if (driftPlayback.playing) {
+        if (driftPlayback.frame >= driftPlayback.frames.length - 1) driftPlayback.frame = 0;
+        let lastTs = null;
+        const STEP_MS = 150;
+        function loop(ts) {
+          if (!driftPlayback.playing || !document.getElementById("drift-pb-arc")) {
+            driftPlayback.playing = false; driftPlayback.rafId = null; return;
+          }
+          if (lastTs === null || ts - lastTs >= STEP_MS) {
+            lastTs = ts;
+            driftPlayback.frame = (driftPlayback.frame + 1) % driftPlayback.frames.length;
+            updateDriftArc(driftPlayback.frames[driftPlayback.frame]);
+            if (driftPlayback.frame === driftPlayback.frames.length - 1) {
+              driftPlayback.playing = false;
+              const b = document.getElementById("drift-pb-play");
+              if (b) b.textContent = "▶";
+              driftPlayback.rafId = null; return;
+            }
+          }
+          driftPlayback.rafId = requestAnimationFrame(loop);
+        }
+        driftPlayback.rafId = requestAnimationFrame(loop);
+      } else {
+        if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; }
+      }
+    });
+    document.getElementById("drift-pb-scrub")?.addEventListener("input", (e) => {
+      if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; }
+      driftPlayback.playing = false;
+      const btn = document.getElementById("drift-pb-play");
+      if (btn) btn.textContent = "▶";
+      driftPlayback.frame = parseInt(e.target.value);
+      updateDriftArc(driftPlayback.frames[driftPlayback.frame]);
+    });
+    document.querySelectorAll("[data-drift-window]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; }
+        driftPlayback.playing = false;
+        driftPlayback.windowSize = parseInt(btn.dataset.driftWindow);
+        driftPlayback.frames = null;
+        driftPlayback.frame = 0;
+        render();
+      });
     });
     const tip = document.getElementById("hover-tip");
     document.querySelectorAll("[data-tip]").forEach((el) => {

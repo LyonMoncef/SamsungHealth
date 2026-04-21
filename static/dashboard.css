@@ -354,6 +354,14 @@ footer {
 .drift-option-desc { font-size: 12px; color: #6a6488; text-align: center; max-width: 22ch; line-height: 1.6; }
 .drift-svg { width: 100%; max-width: 380px; }
 .drift-demo-badge { display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: 'Geist Mono', monospace; background: oklch(0.68 0.14 295 / 0.15); color: oklch(0.68 0.14 295); letter-spacing: 0.05em; vertical-align: middle; }
+.drift-pb-controls { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 4px; }
+.drift-pb-play { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #e8e4f5; font-size: 11px; cursor: pointer; flex-shrink: 0; transition: background 0.15s; display: flex; align-items: center; justify-content: center; }
+.drift-pb-play:hover { background: rgba(255,255,255,0.12); }
+.drift-pb-scrub { flex: 1; accent-color: oklch(0.68 0.14 295); cursor: pointer; height: 3px; }
+.drift-pb-date { font-family: 'Geist Mono', monospace; font-size: 11px; color: #6a6488; flex-shrink: 0; min-width: 8ch; text-align: right; }
+.drift-window-pills { display: flex; gap: 4px; align-self: flex-start; }
+.drift-pill { padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #6a6488; font-family: 'Geist Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s; }
+.drift-pill.active, .drift-pill:hover { background: oklch(0.68 0.14 295 / 0.15); border-color: oklch(0.68 0.14 295 / 0.3); color: #c4b0f0; }
 @media (max-width: 900px) { .drift-grid { grid-template-columns: 1fr; gap: 48px; } .drift-svg { max-width: 320px; } }
 
 /* Timeline weekend + history mode */
