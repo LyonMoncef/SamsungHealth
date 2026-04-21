@@ -15,10 +15,22 @@
 
 | Drift clock — animated playback | `static/dashboard.js`, `static/dashboard.css` | [`3cdb138`](#2026-04-22-3cdb138) |
 | Drift clock — 3 radial views + demo toggle | `static/dashboard.js`, `static/dashboard.css` | [`1dd765e`](#2026-04-22-1dd765e) |
+| Cards full ranking view + bedtime scatter 24h | `static/dashboard.js`, `static/dashboard.css` | [`4882564`](#2026-04-22-4882564) |
 
 ---
 
 ## Changelog
+
+### 2026-04-22 `4882564`
+feat(frontend): cards full ranking view + bedtime scatter 24h axis
+- `bedtimeScatterSVG()` rewritten: Y axis covers full 24h (18h–18h), `h=200`, ticks every 3h with grid lines and `dominant-baseline="middle"` for centering
+- `nightCardHTML(s, rank)` extracted as standalone helper for reuse
+- `chapterCards()` now uses `D.sessionsFull || D.sessions` for full history + added "Full ranking (N) →" button (`id="cards-to-history"`)
+- `renderHistoryCards()` added: compact ranking table sorted by score, grid layout with 6 columns (rank / date / score / duration / bed→wake / stage bar)
+- `renderHistoryCardsAsync()` added: loading state + lazy full-session load via `window.loadFullSessions()`
+- `renderApp()` updated to dispatch `history/cards` → `renderHistoryCardsAsync()`
+- `bindEvents()` updated: `#cards-to-history` click → `navigateTo("history/cards")`
+- CSS: `.ranking-head`, `.ranking-table`, `.ranking-row`, `.ranking-rank`, `.ranking-date`, `.ranking-score`, `.ranking-dur`, `.ranking-times`, `.ranking-stages`
 
 ### 2026-04-22 `3cdb138`
 feat(frontend): drift clock animated playback with scrubber and window size selector
