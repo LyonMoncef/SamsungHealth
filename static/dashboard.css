@@ -383,8 +383,9 @@ footer {
 .history-back-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--paper); }
 .history-view-title { font-family: 'Instrument Serif', serif; font-size: clamp(28px, 4vw, 52px); font-weight: 400; letter-spacing: -0.02em; margin-top: 6px; }
 .history-view-title em { font-style: italic; color: var(--stage-rem); }
-.history-panel { overflow: visible; }
-.timeline-axis-sticky { position: sticky; top: 0; z-index: 10; background: var(--ink-0); padding: 8px 0 6px; margin-bottom: 4px; }
+.history-panel { overflow: visible; padding-top: 0; }
+.history-timeline-sticky { position: sticky; top: 0; z-index: 20; background: var(--ink-0); padding: 8px 32px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.history-timeline-sticky .timeline-axis { margin-bottom: 0; border-bottom: none; }
 .timeline-row.empty .label { color: rgba(106, 100, 136, 0.3); }
 .timeline-row.empty .track { opacity: 0.25; }
 .timeline-row { content-visibility: auto; contain-intrinsic-size: 0 20px; }

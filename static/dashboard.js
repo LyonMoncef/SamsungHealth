@@ -262,7 +262,7 @@
         <p class="chapter-desc">Each bar is one day, 24h from 6pm. Weekends in amber. <button class="history-toggle" id="timeline-to-history">Full history (${n}) →</button></p>
       </div>
       <div class="panel">
-        <div class="timeline"><div class="timeline-axis timeline-axis-sticky">${timelineTicks()}</div>${days.map(buildTimelineRow).join("")}</div>
+        <div class="timeline"><div class="timeline-axis">${timelineTicks()}</div>${days.map(buildTimelineRow).join("")}</div>
       </div>
     `;
   }
@@ -296,9 +296,11 @@
           <h2 class="history-view-title">All <em>${src.length} nights</em></h2>
         </div>
       </div>
+      <div class="history-timeline-sticky">
+        <div class="timeline-axis">${timelineTicks()}</div>
+      </div>
       <div class="panel history-panel">
         <div class="timeline">
-          <div class="timeline-axis timeline-axis-sticky">${timelineTicks()}</div>
           ${groupsHtml}
         </div>
       </div>
