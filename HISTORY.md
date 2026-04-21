@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Nightfall sleep dashboard | `static/index.html`, `static/dashboard.css`, `static/dashboard.js`, `static/api.js` | [`pending`](#2026-04-21-pending) |
 | Workflow bootstrap — CI, labels, hooks, tests | `.github/`, `.githooks/`, `Makefile`, `tests/` | [`939f5ef`](#2026-04-21-939f5ef) |
 | Phase 3: Steps, heart rate, exercise + tabbed dashboard | `server/`, `static/`, `scripts/`, `android-app/` | [`242040a`](#2026-02-16-242040a) |
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
@@ -13,6 +14,16 @@
 ---
 
 ## Changelog
+
+### 2026-04-21 `pending`
+feat(frontend): Nightfall sleep dashboard branché sur l'API réelle
+- Remplacé `static/index.html` par la structure Nightfall (fonts Instrument Serif + Geist, `#app`, `#cursor-glow`)
+- Copié `dashboard.css` et `dashboard.js` du handoff Claude Design (inchangés)
+- Exposé `window.render` dans `dashboard.js` pour découpler chargement des données et rendu
+- Créé `static/api.js` — fetch `GET /api/sleep?include_stages=true`, agrège steps + HR, calcule `totals`/`efficiency`/`score`/`summary`, expose `window.SleepData` puis appelle `render()`
+- Stratégie "30 dernières sessions disponibles" au lieu d'une fenêtre calendaire fixe
+- État vide géré si DB sans données (message sync Android)
+- Ajouté `tests/test_sleep_api_shape.py` — 7 tests de contrat sur le shape de l'API (ISO strings, ordre, filtre, stages)
 
 ### 2026-04-21 `939f5ef`
 chore(workflow): bootstrap project template — CI, labels, hooks, tests
