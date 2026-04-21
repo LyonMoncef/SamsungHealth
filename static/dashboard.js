@@ -1104,16 +1104,23 @@
     `;
   }
 
-  function groupByNight(sessions) {
-    const map = new Map();
-    for (const s of sessions) {
-      const d = new Date(s.sleep_start);
-      if (d.getHours() < 12) d.setDate(d.getDate() - 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(s);
+  function groupByNight(sessions, gapHours = 2) {
+    if (!sessions.length) return [];
+    const sorted = [...sessions].sort((a, b) => a.sleep_start - b.sleep_start);
+    const episodes = [];
+    let current = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      const lastEnd = current[current.length - 1].sleep_end;
+      const gap = (sorted[i].sleep_start - lastEnd) / 3600000;
+      if (gap < gapHours) {
+        current.push(sorted[i]);
+      } else {
+        episodes.push(current);
+        current = [sorted[i]];
+      }
     }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, segs]) => {
+    episodes.push(current);
+    return episodes.map((segs) => {
       const totalMs = segs.reduce((a, s) => a + s.duration_ms, 0);
       const main = segs.reduce((a, b) => a.duration_ms >= b.duration_ms ? a : b);
       return { totalMs, totalHours: totalMs / 3600000, mainSeg: main, segments: segs };
