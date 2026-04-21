@@ -455,11 +455,19 @@
     let t = "";
     for (let h = 0; h < 24; h++) {
       const a = -Math.PI / 2 + (h / 24) * Math.PI * 2;
-      const r1 = rOuter + 4, r2 = rOuter + (h % 6 === 0 ? 16 : 8);
-      t += `<line x1="${cx + Math.cos(a) * r1}" y1="${cy + Math.sin(a) * r1}" x2="${cx + Math.cos(a) * r2}" y2="${cy + Math.sin(a) * r2}" stroke="rgba(255,255,255,${h % 6 === 0 ? 0.4 : 0.15})" stroke-width="1"/>`;
-      if (h % 6 === 0) {
-        const rt = rOuter + 30;
-        t += `<text x="${cx + Math.cos(a) * rt}" y="${cy + Math.sin(a) * rt + 4}" text-anchor="middle" font-family="Geist Mono" font-size="11" fill="rgba(232,228,245,0.6)">${pad(h)}</text>`;
+      const isMajor = h % 6 === 0;
+      const isMid3 = h % 3 === 0;
+      const tickLen = isMajor ? 12 : isMid3 ? 7 : 4;
+      const tickOp = isMajor ? 0.45 : isMid3 ? 0.22 : 0.1;
+      const r1 = rOuter + 3, r2 = rOuter + 3 + tickLen;
+      t += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${tickOp})" stroke-width="${isMajor ? 1.5 : 1}"/>`;
+      if (isMid3) {
+        const rt = rOuter + 22;
+        const label = `${h}h`;
+        const isMidnight = h === 0;
+        const fill = isMidnight ? "rgba(180,150,255,0.9)" : isMajor ? "rgba(232,228,245,0.6)" : "rgba(232,228,245,0.32)";
+        const fs = isMajor ? 11 : 9;
+        t += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${label}</text>`;
       }
     }
     return t;
@@ -493,7 +501,7 @@
       arcs += `<path d="M${xi0},${yi0} A${rI},${rI} 0 0 1 ${xi1},${yi1} L${xo1},${yo1} A${rO},${rO} 0 0 0 ${xo0},${yo0} Z" fill="oklch(0.68 0.14 295)" opacity="${(op * 0.88 + 0.05).toFixed(3)}"/>`;
     }
     const center = `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Instrument Serif" font-size="40" fill="#e8e4f5">${sessions.length}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="Geist Mono" font-size="9" fill="#6a6488" letter-spacing="0.15em">NIGHTS</text>`;
-    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${center}</svg>`;
+    return `<svg viewBox="-30 -30 460 460" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${center}</svg>`;
   }
 
   function driftSpaghettiSVG(sessions) {
@@ -521,7 +529,7 @@
     const ly = w - 22, lx1 = cx - 56, lx2 = cx + 56;
     const legend = `<defs><linearGradient id="dsg"><stop offset="0%" stop-color="oklch(0.52 0.14 275)"/><stop offset="100%" stop-color="oklch(0.78 0.14 60)"/></linearGradient></defs><rect x="${lx1}" y="${ly}" width="${lx2 - lx1}" height="3" fill="url(#dsg)" rx="1.5"/><text x="${lx1}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="start">${yr0}</text><text x="${lx2}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="end">${yr1}</text>`;
     const center = `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Instrument Serif" font-size="40" fill="#e8e4f5">${n}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="Geist Mono" font-size="9" fill="#6a6488" letter-spacing="0.15em">NIGHTS</text>`;
-    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${legend}${center}</svg>`;
+    return `<svg viewBox="-30 -30 460 460" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${legend}${center}</svg>`;
   }
 
   function circularMeanMinutes(minsList) {
@@ -599,7 +607,7 @@
       <text id="drift-pb-bed" x="${cx}" y="${cy - 12}" text-anchor="middle" font-family="Geist Mono" font-size="17" fill="#e8e4f5" letter-spacing="0.04em">${pad(bedH)}:${pad(bedM)}</text>
       <text x="${cx}" y="${cy + 3}" text-anchor="middle" font-family="Geist Mono" font-size="8" fill="#6a6488" letter-spacing="0.14em">BED · WAKE</text>
       <text id="drift-pb-wake" x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="Geist Mono" font-size="17" fill="#e8e4f5" letter-spacing="0.04em">${pad(wkH)}:${pad(wkM)}</text>`;
-    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg">
+    return `<svg viewBox="-30 -30 460 460" class="drift-svg">
       <circle cx="${cx}" cy="${cy}" r="${rMid}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>
       ${ghosts}
       <path id="drift-pb-arc-glow" d="${di}" fill="none" stroke="${col0}" stroke-width="14" opacity="0.18" stroke-linecap="round"/>
