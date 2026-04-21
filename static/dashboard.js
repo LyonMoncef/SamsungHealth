@@ -335,7 +335,7 @@
   let focusIdx = 0;
   let currentView = "dashboard";
   let driftDemoMode = false;
-  let driftPlayback = { playing: false, frameFrac: 0, windowSize: 14, speed: 1, rafId: null, frames: null, _src: null, _loading: false };
+  let driftPlayback = { playing: false, frameFrac: 0, windowSize: 30, speed: 1, rafId: null, frames: null, _src: null, _loading: false };
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -557,21 +557,15 @@
     };
   }
 
-  function computeDriftFrames(sessions, windowSize) {
-    const n = sessions.length;
-    const frames = [];
-    for (let i = windowSize - 1; i < n; i++) {
-      const slice = sessions.slice(i - windowSize + 1, i + 1);
-      const bedMins = slice.map(s => s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes());
-      const wakeMins = slice.map(s => s.sleep_end.getHours() * 60 + s.sleep_end.getMinutes());
-      frames.push({
-        avgBed: circularMeanMinutes(bedMins),
-        avgWake: circularMeanMinutes(wakeMins),
-        date: slice[slice.length - 1].sleep_end,
-        t: (n > windowSize) ? (i - windowSize + 1) / (n - windowSize) : 0,
-      });
-    }
-    return frames;
+  function computeDriftFrames(sessions, scope) {
+    const src = scope > 0 ? sessions.slice(-scope) : sessions;
+    const n = src.length;
+    return src.map((s, i) => ({
+      avgBed: s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes(),
+      avgWake: s.sleep_end.getHours() * 60 + s.sleep_end.getMinutes(),
+      date: s.sleep_end,
+      t: n > 1 ? i / (n - 1) : 0,
+    }));
   }
 
   function driftPlaybackSVG(frames, windowSize) {
@@ -731,13 +725,13 @@
             </div>
             <div class="drift-pills-row">
               <div class="drift-window-pills">
-                ${[7, 14, 30].map(n => `<button class="drift-pill${w === n ? " active" : ""}" data-drift-window="${n}">${n}n</button>`).join("")}
+                ${[[7,"7n"],[14,"14n"],[30,"30n"],[0,"All"]].map(([n,l]) => `<button class="drift-pill${w === n ? " active" : ""}" data-drift-window="${n}">${l}</button>`).join("")}
               </div>
               <div class="drift-speed-pills">
                 ${[0.5, 1, 2, 4].map(s => `<button class="drift-pill${spd === s ? " active" : ""}" data-drift-speed="${s}">${s}×</button>`).join("")}
               </div>
             </div>
-            <div class="drift-option-desc">${src.length} nights${driftPlayback._loading ? " · loading full history…" : ""}. Window = ${w}n rolling avg.</div>
+            <div class="drift-option-desc">${w > 0 ? `Last ${Math.min(w, src.length)}` : src.length} nights${driftPlayback._loading ? " · loading…" : ""}. One frame per real night.</div>
           </div>
         </div>
       </div>
