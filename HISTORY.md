@@ -13,11 +13,24 @@
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
 
+| Drift clock — animated playback | `static/dashboard.js`, `static/dashboard.css` | [`3cdb138`](#2026-04-22-3cdb138) |
 | Drift clock — 3 radial views + demo toggle | `static/dashboard.js`, `static/dashboard.css` | [`1dd765e`](#2026-04-22-1dd765e) |
 
 ---
 
 ## Changelog
+
+### 2026-04-22 `3cdb138`
+feat(frontend): drift clock animated playback with scrubber and window size selector
+- Replaced static rolling-avg view C with animated playback: ▶/⏸ button steps through all N-night rolling windows at ~150ms/frame
+- Ghost trails (downsampled to ~60 arcs, 9% opacity) stay visible in background for context
+- Active arc has glow effect (wide transparent stroke behind main stroke) and color-shifts violet→amber as time advances
+- Bed/wake dot markers on arc endpoints update each frame
+- Center SVG displays live BED → WAKE times (Geist Mono, updated via direct DOM)
+- Scrubber (range input) lets user seek manually; dragging pauses playback
+- Window size selector: 7n / 14n / 30n pills — changing window resets and re-renders
+- Playback state (`driftPlayback`) survives demo-mode toggle but resets on source/window change
+- RAF loop self-terminates when arc element disappears (page navigation) or last frame is reached
 
 ### 2026-04-22 `1dd765e`
 feat(frontend): drift clock demo toggle with synthetic regular sleep data
