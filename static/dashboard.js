@@ -179,67 +179,143 @@
     `;
   }
 
-  function chapterTimeline() {
-    const startHour = 18, spanHours = 24, spanMs = spanHours * 3600000;
-    const src = historyTimeline ? (D.sessionsFull || D.sessions) : D.sessions;
+  const TSTART = 18, TSPAN = 24, TSPAN_MS = TSPAN * 3600000;
 
-    const buildRow = (s) => {
-      const wake = new Date(s.sleep_end); wake.setHours(0, 0, 0, 0);
-      const anchorMs = wake.getTime() - (24 - startHour) * 3600000;
-      const segs = s.stages.map((st) => {
-        const left = ((st.stage_start.getTime() - anchorMs) / spanMs) * 100;
-        const width = ((st.stage_end - st.stage_start) / spanMs) * 100;
-        return `<div class="stage-seg ${st.stage_type}" style="left:${left}%;width:${width}%"></div>`;
-      }).join("");
-      const dayNum = wake.getDay();
-      const wknd = dayNum === 0 || dayNum === 6;
-      const label = `${fmtDay(wake)} ${wake.getDate()}`;
-      const tip = `${fmtDateLong(wake)}\n${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)} · ${hoursMinutes(s.duration_ms)}`;
-      return `<div class="timeline-row${wknd ? " weekend" : ""}" data-tip="${tip}"><div class="label">${label}</div><div class="track">${segs}</div></div>`;
-    };
+  function aggregateByDay(sessions) {
+    const map = new Map();
+    for (const s of sessions) {
+      if (!map.has(s.date_key)) map.set(s.date_key, []);
+      map.get(s.date_key).push(s);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, ss]) => ({ date_key: key, date: ss[0].sleep_end, sessions: ss, isEmpty: false }));
+  }
 
-    let rowsHtml;
-    if (historyTimeline) {
-      const groups = [];
-      let curKey = null, curLabel = "", curRows = [];
-      for (const s of src) {
-        const wake = new Date(s.sleep_end);
-        const key = `${wake.getFullYear()}-${wake.getMonth()}`;
-        const label = wake.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-        if (key !== curKey) {
-          if (curKey !== null) groups.push({ label: curLabel, rows: curRows });
-          curKey = key; curLabel = label; curRows = [];
-        }
-        curRows.push(buildRow(s));
+  function buildCalendarDays(sessions) {
+    if (!sessions.length) return [];
+    const map = new Map();
+    for (const s of sessions) {
+      if (!map.has(s.date_key)) map.set(s.date_key, []);
+      map.get(s.date_key).push(s);
+    }
+    const days = [];
+    const first = new Date(sessions[0].sleep_end); first.setHours(0, 0, 0, 0);
+    const last = new Date(); last.setHours(0, 0, 0, 0);
+    let cur = new Date(first);
+    while (cur <= last) {
+      const key = cur.toISOString().slice(0, 10);
+      days.push({ date_key: key, date: new Date(cur), sessions: map.get(key) || [], isEmpty: !map.has(key) });
+      cur = new Date(cur.getTime() + 86400000);
+    }
+    return days;
+  }
+
+  function buildTimelineRow(day) {
+    const wake = new Date(day.date); wake.setHours(0, 0, 0, 0);
+    const anchorMs = wake.getTime() - (24 - TSTART) * 3600000;
+    let segs = "";
+    for (const s of day.sessions) {
+      for (const st of s.stages) {
+        const left = ((st.stage_start.getTime() - anchorMs) / TSPAN_MS) * 100;
+        const width = ((st.stage_end - st.stage_start) / TSPAN_MS) * 100;
+        segs += `<div class="stage-seg ${st.stage_type}" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%"></div>`;
       }
-      if (curKey !== null) groups.push({ label: curLabel, rows: curRows });
-      rowsHtml = groups.map((g) =>
-        `<div class="timeline-month-sep"><span class="timeline-month-sep-label">${g.label}</span><span class="timeline-month-count">${g.rows.length} nights</span></div>${g.rows.join("")}`
-      ).join("");
-    } else {
-      rowsHtml = src.map(buildRow).join("");
     }
+    const dayNum = wake.getDay();
+    const wknd = dayNum === 0 || dayNum === 6;
+    const label = `${fmtDay(wake)} ${wake.getDate()}`;
+    const totalDur = day.sessions.reduce((a, s) => a + s.duration_ms, 0);
+    let tip = fmtDateLong(wake);
+    if (day.sessions.length > 1) tip += `\n${day.sessions.length} sessions · ${hoursMinutes(totalDur)} total`;
+    else if (day.sessions.length === 1) { const s = day.sessions[0]; tip += `\n${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)} · ${hoursMinutes(s.duration_ms)}`; }
+    const cls = ["timeline-row", wknd ? "weekend" : "", day.isEmpty ? "empty" : ""].filter(Boolean).join(" ");
+    return `<div class="${cls}"${day.isEmpty ? "" : ` data-tip="${tip}"`}><div class="label">${label}</div><div class="track">${segs}</div></div>`;
+  }
 
-    const ticks = [];
-    for (let i = 0; i <= spanHours; i += 3) {
-      const hour = (startHour + i) % 24;
-      ticks.push(`<div class="tick" style="left:${(i / spanHours) * 100}%">${pad(hour)}</div>`);
-    }
-    const toggleLabel = historyTimeline ? "← Last 30" : `Full history (${(D.sessionsFull || D.sessions).length}) →`;
+  function timelineTicks() {
+    return Array.from({ length: TSPAN / 3 + 1 }, (_, i) => {
+      const hour = (TSTART + i * 3) % 24;
+      return `<div class="tick" style="left:${(i * 3 / TSPAN) * 100}%">${pad(hour)}</div>`;
+    }).join("");
+  }
+
+  function chapterTimeline() {
+    const days = aggregateByDay(D.sessions);
+    const n = (D.sessionsFull || D.sessions).length;
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">02</span><span class="eyebrow">Stacked timeline</span></div>
         <h2>Your bedtime <em>drifts</em>, but not by much.</h2>
-        <p class="chapter-desc">Each bar is one night, 24h from 6pm. Weekends in amber. <button class="history-toggle" id="timeline-toggle">${toggleLabel}</button></p>
+        <p class="chapter-desc">Each bar is one day, 24h from 6pm. Weekends in amber. <button class="history-toggle" id="timeline-to-history">Full history (${n}) →</button></p>
       </div>
       <div class="panel">
-        <div class="timeline${historyTimeline ? " timeline-history" : ""}"><div class="timeline-axis">${ticks.join("")}</div>${rowsHtml}</div>
+        <div class="timeline"><div class="timeline-axis">${timelineTicks()}</div>${days.map(buildTimelineRow).join("")}</div>
       </div>
     `;
   }
 
+  function renderHistoryTimeline() {
+    const src = D.sessionsFull || D.sessions;
+    const calDays = buildCalendarDays(src);
+    const groups = [];
+    let curKey = null, curLabel = "", curRows = [], curNights = 0;
+    for (const day of calDays) {
+      const key = `${day.date.getFullYear()}-${day.date.getMonth()}`;
+      const label = day.date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      if (key !== curKey) {
+        if (curKey !== null) groups.push({ label: curLabel, rows: curRows, nights: curNights });
+        curKey = key; curLabel = label; curRows = []; curNights = 0;
+      }
+      curRows.push(buildTimelineRow(day));
+      if (!day.isEmpty) curNights++;
+    }
+    if (curKey !== null) groups.push({ label: curLabel, rows: curRows, nights: curNights });
+
+    const groupsHtml = groups.map((g) =>
+      `<div class="timeline-month-sep"><span class="timeline-month-sep-label">${g.label}</span><span class="timeline-month-count">${g.nights} nights</span></div>${g.rows.join("")}`
+    ).join("");
+
+    app.innerHTML = `
+      <div class="history-view-header">
+        <button class="history-back-btn" id="history-back">← Nightfall</button>
+        <div>
+          <span class="eyebrow">Stacked timeline — full history</span>
+          <h2 class="history-view-title">All <em>${src.length} nights</em></h2>
+        </div>
+      </div>
+      <div class="panel history-panel">
+        <div class="timeline">
+          <div class="timeline-axis timeline-axis-sticky">${timelineTicks()}</div>
+          ${groupsHtml}
+        </div>
+      </div>
+      <div id="hover-tip"></div>
+    `;
+
+    document.getElementById("history-back")?.addEventListener("click", () => {
+      currentView = "dashboard";
+      window.scrollTo(0, 0);
+      renderApp();
+    });
+    const tip = document.getElementById("hover-tip");
+    document.querySelectorAll("[data-tip]").forEach((el) => {
+      el.addEventListener("mouseenter", () => { tip.textContent = el.dataset.tip; tip.classList.add("show"); });
+      el.addEventListener("mousemove", (e) => { tip.style.left = e.clientX + 14 + "px"; tip.style.top = e.clientY + 14 + "px"; });
+      el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+    });
+  }
+
+  function renderApp() {
+    if (currentView === "history/timeline") {
+      renderHistoryTimeline();
+    } else {
+      render();
+    }
+  }
+
   let focusIdx = 0;
-  let historyTimeline = false;
+  let currentView = "dashboard";
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -784,9 +860,10 @@
         PREFS.focusNightIndex = focusIdx; savePrefs(); render();
       });
     });
-    document.getElementById("timeline-toggle")?.addEventListener("click", () => {
-      historyTimeline = !historyTimeline;
-      render();
+    document.getElementById("timeline-to-history")?.addEventListener("click", () => {
+      currentView = "history/timeline";
+      window.scrollTo(0, 0);
+      renderApp();
     });
     const tip = document.getElementById("hover-tip");
     document.querySelectorAll("[data-tip]").forEach((el) => {
@@ -836,6 +913,6 @@
   window.render = function () {
     D = window.SleepData;
     focusIdx = Math.min(Math.max(0, PREFS.focusNightIndex), D.sessions.length - 1);
-    render();
+    renderApp();
   };
 })();

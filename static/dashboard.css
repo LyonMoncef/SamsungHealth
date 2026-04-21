@@ -365,3 +365,15 @@ footer {
 .timeline-month-count { font-family: 'Geist Mono', monospace; font-size: 9px; color: #6a6488; letter-spacing: 0.08em; }
 .history-toggle { background: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; color: #6a6488; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.08em; padding: 3px 9px; cursor: pointer; margin-left: 12px; transition: border-color 0.2s, color 0.2s; }
 .history-toggle:hover { border-color: rgba(255,255,255,0.28); color: #e8e4f5; }
+
+/* History dedicated view */
+.history-view-header { display: flex; align-items: center; gap: 32px; padding: 32px 0 48px; }
+.history-back-btn { background: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--paper-dim); font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.1em; padding: 8px 16px; cursor: pointer; transition: border-color 0.2s, color 0.2s; white-space: nowrap; flex-shrink: 0; }
+.history-back-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--paper); }
+.history-view-title { font-family: 'Instrument Serif', serif; font-size: clamp(28px, 4vw, 52px); font-weight: 400; letter-spacing: -0.02em; margin-top: 6px; }
+.history-view-title em { font-style: italic; color: var(--stage-rem); }
+.history-panel { overflow: visible; }
+.timeline-axis-sticky { position: sticky; top: 0; z-index: 10; background: var(--ink-0); padding: 8px 0 6px; margin-bottom: 4px; }
+.timeline-row.empty .label { color: rgba(106, 100, 136, 0.3); }
+.timeline-row.empty .track { opacity: 0.25; }
+.timeline-row { content-visibility: auto; contain-intrinsic-size: 0 20px; }
