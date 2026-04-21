@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Workflow bootstrap — CI, labels, hooks, tests | `.github/`, `.githooks/`, `Makefile`, `tests/` | [`939f5ef`](#2026-04-21-939f5ef) |
 | Phase 3: Steps, heart rate, exercise + tabbed dashboard | `server/`, `static/`, `scripts/`, `android-app/` | [`242040a`](#2026-02-16-242040a) |
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
@@ -12,6 +13,19 @@
 ---
 
 ## Changelog
+
+### 2026-04-21 `939f5ef`
+chore(workflow): bootstrap project template — CI, labels, hooks, tests
+- Added `.github/workflows/ci.yml` — CI Python 3.12, runs `make ci-test` + `make ci-lint` on PR to main/dev
+- Added `.github/workflows/review-complete.yml` — bloque les PR sans label `tested` (skip release/hotfix/docs-only)
+- Added `.github/ISSUE_TEMPLATE/bug.yml` + `feat.yml` — templates avec labels auto (priorité + taille)
+- Added `.github/pull_request_template.md` — format standard résumé / changements / test plan
+- Added `.github/labels.json` — 28 labels (P0-P3, size/XS-XXL, types, statuts)
+- Added `.githooks/pre-push` — enforce naming branches (feat/|fix/|chore/|hotfix/|release/)
+- Added `.claude/settings.json` — permissions de base pour le projet
+- Added `Makefile` — targets `dev`, `test`, `lint`, `ci-test`, `ci-lint`
+- Added `tests/conftest.py` — TestClient FastAPI + DB de test isolée + fixture clean entre tests
+- Added `tests/test_sleep.py` — 5 tests sleep (POST, dedup, GET, stages, not found) — tous verts
 
 ### 2026-02-16 `242040a`
 Add Phase 3: steps, heart rate, exercise data types + tabbed dashboard
