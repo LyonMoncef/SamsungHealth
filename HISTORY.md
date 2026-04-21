@@ -13,9 +13,18 @@
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
 
+| Drift clock — 3 radial views + demo toggle | `static/dashboard.js`, `static/dashboard.css` | [`1dd765e`](#2026-04-22-1dd765e) |
+
 ---
 
 ## Changelog
+
+### 2026-04-22 `1dd765e`
+feat(frontend): drift clock demo toggle with synthetic regular sleep data
+- Added `generateDemoSessions(n)` — synthetic 365-night dataset with seasonal bedtime variation (±42min) and small jitter, for demo purposes
+- Added `driftDemoMode` state variable and binding in `bindEvents()` for `#drift-demo-toggle`
+- Toggle button switches between user's data and demo data in all 3 drift clock views (density, spaghetti, rolling avg)
+- Added `.drift-demo-badge` CSS — small violet pill label shown when demo mode is active
 
 ### 2026-04-21 `d032741`
 feat(data): Samsung Health CSV import pipeline + full DB schema (21 tables)
