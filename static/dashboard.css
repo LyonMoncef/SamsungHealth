@@ -359,7 +359,8 @@ footer {
 .drift-pb-play:hover { background: rgba(255,255,255,0.12); }
 .drift-pb-scrub { flex: 1; accent-color: oklch(0.68 0.14 295); cursor: pointer; height: 3px; }
 .drift-pb-date { font-family: 'Geist Mono', monospace; font-size: 11px; color: #6a6488; flex-shrink: 0; min-width: 8ch; text-align: right; }
-.drift-window-pills { display: flex; gap: 4px; align-self: flex-start; }
+.drift-pills-row { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+.drift-window-pills, .drift-speed-pills { display: flex; gap: 4px; }
 .drift-pill { padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #6a6488; font-family: 'Geist Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s; }
 .drift-pill.active, .drift-pill:hover { background: oklch(0.68 0.14 295 / 0.15); border-color: oklch(0.68 0.14 295 / 0.3); color: #c4b0f0; }
 @media (max-width: 900px) { .drift-grid { grid-template-columns: 1fr; gap: 48px; } .drift-svg { max-width: 320px; } }
