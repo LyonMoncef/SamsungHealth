@@ -390,53 +390,89 @@ footer {
 .timeline-row.empty .track { opacity: 0.25; }
 .timeline-row { content-visibility: auto; contain-intrinsic-size: 0 20px; }
 
-/* Ranking table */
-.ranking-head {
-  display: grid;
-  grid-template-columns: 40px 1fr 56px 80px 120px 1fr;
-  gap: 0 12px;
-  padding: 8px 16px;
-  font-family: 'Geist Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--paper-faint);
-  text-transform: uppercase;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  margin-bottom: 4px;
-}
-.ranking-table { display: flex; flex-direction: column; }
-.ranking-row {
-  display: grid;
-  grid-template-columns: 40px 1fr 56px 80px 120px 1fr;
-  gap: 0 12px;
-  padding: 7px 16px;
+/* Metrics month navigator */
+.metrics-month-nav {
+  display: flex;
   align-items: center;
-  border-radius: 6px;
-  transition: background 0.12s;
+  gap: 12px;
+  margin-bottom: 20px;
 }
-.ranking-row:hover { background: rgba(255,255,255,0.04); }
-.ranking-rank {
+.metrics-month-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: var(--paper-dim);
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.metrics-month-btn:hover:not(:disabled) { border-color: rgba(255,255,255,0.3); color: var(--paper); }
+.metrics-month-btn:disabled { opacity: 0.25; cursor: default; }
+.metrics-month-label {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px;
+  color: var(--paper);
+  min-width: 160px;
+}
+.metrics-month-hint {
   font-family: 'Geist Mono', monospace;
   font-size: 10px;
   color: var(--paper-faint);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
-.ranking-date { font-size: 12px; color: var(--paper-dim); }
-.ranking-score {
+.metrics-loading {
   font-family: 'Geist Mono', monospace;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--paper);
+  font-size: 10px;
+  color: var(--paper-faint);
+  letter-spacing: 0.08em;
+  animation: pulse 1.2s ease-in-out infinite;
 }
-.ranking-dur {
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px;
-  color: var(--paper-dim);
+
+/* Clickable metric cards */
+.metric-card-clickable {
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  position: relative;
 }
-.ranking-times {
-  font-family: 'Geist Mono', monospace;
+.metric-card-clickable::after {
+  content: "↗";
+  position: absolute;
+  top: 14px;
+  right: 16px;
   font-size: 11px;
   color: var(--paper-faint);
-  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
-.ranking-stages { height: 8px; border-radius: 4px; overflow: hidden; display: flex; min-width: 60px; }
+.metric-card-clickable:hover { background: rgba(255,255,255,0.04); box-shadow: 0 0 0 1px rgba(255,255,255,0.08); }
+.metric-card-clickable:hover::after { opacity: 1; }
+.metric-no-data {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--paper-faint);
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* Full-history metric views */
+.debt-full-list { max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+.debt-row-full { gap: 8px; }
+.debt-row-full .debt-date { font-size: 10px; min-width: 64px; }
+.debt-row-full .debt-val { font-family: 'Geist Mono', monospace; font-size: 10px; min-width: 40px; }
+.debt-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 12px;
+}
+.debt-summary-label { font-size: 12px; color: var(--paper-faint); }
+.debt-summary-val { font-family: 'Geist Mono', monospace; font-size: 14px; font-weight: 600; }
+.stages-legend { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--paper-faint); }

@@ -332,11 +332,222 @@
     renderHistoryTimeline();
   }
 
+  const LOADING_HTML = `<div style="display:flex;align-items:center;justify-content:center;height:60vh;font-family:'Geist Mono',monospace;font-size:12px;color:#6a6488;letter-spacing:0.12em;">Loading full history…</div>`;
+
+  async function loadFull() {
+    if (!D.sessionsFull) {
+      app.innerHTML = LOADING_HTML;
+      await (window.loadFullSessions?.() || Promise.resolve());
+      D = window.SleepData;
+    }
+  }
+
+  function historyViewShell(eyebrow, title, content, backId) {
+    return `
+      <div class="history-view-header">
+        <button class="history-back-btn" id="${backId}">← Nightfall</button>
+        <div><span class="eyebrow">${eyebrow}</span><h2 class="history-view-title">${title}</h2></div>
+      </div>
+      <div class="panel history-panel">${content}</div>
+    `;
+  }
+
+  function renderHistoryScatter() {
+    const src = D.sessionsFull || D.sessions;
+    const w = 1000, h = 400, padL = 50, padR = 20, padT = 20, padB = 40;
+    const innerW = w - padL - padR, innerH = h - padT - padB;
+    const yMin = 18 * 60, yRange = 24 * 60;
+    const first = src[0].sleep_end.getTime(), last = src[src.length - 1].sleep_end.getTime();
+    const timeRange = last - first || 1;
+    let dots = "";
+    for (const s of src) {
+      let m = s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes();
+      if (m < 12 * 60) m += 24 * 60;
+      const x = padL + ((s.sleep_end.getTime() - first) / timeRange) * innerW;
+      const y = padT + ((m - yMin) / yRange) * innerH;
+      dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="oklch(0.68 0.14 295)" opacity="0.45"/>`;
+    }
+    let yTicks = "";
+    for (let step = 0; step <= 8; step++) {
+      const m = yMin + step * 3 * 60;
+      const hh = Math.floor((m / 60) % 24);
+      const y = padT + (step / 8) * innerH;
+      const isMaj = step % 2 === 0;
+      yTicks += `<text x="${padL - 8}" y="${y}" dominant-baseline="middle" text-anchor="end" fill="#6a6488" font-family="Geist Mono,monospace" font-size="9" opacity="${isMaj ? 1 : 0.45}">${pad(hh)}h</text>`;
+      yTicks += `<line x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,${isMaj ? 0.06 : 0.03})"/>`;
+    }
+    let xTicks = "";
+    const startD = new Date(first);
+    let cur = new Date(startD.getFullYear(), startD.getMonth(), 1);
+    let mCount = 0;
+    while (cur.getTime() <= last) {
+      const x = padL + ((cur.getTime() - first) / timeRange) * innerW;
+      xTicks += `<line x1="${x}" x2="${x}" y1="${padT}" y2="${padT + innerH}" stroke="rgba(255,255,255,0.05)"/>`;
+      if (mCount % 3 === 0) {
+        const label = cur.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+        xTicks += `<text x="${x}" y="${padT + innerH + 16}" text-anchor="middle" fill="#6a6488" font-family="Geist Mono,monospace" font-size="8">${label}</text>`;
+      }
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      mCount++;
+    }
+    const vals = src.map((s) => { let m = s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes(); if (m < 12 * 60) m += 24 * 60; return m; });
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const meanY = padT + ((mean - yMin) / yRange) * innerH;
+    const meanLine = `<line x1="${padL}" x2="${w - padR}" y1="${meanY}" y2="${meanY}" stroke="rgba(255,255,255,0.18)" stroke-dasharray="3 4"/>`;
+    const svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block">${yTicks}${xTicks}${meanLine}${dots}</svg>`;
+    app.innerHTML = historyViewShell("Bedtime regularity", `<em>${src.length} nights</em> — bedtime across time`, svg, "history-back");
+    document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
+  }
+
+  async function renderHistoryScatterAsync() {
+    await loadFull();
+    renderHistoryScatter();
+  }
+
+  function renderHistoryDebt() {
+    const src = D.sessionsFull || D.sessions;
+    const rows = src.map((s) => {
+      const diff = s.duration_hours - 8;
+      const pct = Math.min(48, Math.abs(diff) * 12);
+      const side = diff < 0 ? "deficit" : "surplus";
+      const style = diff < 0 ? `right:50%;width:${pct}%` : `left:50%;width:${pct}%`;
+      return `<div class="debt-row debt-row-full"><span class="debt-date">${s.sleep_end.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span><div class="debt-bar-track"><div class="debt-bar ${side}" style="${style}"></div></div><span class="debt-val" style="color:${diff<0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${diff>=0?"+":""}${diff.toFixed(1)}h</span></div>`;
+    }).join("");
+    const totalDebt = src.reduce((a, s) => a + (8 - s.duration_hours), 0);
+    const debtSign = totalDebt <= 0 ? "+" : "";
+    const content = `
+      <div class="debt-summary-row">
+        <span class="debt-summary-label">Cumulative debt (all time)</span>
+        <span class="debt-summary-val" style="color:${totalDebt>0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${debtSign}${(-totalDebt).toFixed(1)}h vs 8h/night target</span>
+      </div>
+      <div class="debt-full-list">${rows}</div>
+    `;
+    app.innerHTML = historyViewShell("Sleep debt", `<em>${src.length} nights</em> — all history`, content, "history-back");
+    document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
+  }
+
+  async function renderHistoryDebtAsync() {
+    await loadFull();
+    renderHistoryDebt();
+  }
+
+  function renderHistoryStages() {
+    const src = D.sessionsFull || D.sessions;
+    const W = 28;
+    const pts = { deep: [], rem: [], light: [], awake: [] };
+    for (let i = 0; i < src.length; i++) {
+      const win = src.slice(Math.max(0, i - W + 1), i + 1);
+      const total = win.reduce((a, s) => a + s.duration_ms, 0) || 1;
+      for (const k of Object.keys(pts)) {
+        pts[k].push(win.reduce((a, s) => a + s.totals[k], 0) / total);
+      }
+    }
+    const w = 1000, h = 360, padL = 50, padR = 20, padT = 20, padB = 40;
+    const innerW = w - padL - padR, innerH = h - padT - padB;
+    const n = src.length;
+    const colors = { deep: "oklch(0.48 0.14 275)", light: "oklch(0.68 0.14 295)", rem: "oklch(0.82 0.13 220)", awake: "oklch(0.78 0.15 60)" };
+    const targets = { deep: 0.15, rem: 0.22, light: 0.55, awake: 0.08 };
+    let lines = "";
+    for (const k of ["awake", "light", "deep", "rem"]) {
+      const d = pts[k].map((v, i) => {
+        const x = padL + (i / (n - 1)) * innerW;
+        const y = padT + (1 - v) * innerH;
+        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+      lines += `<path d="${d}" fill="none" stroke="${colors[k]}" stroke-width="1.5" opacity="0.85"/>`;
+      const tY = padT + (1 - targets[k]) * innerH;
+      lines += `<line x1="${padL}" x2="${w - padR}" y1="${tY}" y2="${tY}" stroke="${colors[k]}" stroke-dasharray="2 6" opacity="0.3"/>`;
+    }
+    let yTicks = "";
+    for (let p = 0; p <= 4; p++) {
+      const v = p * 0.25;
+      const y = padT + (1 - v) * innerH;
+      yTicks += `<text x="${padL - 6}" y="${y}" dominant-baseline="middle" text-anchor="end" fill="#6a6488" font-family="Geist Mono,monospace" font-size="9">${Math.round(v * 100)}%</text>`;
+      yTicks += `<line x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,0.05)"/>`;
+    }
+    let xTicks = "";
+    const first = src[0].sleep_end.getTime(), last = src[src.length - 1].sleep_end.getTime();
+    const timeRange = last - first || 1;
+    let cur = new Date(src[0].sleep_end.getFullYear(), src[0].sleep_end.getMonth(), 1);
+    let mCount = 0;
+    while (cur.getTime() <= last) {
+      const x = padL + ((cur.getTime() - first) / timeRange) * innerW;
+      if (mCount % 3 === 0) xTicks += `<text x="${x}" y="${padT + innerH + 16}" text-anchor="middle" fill="#6a6488" font-family="Geist Mono,monospace" font-size="8">${cur.toLocaleDateString("en-US", { month: "short", year: "2-digit" })}</text>`;
+      xTicks += `<line x1="${x}" x2="${x}" y1="${padT}" y2="${padT + innerH}" stroke="rgba(255,255,255,0.04)"/>`;
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); mCount++;
+    }
+    const legend = Object.entries(colors).map(([k, c]) => `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px"><span style="width:12px;height:2px;background:${c};display:inline-block"></span>${k}</span>`).join("");
+    const content = `
+      <div class="stages-legend">${legend}</div>
+      <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block">${yTicks}${xTicks}${lines}</svg>
+      <p style="font-size:11px;color:#6a6488;margin-top:8px;">28-night rolling average. Dashed lines = healthy targets.</p>
+    `;
+    app.innerHTML = historyViewShell("Stage mix", `<em>${src.length} nights</em> — rolling 28-night average`, content, "history-back");
+    document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
+  }
+
+  async function renderHistoryStagesAsync() {
+    await loadFull();
+    renderHistoryStages();
+  }
+
+  function renderHistoryHR() {
+    const allEntries = Object.entries(D.hr).sort(([a], [b]) => a.localeCompare(b));
+    if (allEntries.length < 2) {
+      app.innerHTML = historyViewShell("Heart rate", "No HR data available", `<div class="metric-no-data" style="padding:40px">Sync more data from the Android app to see HR history.</div>`, "history-back");
+      document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
+      return;
+    }
+    const vals = allEntries.map(([, v]) => v);
+    const w = 1000, h = 280, padL = 50, padR = 20, padT = 20, padB = 40;
+    const innerW = w - padL - padR, innerH = h - padT - padB;
+    const minV = Math.min(...vals) - 2, maxV = Math.max(...vals) + 2, range = maxV - minV;
+    const first = new Date(allEntries[0][0]).getTime(), last = new Date(allEntries[allEntries.length - 1][0]).getTime();
+    const timeRange = last - first || 1;
+    const pts = allEntries.map(([d, v]) => {
+      const x = padL + ((new Date(d).getTime() - first) / timeRange) * innerW;
+      const y = padT + innerH - ((v - minV) / range) * innerH;
+      return [x, y];
+    });
+    const line = pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(" ");
+    const area = `${line} L${pts[pts.length-1][0]},${padT+innerH} L${pts[0][0]},${padT+innerH} Z`;
+    let yTicks = "";
+    for (let i = 0; i <= 4; i++) {
+      const v = minV + (range * i) / 4;
+      const y = padT + innerH - (i / 4) * innerH;
+      yTicks += `<text x="${padL - 6}" y="${y}" dominant-baseline="middle" text-anchor="end" fill="#6a6488" font-family="Geist Mono,monospace" font-size="9">${Math.round(v)}</text>`;
+      yTicks += `<line x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,0.05)"/>`;
+    }
+    let xTicks = "";
+    let cur = new Date(new Date(allEntries[0][0]).getFullYear(), new Date(allEntries[0][0]).getMonth(), 1);
+    let mCount = 0;
+    while (cur.getTime() <= last) {
+      const x = padL + ((cur.getTime() - first) / timeRange) * innerW;
+      if (mCount % 3 === 0) xTicks += `<text x="${x}" y="${padT + innerH + 16}" text-anchor="middle" fill="#6a6488" font-family="Geist Mono,monospace" font-size="8">${cur.toLocaleDateString("en-US", { month: "short", year: "2-digit" })}</text>`;
+      xTicks += `<line x1="${x}" x2="${x}" y1="${padT}" y2="${padT + innerH}" stroke="rgba(255,255,255,0.04)"/>`;
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); mCount++;
+    }
+    const svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block"><defs><linearGradient id="hrGradFull" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="oklch(0.82 0.13 220)" stop-opacity="0.35"/><stop offset="100%" stop-color="oklch(0.82 0.13 220)" stop-opacity="0"/></linearGradient></defs>${yTicks}${xTicks}<path d="${area}" fill="url(#hrGradFull)"/><path d="${line}" fill="none" stroke="oklch(0.82 0.13 220)" stroke-width="1.5"/></svg>`;
+    app.innerHTML = historyViewShell("Nighttime heart rate", `<em>${allEntries.length} nights</em> — resting bpm history`, svg, "history-back");
+    document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
+  }
+
+  async function renderHistoryHRAsync() {
+    await loadFull();
+    renderHistoryHR();
+  }
+
   function renderApp() {
     if (currentView === "history/timeline") {
       renderHistoryTimelineAsync();
-    } else if (currentView === "history/cards") {
-      renderHistoryCardsAsync();
+    } else if (currentView === "history/scatter") {
+      renderHistoryScatterAsync();
+    } else if (currentView === "history/debt") {
+      renderHistoryDebtAsync();
+    } else if (currentView === "history/stages") {
+      renderHistoryStagesAsync();
+    } else if (currentView === "history/hr") {
+      renderHistoryHRAsync();
     } else {
       render();
     }
@@ -346,6 +557,8 @@
   let currentView = "dashboard";
   let driftDemoMode = false;
   let driftPlayback = { playing: false, frameFrac: 0, windowSize: 30, speed: 1, rafId: null, frames: null, _src: null, _loading: false };
+  let metricsMonth = null;
+  let metricsFullLoading = false;
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -844,52 +1057,10 @@
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">07</span><span class="eyebrow">Top nights</span></div>
         <h2>The nights that <em>earned their stars</em>.</h2>
-        <p class="chapter-desc">Your four highest-scoring nights — a blend of duration, efficiency, REM%, and low fragmentation. <button class="history-toggle" id="cards-to-history">Full ranking (${src.length}) →</button></p>
+        <p class="chapter-desc">Your four highest-scoring nights — a blend of duration, efficiency, REM%, and low fragmentation.</p>
       </div>
       <div class="cards-grid">${top.map((s, i) => nightCardHTML(s, i + 1)).join("")}</div>
     `;
-  }
-
-  function renderHistoryCards() {
-    const src = D.sessionsFull || D.sessions;
-    const sorted = [...src].sort((a, b) => b.score - a.score);
-    const rows = sorted.map((s, i) => {
-      const total = s.duration_ms;
-      const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
-      return `<div class="ranking-row">
-        <span class="ranking-rank">${pad(i + 1)}</span>
-        <span class="ranking-date">${s.sleep_end.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-        <span class="ranking-score">${s.score}</span>
-        <span class="ranking-dur">${hoursMinutes(s.duration_ms)}</span>
-        <span class="ranking-times">${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)}</span>
-        <div class="mini-stages ranking-stages">${segs}</div>
-      </div>`;
-    }).join("");
-    app.innerHTML = `
-      <div class="history-view-header">
-        <button class="history-back-btn" id="history-back">← Nightfall</button>
-        <div>
-          <span class="eyebrow">Top nights — full ranking</span>
-          <h2 class="history-view-title">All <em>${src.length} nights</em> ranked</h2>
-        </div>
-      </div>
-      <div class="panel history-panel">
-        <div class="ranking-head">
-          <span>#</span><span>Date</span><span>Score</span><span>Duration</span><span>Bed → Wake</span><span>Stages</span>
-        </div>
-        <div class="ranking-table">${rows}</div>
-      </div>
-    `;
-    document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
-  }
-
-  async function renderHistoryCardsAsync() {
-    if (!D.sessionsFull) {
-      app.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:60vh;font-family:'Geist Mono',monospace;font-size:12px;color:#6a6488;letter-spacing:0.12em;">Loading…</div>`;
-      await (window.loadFullSessions ? window.loadFullSessions() : Promise.resolve());
-      D = window.SleepData;
-    }
-    renderHistoryCards();
   }
 
   function chapterAgenda() {
@@ -932,11 +1103,68 @@
     `;
   }
 
-  function bedtimeScatterSVG() {
+  function metricsAvailableMonths() {
+    const src = D.sessionsFull || D.sessions;
+    const months = new Set();
+    for (const s of src) {
+      const d = s.sleep_end;
+      months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    return [...months].sort();
+  }
+
+  function sessionsForMetricsMonth() {
+    const src = D.sessionsFull || D.sessions;
+    const months = metricsAvailableMonths();
+    if (!months.length) return D.sessions;
+    const m = metricsMonth || months[months.length - 1];
+    return src.filter((s) => {
+      const d = s.sleep_end;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === m;
+    });
+  }
+
+  function metricsMonthLabel(key) {
+    const [y, mo] = key.split("-");
+    return new Date(parseInt(y), parseInt(mo) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  }
+
+  function computeMetricsSummary(sessions) {
+    const n = sessions.length;
+    if (!n) return { debt: 0, regularity: 100, bedtimeStdDev: 0, avgRem: 0, avgDeep: 0, avgLight: 0, avgAwake: 0, avgRestingHR: 0 };
+    let debt = 0;
+    for (const s of sessions) debt += 8 - s.duration_hours;
+    const bedMins = sessions.map((s) => {
+      let m = s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes();
+      if (m < 12 * 60) m += 24 * 60;
+      return m;
+    });
+    const meanBed = bedMins.reduce((a, b) => a + b, 0) / n;
+    const bedtimeStdDev = Math.sqrt(bedMins.reduce((a, b) => a + (b - meanBed) ** 2, 0) / n);
+    const regularity = Math.max(0, 100 - bedtimeStdDev * 0.8);
+    const dateKeys = new Set(sessions.map((s) => s.date_key));
+    const hrVals = Object.entries(D.hr).filter(([k]) => dateKeys.has(k)).map(([, v]) => v);
+    const avgRestingHR = hrVals.length ? hrVals.reduce((a, b) => a + b, 0) / hrVals.length : 0;
+    return {
+      debt, regularity, bedtimeStdDev,
+      avgRem: sessions.reduce((a, s) => a + s.totals.rem, 0) / n / 3600000,
+      avgDeep: sessions.reduce((a, s) => a + s.totals.deep, 0) / n / 3600000,
+      avgLight: sessions.reduce((a, s) => a + s.totals.light, 0) / n / 3600000,
+      avgAwake: sessions.reduce((a, s) => a + s.totals.awake, 0) / n / 3600000,
+      avgRestingHR,
+    };
+  }
+
+  function reRenderMetrics() {
+    const scrollY = window.scrollY;
+    render();
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
+  }
+
+  function bedtimeScatterSVG(sessions) {
     const w = 500, h = 200, padL = 40, padR = 10, padT = 10, padB = 10;
     const innerW = w - padL - padR, innerH = h - padT - padB;
     const yMin = 18 * 60, yRange = 24 * 60;
-    const sessions = D.sessions;
     const n = sessions.length;
     let dots = "";
     const values = [];
@@ -963,10 +1191,12 @@
     return `<svg class="scatter-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${yTicks}${horizLine}${dots}</svg>`;
   }
 
-  function hrSparkSVG() {
+  function hrSparkSVG(sessions) {
     const w = 500, h = 140, padL = 40, padR = 10, padT = 10, padB = 24;
     const innerW = w - padL - padR, innerH = h - padT - padB;
-    const vals = D.sessions.map((s) => D.hr[s.date_key]);
+    const withHR = sessions.filter((s) => D.hr[s.date_key] !== undefined);
+    if (withHR.length < 2) return `<div class="metric-no-data">No HR data for this period</div>`;
+    const vals = withHR.map((s) => D.hr[s.date_key]);
     const min = Math.min(...vals) - 2, max = Math.max(...vals) + 2, range = max - min;
     const pts = vals.map((v, i) => [padL + (i / (vals.length - 1)) * innerW, padT + innerH - ((v - min) / range) * innerH]);
     const line = pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(" ");
@@ -980,8 +1210,8 @@
     return `<svg class="hr-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="hrGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="oklch(0.82 0.13 220)" stop-opacity="0.5"/><stop offset="100%" stop-color="oklch(0.82 0.13 220)" stop-opacity="0"/></linearGradient></defs>${yTicks}<path class="hr-area" d="${area}"/><path class="hr-line" d="${line}"/></svg>`;
   }
 
-  function debtBars() {
-    return D.sessions.slice(-14).map((s) => {
+  function debtBars(sessions) {
+    return sessions.map((s) => {
       const wake = new Date(s.sleep_end);
       const diff = s.duration_hours - 8;
       const pct = Math.min(50, Math.abs(diff) * 14);
@@ -991,11 +1221,11 @@
     }).join("");
   }
 
-  function stageGauge() {
+  function stageGauge(sessions) {
     const targets = { deep: 0.15, rem: 0.22, light: 0.55, awake: 0.08 };
-    const total = D.sessions.reduce((a, s) => a + s.duration_ms, 0);
+    const total = sessions.reduce((a, s) => a + s.duration_ms, 0);
     const totals = { deep: 0, rem: 0, light: 0, awake: 0 };
-    for (const s of D.sessions) for (const k of Object.keys(totals)) totals[k] += s.totals[k];
+    for (const s of sessions) for (const k of Object.keys(totals)) totals[k] += s.totals[k];
     return Object.keys(targets).map((k) => {
       const pct = totals[k] / total, tpct = targets[k];
       const width = Math.min(100, (pct / (tpct * 1.6)) * 100);
@@ -1005,37 +1235,59 @@
   }
 
   function chapterMetrics() {
-    const summary = D.summary;
+    if (!D.sessionsFull && !metricsFullLoading) {
+      metricsFullLoading = true;
+      window.loadFullSessions?.().then(() => {
+        D = window.SleepData;
+        metricsFullLoading = false;
+        reRenderMetrics();
+      });
+    }
+    const months = metricsAvailableMonths();
+    const curMonth = metricsMonth || (months.length ? months[months.length - 1] : null);
+    const mIdx = months.indexOf(curMonth);
+    const mSessions = sessionsForMetricsMonth();
+    const summary = computeMetricsSummary(mSessions);
     const debtSign = summary.debt > 0 ? "" : "+";
+    const remTotal = summary.avgRem + summary.avgDeep + summary.avgLight + summary.avgAwake;
+    const remPct = remTotal > 0 ? Math.round((summary.avgRem / remTotal) * 100) : 0;
+    const monthLabel = curMonth ? metricsMonthLabel(curMonth) : "—";
+    const loading = metricsFullLoading && !D.sessionsFull;
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">09</span><span class="eyebrow">Metrics</span></div>
         <h2>The <em>numbers</em> behind the nights.</h2>
-        <p class="chapter-desc">Regularity, debt, stage composition, resting heart rate.</p>
+        <p class="chapter-desc">Regularity, debt, stage composition, resting heart rate. Click any card for full history.</p>
+      </div>
+      <div class="metrics-month-nav">
+        <button class="metrics-month-btn" id="metrics-month-prev" ${mIdx <= 0 ? "disabled" : ""}>←</button>
+        <span class="metrics-month-label">${monthLabel}</span>
+        <button class="metrics-month-btn" id="metrics-month-next" ${mIdx >= months.length - 1 ? "disabled" : ""}>→</button>
+        ${loading ? `<span class="metrics-loading">loading full history…</span>` : `<span class="metrics-month-hint">${months.length} months · ${mSessions.length} nights</span>`}
       </div>
       <div class="metrics-grid">
-        <div class="metric-card">
+        <div class="metric-card metric-card-clickable" data-view="history/scatter">
           <div class="head"><h3>Bedtime regularity</h3><span class="hint">σ = ${summary.bedtimeStdDev.toFixed(0)} min</span></div>
           <div class="metric-big">${Math.round(summary.regularity)}<small>/100</small></div>
-          <div class="metric-body">${bedtimeScatterSVG()}</div>
+          <div class="metric-body">${mSessions.length ? bedtimeScatterSVG(mSessions) : '<div class="metric-no-data">No data</div>'}</div>
           <p class="metric-caption">Each dot is a bedtime. The tighter the cloud, the more your circadian rhythm trusts you.</p>
         </div>
-        <div class="metric-card">
+        <div class="metric-card metric-card-clickable" data-view="history/debt">
           <div class="head"><h3>Sleep debt</h3><span class="hint">vs 8h target</span></div>
           <div class="metric-big">${debtSign}${(-summary.debt).toFixed(1)}<small>h cumulative</small></div>
-          <div class="metric-body" style="margin-top:10px;">${debtBars()}</div>
-          <p class="metric-caption">Last 14 nights. Bars left are hours short; bars right are hours over.</p>
+          <div class="metric-body" style="margin-top:10px;">${debtBars(mSessions.slice(-30))}</div>
+          <p class="metric-caption">Last 30 nights. Bars left are hours short; bars right are hours over.</p>
         </div>
-        <div class="metric-card">
-          <div class="head"><h3>Stage mix</h3><span class="hint">30-night avg</span></div>
-          <div class="metric-big">${Math.round((D.summary.avgRem / (D.summary.avgRem + D.summary.avgDeep + D.summary.avgLight + D.summary.avgAwake)) * 100)}<small>% REM</small></div>
-          <div class="metric-body"><div class="stage-bar-group">${stageGauge()}</div></div>
+        <div class="metric-card metric-card-clickable" data-view="history/stages">
+          <div class="head"><h3>Stage mix</h3><span class="hint">month avg</span></div>
+          <div class="metric-big">${remPct}<small>% REM</small></div>
+          <div class="metric-body"><div class="stage-bar-group">${mSessions.length ? stageGauge(mSessions) : ""}</div></div>
           <p class="metric-caption">White ticks mark healthy targets. Deep anchors physical recovery; REM consolidates memory.</p>
         </div>
-        <div class="metric-card">
-          <div class="head"><h3>Nighttime heart rate</h3><span class="hint">resting, 30 nights</span></div>
-          <div class="metric-big">${Math.round(summary.avgRestingHR)}<small>bpm avg</small></div>
-          <div class="metric-body">${hrSparkSVG()}</div>
+        <div class="metric-card metric-card-clickable" data-view="history/hr">
+          <div class="head"><h3>Nighttime heart rate</h3><span class="hint">resting bpm</span></div>
+          <div class="metric-big">${summary.avgRestingHR ? Math.round(summary.avgRestingHR) : "—"}<small>bpm avg</small></div>
+          <div class="metric-body">${hrSparkSVG(mSessions)}</div>
           <p class="metric-caption">Lower is calmer. Dips after good workouts; spikes after late meals or stress.</p>
         </div>
       </div>
@@ -1094,8 +1346,20 @@
     document.getElementById("timeline-to-history")?.addEventListener("click", () => {
       navigateTo("history/timeline");
     });
-    document.getElementById("cards-to-history")?.addEventListener("click", () => {
-      navigateTo("history/cards");
+    document.getElementById("metrics-month-prev")?.addEventListener("click", () => {
+      const months = metricsAvailableMonths();
+      const cur = metricsMonth || months[months.length - 1];
+      const idx = months.indexOf(cur);
+      if (idx > 0) { metricsMonth = months[idx - 1]; reRenderMetrics(); }
+    });
+    document.getElementById("metrics-month-next")?.addEventListener("click", () => {
+      const months = metricsAvailableMonths();
+      const cur = metricsMonth || months[months.length - 1];
+      const idx = months.indexOf(cur);
+      if (idx < months.length - 1) { metricsMonth = months[idx + 1]; reRenderMetrics(); }
+    });
+    document.querySelectorAll(".metric-card-clickable[data-view]").forEach((card) => {
+      card.addEventListener("click", () => navigateTo(card.dataset.view));
     });
     document.getElementById("drift-demo-toggle")?.addEventListener("click", () => {
       driftDemoMode = !driftDemoMode;
