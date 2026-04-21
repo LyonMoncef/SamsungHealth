@@ -16,10 +16,28 @@
 | Drift clock — animated playback | `static/dashboard.js`, `static/dashboard.css` | [`3cdb138`](#2026-04-22-3cdb138) |
 | Drift clock — 3 radial views + demo toggle | `static/dashboard.js`, `static/dashboard.css` | [`1dd765e`](#2026-04-22-1dd765e) |
 | Cards full ranking view + bedtime scatter 24h | `static/dashboard.js`, `static/dashboard.css` | [`4882564`](#2026-04-22-4882564) |
+| Metrics month selector + 4 full-history views | `static/dashboard.js`, `static/dashboard.css` | [`7367906`](#2026-04-22-7367906) |
 
 ---
 
 ## Changelog
+
+### 2026-04-22 `7367906`
+feat(frontend): metrics month selector + 4 full-history views (scatter/debt/stages/hr)
+- Chapter 07 "Top nights": removed erroneous "Full ranking →" button and ranking table code
+- Added `metricsMonth` state + `metricsAvailableMonths()`, `sessionsForMetricsMonth()`, `computeMetricsSummary()` helpers
+- Added `metricsMonthSelector()` — prev/next nav above the 4 metric cards, updates all 4 simultaneously
+- `bedtimeScatterSVG`, `hrSparkSVG`, `debtBars`, `stageGauge` parameterized to accept filtered session arrays
+- `chapterMetrics()` rewritten: triggers lazy full-session load, uses month-filtered data, each card clickable
+- Sleep debt card: now shows last 30 nights (was 14)
+- Added `renderHistoryScatter()` — X=date/time, Y=24h bedtime, all 1200 nights as dots with month ticks
+- Added `renderHistoryDebt()` — all nights debt bars (scrollable) + cumulative debt summary
+- Added `renderHistoryStages()` — 28-night rolling average of 4 stage % as line chart over full history
+- Added `renderHistoryHR()` — HR sparkline for all available nights (area + line)
+- Added `loadFull()` + `historyViewShell()` shared helpers for full-history views
+- `renderApp()` routes `history/scatter|debt|stages|hr` to async render functions
+- `bindEvents()` handles month prev/next + clickable card navigation
+- CSS: `.metrics-month-nav`, clickable card `::after` arrow indicator, full-history view styles
 
 ### 2026-04-22 `4882564`
 feat(frontend): cards full ranking view + bedtime scatter 24h axis
