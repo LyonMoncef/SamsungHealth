@@ -244,17 +244,25 @@
     }).join("");
   }
 
+  function bedtimeDriftLabel() {
+    const std = D.summary.bedtimeStdDev;
+    if (!std || std < 20) return `Your bedtime is <em>remarkably stable</em>.`;
+    if (std < 35) return `Your bedtime drifts by <em>~${Math.round(std)} min</em> on average.`;
+    if (std < 60) return `Your bedtime <em>drifts noticeably</em> — ±${Math.round(std)} min variance.`;
+    return `Your bedtime <em>drifts significantly</em> — over an hour of variance.`;
+  }
+
   function chapterTimeline() {
     const days = aggregateByDay(D.sessions);
     const n = (D.sessionsFull || D.sessions).length;
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">02</span><span class="eyebrow">Stacked timeline</span></div>
-        <h2>Your bedtime <em>drifts</em>, but not by much.</h2>
+        <h2>${bedtimeDriftLabel()}</h2>
         <p class="chapter-desc">Each bar is one day, 24h from 6pm. Weekends in amber. <button class="history-toggle" id="timeline-to-history">Full history (${n}) →</button></p>
       </div>
       <div class="panel">
-        <div class="timeline"><div class="timeline-axis">${timelineTicks()}</div>${days.map(buildTimelineRow).join("")}</div>
+        <div class="timeline"><div class="timeline-axis timeline-axis-sticky">${timelineTicks()}</div>${days.map(buildTimelineRow).join("")}</div>
       </div>
     `;
   }
