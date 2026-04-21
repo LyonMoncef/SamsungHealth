@@ -389,3 +389,54 @@ footer {
 .timeline-row.empty .label { color: rgba(106, 100, 136, 0.3); }
 .timeline-row.empty .track { opacity: 0.25; }
 .timeline-row { content-visibility: auto; contain-intrinsic-size: 0 20px; }
+
+/* Ranking table */
+.ranking-head {
+  display: grid;
+  grid-template-columns: 40px 1fr 56px 80px 120px 1fr;
+  gap: 0 12px;
+  padding: 8px 16px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 4px;
+}
+.ranking-table { display: flex; flex-direction: column; }
+.ranking-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 56px 80px 120px 1fr;
+  gap: 0 12px;
+  padding: 7px 16px;
+  align-items: center;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+.ranking-row:hover { background: rgba(255,255,255,0.04); }
+.ranking-rank {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--paper-faint);
+  letter-spacing: 0.06em;
+}
+.ranking-date { font-size: 12px; color: var(--paper-dim); }
+.ranking-score {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--paper);
+}
+.ranking-dur {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--paper-dim);
+}
+.ranking-times {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--paper-faint);
+  white-space: nowrap;
+}
+.ranking-stages { height: 8px; border-radius: 4px; overflow: hidden; display: flex; min-width: 60px; }

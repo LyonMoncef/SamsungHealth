@@ -335,6 +335,8 @@
   function renderApp() {
     if (currentView === "history/timeline") {
       renderHistoryTimelineAsync();
+    } else if (currentView === "history/cards") {
+      renderHistoryCardsAsync();
     } else {
       render();
     }
@@ -829,21 +831,65 @@
     `;
   }
 
+  function nightCardHTML(s, rank) {
+    const total = s.duration_ms;
+    const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
+    return `<div class="night-card"><div class="rank">Rank ${pad(rank)}</div><div class="date">${fmtDateLong(s.sleep_end)}</div><div class="score"><span class="n">${s.score}</span><span class="label">/ 100</span></div><div class="mini-stages">${segs}</div><div class="times"><span>${fmtHM(s.sleep_start)}</span><span>${hoursMinutes(s.duration_ms)}</span><span>${fmtHM(s.sleep_end)}</span></div></div>`;
+  }
+
   function chapterCards() {
-    const top = [...D.sessions].sort((a, b) => b.score - a.score).slice(0, 4);
-    const cards = top.map((s, i) => {
-      const total = s.duration_ms;
-      const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
-      return `<div class="night-card"><div class="rank">Rank ${pad(i + 1)}</div><div class="date">${fmtDateLong(s.sleep_end)}</div><div class="score"><span class="n">${s.score}</span><span class="label">/ 100</span></div><div class="mini-stages">${segs}</div><div class="times"><span>${fmtHM(s.sleep_start)}</span><span>${hoursMinutes(s.duration_ms)}</span><span>${fmtHM(s.sleep_end)}</span></div></div>`;
-    }).join("");
+    const src = D.sessionsFull || D.sessions;
+    const top = [...src].sort((a, b) => b.score - a.score).slice(0, 4);
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">07</span><span class="eyebrow">Top nights</span></div>
         <h2>The nights that <em>earned their stars</em>.</h2>
-        <p class="chapter-desc">Your four highest-scoring nights — a blend of duration, efficiency, REM%, and low fragmentation.</p>
+        <p class="chapter-desc">Your four highest-scoring nights — a blend of duration, efficiency, REM%, and low fragmentation. <button class="history-toggle" id="cards-to-history">Full ranking (${src.length}) →</button></p>
       </div>
-      <div class="cards-grid">${cards}</div>
+      <div class="cards-grid">${top.map((s, i) => nightCardHTML(s, i + 1)).join("")}</div>
     `;
+  }
+
+  function renderHistoryCards() {
+    const src = D.sessionsFull || D.sessions;
+    const sorted = [...src].sort((a, b) => b.score - a.score);
+    const rows = sorted.map((s, i) => {
+      const total = s.duration_ms;
+      const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
+      return `<div class="ranking-row">
+        <span class="ranking-rank">${pad(i + 1)}</span>
+        <span class="ranking-date">${s.sleep_end.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</span>
+        <span class="ranking-score">${s.score}</span>
+        <span class="ranking-dur">${hoursMinutes(s.duration_ms)}</span>
+        <span class="ranking-times">${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)}</span>
+        <div class="mini-stages ranking-stages">${segs}</div>
+      </div>`;
+    }).join("");
+    app.innerHTML = `
+      <div class="history-view-header">
+        <button class="history-back-btn" id="history-back">← Nightfall</button>
+        <div>
+          <span class="eyebrow">Top nights — full ranking</span>
+          <h2 class="history-view-title">All <em>${src.length} nights</em> ranked</h2>
+        </div>
+      </div>
+      <div class="panel history-panel">
+        <div class="ranking-head">
+          <span>#</span><span>Date</span><span>Score</span><span>Duration</span><span>Bed → Wake</span><span>Stages</span>
+        </div>
+        <div class="ranking-table">${rows}</div>
+      </div>
+    `;
+    document.getElementById("history-back")?.addEventListener("click", () => navigateTo("dashboard"));
+  }
+
+  async function renderHistoryCardsAsync() {
+    if (!D.sessionsFull) {
+      app.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:60vh;font-family:'Geist Mono',monospace;font-size:12px;color:#6a6488;letter-spacing:0.12em;">Loading…</div>`;
+      await (window.loadFullSessions ? window.loadFullSessions() : Promise.resolve());
+      D = window.SleepData;
+    }
+    renderHistoryCards();
   }
 
   function chapterAgenda() {
@@ -887,27 +933,32 @@
   }
 
   function bedtimeScatterSVG() {
-    const w = 500, h = 140, padL = 40, padR = 10, padT = 10, padB = 24;
+    const w = 500, h = 200, padL = 40, padR = 10, padT = 10, padB = 10;
     const innerW = w - padL - padR, innerH = h - padT - padB;
-    const yMinHour = 20 * 60, yRange = 6 * 60;
+    const yMin = 18 * 60, yRange = 24 * 60;
+    const sessions = D.sessions;
+    const n = sessions.length;
     let dots = "";
     const values = [];
-    for (let i = 0; i < D.sessions.length; i++) {
-      let minOfDay = D.sessions[i].sleep_start.getHours() * 60 + D.sessions[i].sleep_start.getMinutes();
-      if (minOfDay < 12 * 60) minOfDay += 24 * 60;
-      values.push(minOfDay);
-      const x = padL + (i / (D.sessions.length - 1)) * innerW;
-      const y = padT + ((minOfDay - yMinHour) / yRange) * innerH;
-      dots += `<circle class="scatter-dot" cx="${x}" cy="${y}" r="3"/>`;
+    for (let i = 0; i < n; i++) {
+      let m = sessions[i].sleep_start.getHours() * 60 + sessions[i].sleep_start.getMinutes();
+      if (m < 12 * 60) m += 24 * 60;
+      values.push(m);
+      const x = padL + (n > 1 ? (i / (n - 1)) : 0.5) * innerW;
+      const y = padT + ((m - yMin) / yRange) * innerH;
+      dots += `<circle class="scatter-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5"/>`;
     }
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const meanY = padT + ((mean - yMinHour) / yRange) * innerH;
-    const horizLine = `<line class="scatter-guide" x1="${padL}" x2="${w - padR}" y1="${meanY}" y2="${meanY}"/>`;
+    const meanY = padT + ((mean - yMin) / yRange) * innerH;
+    const horizLine = `<line class="scatter-guide" x1="${padL}" x2="${w - padR}" y1="${meanY.toFixed(1)}" y2="${meanY.toFixed(1)}"/>`;
     let yTicks = "";
-    for (let m = yMinHour; m <= yMinHour + yRange; m += 60) {
-      const y = padT + ((m - yMinHour) / yRange) * innerH;
+    for (let step = 0; step <= 8; step++) {
+      const m = yMin + step * 3 * 60;
       const hh = Math.floor((m / 60) % 24);
-      yTicks += `<text class="scatter-label" x="${padL - 6}" y="${y + 3}" text-anchor="end">${pad(hh)}:00</text>`;
+      const y = padT + (step / 8) * innerH;
+      const isMaj = step % 2 === 0;
+      yTicks += `<text class="scatter-label" x="${padL - 6}" y="${y.toFixed(1)}" dominant-baseline="middle" text-anchor="end" opacity="${isMaj ? 1 : 0.45}">${pad(hh)}h</text>`;
+      yTicks += `<line x1="${padL}" x2="${w - padR}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${isMaj ? 0.06 : 0.03})"/>`;
     }
     return `<svg class="scatter-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${yTicks}${horizLine}${dots}</svg>`;
   }
@@ -1042,6 +1093,9 @@
     });
     document.getElementById("timeline-to-history")?.addEventListener("click", () => {
       navigateTo("history/timeline");
+    });
+    document.getElementById("cards-to-history")?.addEventListener("click", () => {
+      navigateTo("history/cards");
     });
     document.getElementById("drift-demo-toggle")?.addEventListener("click", () => {
       driftDemoMode = !driftDemoMode;
