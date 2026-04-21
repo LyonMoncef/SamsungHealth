@@ -217,7 +217,7 @@ def generate():
     hr_count = conn.execute("SELECT COUNT(*) FROM heart_rate_hourly").fetchone()[0]
     ex_count = conn.execute("SELECT COUNT(*) FROM exercise_sessions").fetchone()[0]
     conn.close()
-    print(f"Inserted into health.db:")
+    print("Inserted into health.db:")
     print(f"  {session_count} sleep sessions with {stage_count} stages")
     print(f"  {step_count} steps_hourly records")
     print(f"  {hr_count} heart_rate_hourly records")

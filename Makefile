@@ -7,7 +7,7 @@ install:
 
 ## dev : start the FastAPI server (reload + accessible from phone on LAN)
 dev:
-	uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn server.main:app --reload --host 0.0.0.0 --port 8001
 
 ## test : run the test suite
 test:

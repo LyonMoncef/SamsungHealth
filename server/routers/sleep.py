@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Query
-from datetime import datetime
 from server.database import get_connection
-from server.models import SleepSessionIn, SleepSessionOut, SleepStageOut, SleepBulkIn
+from server.models import SleepSessionOut, SleepBulkIn
 
 router = APIRouter(prefix="/api/sleep", tags=["sleep"])
 

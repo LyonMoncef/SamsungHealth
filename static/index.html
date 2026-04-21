@@ -1,47 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Health Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <button id="prev-month">&larr;</button>
-            <h1 id="month-label"></h1>
-            <button id="next-month">&rarr;</button>
-        </header>
-        <nav class="tabs">
-            <button class="tab active" data-tab="sleep">Sleep</button>
-            <button class="tab" data-tab="steps">Steps</button>
-            <button class="tab" data-tab="heartrate">Heart Rate</button>
-            <button class="tab" data-tab="exercise">Exercise</button>
-            <button class="tab" data-tab="trends">Trends</button>
-        </nav>
-        <div id="panel-sleep" class="panel active">
-            <div id="grid-wrapper">
-                <table id="sleep-grid">
-                    <thead><tr><th>Date</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-        <div id="panel-steps" class="panel">
-            <div id="steps-chart"></div>
-        </div>
-        <div id="panel-heartrate" class="panel">
-            <div id="hr-chart"></div>
-        </div>
-        <div id="panel-exercise" class="panel">
-            <div id="exercise-list"></div>
-        </div>
-        <div id="panel-trends" class="panel">
-            <div id="trends-grid"></div>
-        </div>
-        <div id="tooltip" class="tooltip"></div>
-    </div>
-    <script src="/static/app.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nightfall — Samsung Sleep</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="cursor-glow"></div>
+    <script src="/static/dashboard.js"></script>
+    <script src="/static/api.js"></script>
+  </body>
 </html>
