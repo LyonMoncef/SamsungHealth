@@ -1,0 +1,8 @@
+#!/bin/bash
+branch=$(git branch --show-current)
+if [[ ! "$branch" =~ ^(feat|fix|chore|hotfix|release)/ ]]; then
+  echo "❌ Branch name must start with feat/|fix/|chore/|hotfix/|release/"
+  echo "   Current: $branch"
+  exit 1
+fi
+exit 0

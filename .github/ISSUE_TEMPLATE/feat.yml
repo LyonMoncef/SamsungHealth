@@ -1,0 +1,41 @@
+name: Feature
+description: Nouvelle fonctionnalité ou amélioration
+labels: ["enhancement", "P2"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Pourquoi cette feature ? Quel problème elle résout ?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution proposée
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critères d'acceptance
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité
+      options: [P0 — bloquant, P1 — courant, P2 — suivant, P3 — backlog]
+      default: 2
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: Taille estimée
+      options: [XS ~1h, S ~3h, M ~1j, L ~3j, XL ~1 semaine, XXL épic]
+    validations:
+      required: true
