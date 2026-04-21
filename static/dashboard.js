@@ -180,7 +180,7 @@
   }
 
   function chapterTimeline() {
-    const startHour = 18, spanHours = 18, spanMs = spanHours * 3600000;
+    const startHour = 18, spanHours = 24, spanMs = spanHours * 3600000;
     const rows = D.sessions.map((s) => {
       const wake = new Date(s.sleep_end); wake.setHours(0, 0, 0, 0);
       const anchorMs = wake.getTime() - (24 - startHour) * 3600000;
@@ -202,7 +202,7 @@
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">02</span><span class="eyebrow">Stacked timeline</span></div>
         <h2>Your bedtime <em>drifts</em>, but not by much.</h2>
-        <p class="chapter-desc">Each bar is one night, from 6pm to noon. The longer the bar, the longer the night.</p>
+        <p class="chapter-desc">Each bar is one night, 24 hours from 6pm. The longer the bar, the longer the night.</p>
       </div>
       <div class="panel">
         <div class="timeline"><div class="timeline-axis">${ticks.join("")}</div>${rows}</div>
@@ -267,7 +267,6 @@
 
   function radialSVG(session) {
     const w = 520, cx = w / 2, cy = w / 2, rOuter = w * 0.46, rInner = w * 0.32;
-    function angleForTime(d) { return -Math.PI / 2 + ((d.getHours() + d.getMinutes() / 60) / 24) * Math.PI * 2; }
     let stageArcs = "";
     for (const st of session.stages) {
       const a0 = angleForTime(st.stage_start);
@@ -319,6 +318,204 @@
             </dl>
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  function angleForTime(d) {
+    return -Math.PI / 2 + ((d.getHours() + d.getMinutes() / 60) / 24) * Math.PI * 2;
+  }
+
+  function clockTicks(cx, cy, rOuter) {
+    let t = "";
+    for (let h = 0; h < 24; h++) {
+      const a = -Math.PI / 2 + (h / 24) * Math.PI * 2;
+      const r1 = rOuter + 4, r2 = rOuter + (h % 6 === 0 ? 16 : 8);
+      t += `<line x1="${cx + Math.cos(a) * r1}" y1="${cy + Math.sin(a) * r1}" x2="${cx + Math.cos(a) * r2}" y2="${cy + Math.sin(a) * r2}" stroke="rgba(255,255,255,${h % 6 === 0 ? 0.4 : 0.15})" stroke-width="1"/>`;
+      if (h % 6 === 0) {
+        const rt = rOuter + 30;
+        t += `<text x="${cx + Math.cos(a) * rt}" y="${cy + Math.sin(a) * rt + 4}" text-anchor="middle" font-family="Geist Mono" font-size="11" fill="rgba(232,228,245,0.6)">${pad(h)}</text>`;
+      }
+    }
+    return t;
+  }
+
+  function driftDensitySVG(sessions) {
+    const SLOTS = 96;
+    const counts = new Array(SLOTS).fill(0);
+    const STEP = 15 * 60 * 1000;
+    for (const s of sessions) {
+      let cur = s.sleep_start.getTime();
+      while (cur < s.sleep_end.getTime()) {
+        const d = new Date(cur);
+        const slot = Math.floor((d.getHours() * 60 + d.getMinutes()) / 15) % SLOTS;
+        counts[slot]++;
+        cur += STEP;
+      }
+    }
+    const maxC = Math.max(...counts, 1);
+    const w = 400, cx = w / 2, cy = w / 2, rO = w * 0.43, rI = w * 0.29;
+    let arcs = "";
+    for (let i = 0; i < SLOTS; i++) {
+      const op = counts[i] / maxC;
+      if (op < 0.01) continue;
+      const a0 = -Math.PI / 2 + (i / SLOTS) * Math.PI * 2;
+      const a1 = -Math.PI / 2 + ((i + 1) / SLOTS) * Math.PI * 2;
+      const xi0 = cx + Math.cos(a0) * rI, yi0 = cy + Math.sin(a0) * rI;
+      const xi1 = cx + Math.cos(a1) * rI, yi1 = cy + Math.sin(a1) * rI;
+      const xo1 = cx + Math.cos(a1) * rO, yo1 = cy + Math.sin(a1) * rO;
+      const xo0 = cx + Math.cos(a0) * rO, yo0 = cy + Math.sin(a0) * rO;
+      arcs += `<path d="M${xi0},${yi0} A${rI},${rI} 0 0 1 ${xi1},${yi1} L${xo1},${yo1} A${rO},${rO} 0 0 0 ${xo0},${yo0} Z" fill="oklch(0.68 0.14 295)" opacity="${(op * 0.88 + 0.05).toFixed(3)}"/>`;
+    }
+    const center = `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Instrument Serif" font-size="40" fill="#e8e4f5">${sessions.length}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="Geist Mono" font-size="9" fill="#6a6488" letter-spacing="0.15em">NIGHTS</text>`;
+    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${center}</svg>`;
+  }
+
+  function driftSpaghettiSVG(sessions) {
+    const w = 400, cx = w / 2, cy = w / 2, rO = w * 0.43, rI = w * 0.29;
+    const n = sessions.length;
+    let arcs = "";
+    for (let i = 0; i < n; i++) {
+      const s = sessions[i];
+      const t = n > 1 ? i / (n - 1) : 0;
+      const hue = 275 - t * 215;
+      const lum = (0.52 + t * 0.26).toFixed(2);
+      const color = `oklch(${lum} 0.14 ${hue.toFixed(0)})`;
+      const a0 = angleForTime(s.sleep_start);
+      const a1 = angleForTime(s.sleep_end);
+      let span = a1 - a0; if (span <= 0) span += Math.PI * 2;
+      const largeArc = span > Math.PI ? 1 : 0;
+      const xi0 = cx + Math.cos(a0) * rI, yi0 = cy + Math.sin(a0) * rI;
+      const xi1 = cx + Math.cos(a1) * rI, yi1 = cy + Math.sin(a1) * rI;
+      const xo1 = cx + Math.cos(a1) * rO, yo1 = cy + Math.sin(a1) * rO;
+      const xo0 = cx + Math.cos(a0) * rO, yo0 = cy + Math.sin(a0) * rO;
+      arcs += `<path d="M${xi0},${yi0} A${rI},${rI} 0 ${largeArc} 1 ${xi1},${yi1} L${xo1},${yo1} A${rO},${rO} 0 ${largeArc} 0 ${xo0},${yo0} Z" fill="${color}" opacity="${(0.04 + t * 0.08).toFixed(3)}"/>`;
+    }
+    const yr0 = new Date(sessions[0].sleep_start).getFullYear();
+    const yr1 = new Date(sessions[n - 1].sleep_start).getFullYear();
+    const ly = w - 22, lx1 = cx - 56, lx2 = cx + 56;
+    const legend = `<defs><linearGradient id="dsg"><stop offset="0%" stop-color="oklch(0.52 0.14 275)"/><stop offset="100%" stop-color="oklch(0.78 0.14 60)"/></linearGradient></defs><rect x="${lx1}" y="${ly}" width="${lx2 - lx1}" height="3" fill="url(#dsg)" rx="1.5"/><text x="${lx1}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="start">${yr0}</text><text x="${lx2}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="end">${yr1}</text>`;
+    const center = `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Instrument Serif" font-size="40" fill="#e8e4f5">${n}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="Geist Mono" font-size="9" fill="#6a6488" letter-spacing="0.15em">NIGHTS</text>`;
+    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${legend}${center}</svg>`;
+  }
+
+  function circularMeanMinutes(minsList) {
+    const TAU = 2 * Math.PI, MINS_DAY = 24 * 60;
+    const sinSum = minsList.reduce((a, m) => a + Math.sin((m / MINS_DAY) * TAU), 0);
+    const cosSum = minsList.reduce((a, m) => a + Math.cos((m / MINS_DAY) * TAU), 0);
+    let angle = Math.atan2(sinSum / minsList.length, cosSum / minsList.length);
+    let mins = (angle / TAU) * MINS_DAY;
+    if (mins < 0) mins += MINS_DAY;
+    return mins;
+  }
+
+  function driftRollingAvgSVG(sessions) {
+    const w = 400, cx = w / 2, cy = w / 2, rO = w * 0.43, rI = w * 0.29;
+    const WINDOW = 7, n = sessions.length;
+    const rMid = (rO + rI) / 2;
+    let arcs = "";
+    for (let i = WINDOW - 1; i < n; i++) {
+      const slice = sessions.slice(i - WINDOW + 1, i + 1);
+      const t = (n > WINDOW) ? (i - WINDOW + 1) / (n - WINDOW) : 0;
+      const bedMins = slice.map(s => s.sleep_start.getHours() * 60 + s.sleep_start.getMinutes());
+      const wakeMins = slice.map(s => s.sleep_end.getHours() * 60 + s.sleep_end.getMinutes());
+      const avgBed = circularMeanMinutes(bedMins);
+      const avgWake = circularMeanMinutes(wakeMins);
+      const hue = 275 - t * 215;
+      const lum = (0.55 + t * 0.23).toFixed(2);
+      const color = `oklch(${lum} 0.16 ${hue.toFixed(0)})`;
+      const a0 = -Math.PI / 2 + (avgBed / (24 * 60)) * Math.PI * 2;
+      const a1 = -Math.PI / 2 + (avgWake / (24 * 60)) * Math.PI * 2;
+      let span = a1 - a0; if (span <= 0) span += Math.PI * 2;
+      const largeArc = span > Math.PI ? 1 : 0;
+      const x0 = cx + Math.cos(a0) * rMid, y0 = cy + Math.sin(a0) * rMid;
+      const x1 = cx + Math.cos(a1) * rMid, y1 = cy + Math.sin(a1) * rMid;
+      arcs += `<path d="M${x0},${y0} A${rMid},${rMid} 0 ${largeArc} 1 ${x1},${y1}" fill="none" stroke="${color}" stroke-width="2.5" opacity="${(0.18 + t * 0.55).toFixed(3)}" stroke-linecap="round"/>`;
+    }
+    const yr0 = new Date(sessions[0].sleep_start).getFullYear();
+    const yr1 = new Date(sessions[n - 1].sleep_start).getFullYear();
+    const ly = w - 22, lx1 = cx - 56, lx2 = cx + 56;
+    const legend = `<defs><linearGradient id="drgrd"><stop offset="0%" stop-color="oklch(0.55 0.16 275)"/><stop offset="100%" stop-color="oklch(0.78 0.16 60)"/></linearGradient></defs><rect x="${lx1}" y="${ly}" width="${lx2 - lx1}" height="3" fill="url(#drgrd)" rx="1.5"/><text x="${lx1}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="start">${yr0}</text><text x="${lx2}" y="${ly + 13}" font-family="Geist Mono" font-size="9" fill="rgba(232,228,245,0.45)" text-anchor="end">${yr1}</text>`;
+    const center = `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Instrument Serif" font-size="32" fill="#e8e4f5">${WINDOW}d avg</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" font-family="Geist Mono" font-size="9" fill="#6a6488" letter-spacing="0.12em">ROLLING</text>`;
+    return `<svg viewBox="0 0 ${w} ${w}" class="drift-svg"><circle cx="${cx}" cy="${cy}" r="${(rO + rI) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rO - rI}"/>${arcs}${clockTicks(cx, cy, rO)}${legend}${center}</svg>`;
+  }
+
+  function chapterDriftClock() {
+    const src = D.sessionsFull || D.sessions;
+    return `
+      <div class="chapter">
+        <div class="chapter-label"><span class="chapter-num">10</span><span class="eyebrow">Sleep clock drift</span></div>
+        <h2>Your nights, mapped <em>around the clock</em>.</h2>
+        <p class="chapter-desc">Three readings of the same 2+ years of sleep — each revealing a different dimension of the pattern.</p>
+      </div>
+      <div class="panel">
+        <div class="drift-grid">
+          <div class="drift-option">
+            <div class="drift-option-label">A — Frequency density</div>
+            ${driftDensitySVG(src)}
+            <div class="drift-option-desc">Opacity = fraction of nights asleep during each 15-min slot. Fuzziness at the edges shows variability.</div>
+          </div>
+          <div class="drift-option">
+            <div class="drift-option-label">B — Trajectories (drift)</div>
+            ${driftSpaghettiSVG(src)}
+            <div class="drift-option-desc">Every session drawn as an arc. Violet = oldest nights, amber = most recent. Density reveals the core window; colour reveals temporal drift.</div>
+          </div>
+          <div class="drift-option">
+            <div class="drift-option-label">C — 7-night rolling average</div>
+            ${driftRollingAvgSVG(src)}
+            <div class="drift-option-desc">Each stroke is the average bedtime→wake over a 7-night window. Violet = 2023, amber = 2026. Read the drift as a shifting arc.</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function chapterHistory() {
+    const allSessions = D.sessionsFull || D.sessions;
+    const groups = [];
+    let curKey = null, curLabel = null, curGroup = [];
+    for (let i = 0; i < allSessions.length; i++) {
+      const s = allSessions[i];
+      const wake = new Date(s.sleep_end);
+      const key = `${wake.getFullYear()}-${wake.getMonth()}`;
+      const label = wake.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      if (key !== curKey) {
+        if (curGroup.length) groups.push({ label: curLabel, items: curGroup });
+        curKey = key; curLabel = label; curGroup = [];
+      }
+      curGroup.push({ s, globalIdx: i });
+    }
+    if (curGroup.length) groups.push({ label: curLabel, items: curGroup });
+
+    const groupsHtml = groups.map((g) => {
+      const cells = g.items.map(({ s, globalIdx }) => {
+        const w = 100, h = 36;
+        const yFS = { awake: h * 0.08, rem: h * 0.3, light: h * 0.55, deep: h * 0.92 };
+        const start = s.sleep_start.getTime(), total = s.duration_ms;
+        let segs = "";
+        for (const st of s.stages) {
+          const x0 = ((st.stage_start.getTime() - start) / total) * w;
+          const x1 = ((st.stage_end.getTime() - start) / total) * w;
+          segs += `<line x1="${x0}" x2="${x1}" y1="${yFS[st.stage_type]}" y2="${yFS[st.stage_type]}" stroke="${STAGE_COLORS[st.stage_type]}" stroke-width="2.2" stroke-linecap="round"/>`;
+        }
+        const wake = new Date(s.sleep_end);
+        const day = wake.getDay();
+        const wknd = day === 0 || day === 6;
+        const recentIdx = D.sessions.findIndex((r) => r.date_key === s.date_key);
+        const isActive = recentIdx !== -1 && recentIdx === focusIdx;
+        return `<div class="sm-cell${isActive ? " active" : ""}${wknd ? " weekend" : ""}" data-recent-idx="${recentIdx}"><div class="sm-cell-head"><span class="sm-date">${fmtDay(wake)} ${wake.getDate()}</span><span class="sm-score">${s.score}</span></div><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="sm-svg">${segs}</svg><div class="sm-duration">${hoursMinutes(s.duration_ms)}</div></div>`;
+      }).join("");
+      return `<div class="month-sep"><span class="month-label">${g.label}</span><span class="month-count">${g.items.length} nights</span></div><div class="sm-grid">${cells}</div>`;
+    }).join("");
+
+    return `
+      <div class="chapter">
+        <div class="chapter-label"><span class="chapter-num">11</span><span class="eyebrow">Full history</span></div>
+        <h2>All <em>${allSessions.length} nights</em>, month by month.</h2>
+        <p class="chapter-desc">Weekends highlighted in amber. Click any night in the last 30 to focus it in the hypnogram above.</p>
+      </div>
+      <div class="panel">
+        <div class="history-scroll">${groupsHtml}</div>
       </div>
     `;
   }
@@ -588,7 +785,7 @@
   }
 
   function render() {
-    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterRidgeline() + chapterCards() + chapterAgenda() + chapterMetrics() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterRidgeline() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterDriftClock() + chapterHistory() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
@@ -602,10 +799,20 @@
       focusIdx = (focusIdx + 1) % D.sessions.length;
       PREFS.focusNightIndex = focusIdx; savePrefs(); render();
     });
-    document.querySelectorAll(".sm-cell").forEach((el) => {
+    document.querySelectorAll(".sm-cell[data-idx]").forEach((el) => {
       el.addEventListener("click", () => {
         focusIdx = parseInt(el.dataset.idx, 10);
         PREFS.focusNightIndex = focusIdx; savePrefs(); render();
+      });
+    });
+    document.querySelectorAll(".sm-cell[data-recent-idx]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const idx = parseInt(el.dataset.recentIdx, 10);
+        if (idx === -1) return;
+        focusIdx = idx;
+        PREFS.focusNightIndex = focusIdx; savePrefs(); render();
+        const chs = document.querySelectorAll(".chapter");
+        if (chs[2]) chs[2].scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
     const tip = document.getElementById("hover-tip");

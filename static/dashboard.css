@@ -337,3 +337,20 @@ footer {
   .top-meta { display: none; }
   .metric-big { font-size: 40px; }
 }
+
+/* Full history chapter */
+.history-scroll { max-height: 640px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+.month-sep { display: flex; align-items: baseline; gap: 14px; padding: 20px 0 10px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 6px; }
+.month-sep:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.month-label { font-family: 'Instrument Serif', serif; font-size: 18px; color: #e8e4f5; }
+.month-count { font-family: 'Geist Mono', monospace; font-size: 10px; color: #6a6488; letter-spacing: 0.08em; }
+.sm-cell.weekend { background: rgba(200, 140, 50, 0.04); border-color: rgba(200, 140, 50, 0.14); }
+.sm-cell.weekend .sm-date { color: oklch(0.78 0.12 60); }
+
+/* Drift clock chapter */
+.drift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.drift-option { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.drift-option-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: #6a6488; text-transform: uppercase; align-self: flex-start; }
+.drift-option-desc { font-size: 12px; color: #6a6488; text-align: center; max-width: 22ch; line-height: 1.6; }
+.drift-svg { width: 100%; max-width: 380px; }
+@media (max-width: 900px) { .drift-grid { grid-template-columns: 1fr; gap: 48px; } .drift-svg { max-width: 320px; } }

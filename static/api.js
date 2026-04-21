@@ -154,11 +154,13 @@
     const rawHR = hrRes.ok ? await hrRes.json() : [];
 
     const sessions = rawSessions.map((s, i) => computeSession(s, i));
+    const sessionsFull = allSessions.map((s, i) => computeSession(s, i));
     const steps = aggregateSteps(rawSteps);
     const hr = aggregateHR(rawHR);
 
     window.SleepData = {
       sessions,
+      sessionsFull,
       steps,
       hr,
       summary: computeSummary(sessions, steps, hr),
