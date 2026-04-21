@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Dev mobile — WSL2 port forwarding + Android cleartext | `scripts/dev-mobile.ps1`, `Makefile`, `android-app/` | [`646aeaa`](#2026-04-21-646aeaa) |
 | Nightfall sleep dashboard | `static/index.html`, `static/dashboard.css`, `static/dashboard.js`, `static/api.js` | [`b5cacc7`](#2026-04-21-b5cacc7) |
 | Workflow bootstrap — CI, labels, hooks, tests | `.github/`, `.githooks/`, `Makefile`, `tests/` | [`939f5ef`](#2026-04-21-939f5ef) |
 | Phase 3: Steps, heart rate, exercise + tabbed dashboard | `server/`, `static/`, `scripts/`, `android-app/` | [`242040a`](#2026-02-16-242040a) |
@@ -14,6 +15,14 @@
 ---
 
 ## Changelog
+
+### 2026-04-21 `646aeaa`
+chore(dev): dev-mobile script + fix Android cleartext HTTP
+- Ajout `scripts/dev-mobile.ps1` — détecte auto les IPs WSL2/Windows, configure port forwarding 8001 et règle firewall
+- Ajout `make dev-mobile` — affiche les instructions pour tester depuis le téléphone
+- Ajout `android-app/res/xml/network_security_config.xml` — autorise HTTP cleartext (app locale uniquement, pas de données sensibles en transit)
+- Référencé dans `AndroidManifest.xml` via `android:networkSecurityConfig`
+- Fix `PreferencesManager.kt` — `DEFAULT_URL` sur port 8001
 
 ### 2026-04-21 `b5cacc7`
 feat(frontend): Nightfall sleep dashboard branché sur l'API réelle
