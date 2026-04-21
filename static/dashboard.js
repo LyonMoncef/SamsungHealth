@@ -1,5 +1,5 @@
 (function () {
-  const D = window.SleepData;
+  let D = window.SleepData;
   const STAGE_COLORS = {
     deep: "oklch(0.48 0.14 275)",
     light: "oklch(0.68 0.14 295)",
@@ -210,7 +210,7 @@
     `;
   }
 
-  let focusIdx = Math.min(Math.max(0, PREFS.focusNightIndex), D.sessions.length - 1);
+  let focusIdx = 0;
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -653,5 +653,9 @@
   });
   try { window.parent.postMessage({ type: "__edit_mode_available" }, "*"); } catch (e) {}
 
-  window.render = render;
+  window.render = function () {
+    D = window.SleepData;
+    focusIdx = Math.min(Math.max(0, PREFS.focusNightIndex), D.sessions.length - 1);
+    render();
+  };
 })();
