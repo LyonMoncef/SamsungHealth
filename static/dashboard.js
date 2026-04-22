@@ -215,6 +215,27 @@
     return days;
   }
 
+  function depthOverlaySVG(day) {
+    const SAMPLES = 100;
+    const wake = new Date(day.date); wake.setHours(0, 0, 0, 0);
+    const anchorMs = wake.getTime() - (24 - TSTART) * 3600000;
+    const allStages = day.sessions.flatMap((s) => s.stages);
+    const DEPTH = { awake: 0.15, rem: 0.4, light: 0.65, deep: 1.0 };
+    let d = "", drawing = false;
+    for (let k = 0; k <= SAMPLES; k++) {
+      const t = anchorMs + (k / SAMPLES) * TSPAN_MS;
+      let depth = 0;
+      for (const st of allStages) {
+        if (st.stage_start.getTime() <= t && t < st.stage_end.getTime()) { depth = DEPTH[st.stage_type] || 0; break; }
+      }
+      const x = (k / SAMPLES) * 100, y = (1 - depth) * 100;
+      if (depth > 0) { d += drawing ? ` L${x.toFixed(1)},${y.toFixed(1)}` : `M${x.toFixed(1)},${y.toFixed(1)}`; drawing = true; }
+      else { drawing = false; }
+    }
+    if (!d) return "";
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1"><path d="${d}" fill="none" stroke="rgba(210,200,240,0.6)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+
   function buildTimelineRow(day) {
     const wake = new Date(day.date); wake.setHours(0, 0, 0, 0);
     const anchorMs = wake.getTime() - (24 - TSTART) * 3600000;
@@ -234,7 +255,8 @@
     if (day.sessions.length > 1) tip += `\n${day.sessions.length} sessions · ${hoursMinutes(totalDur)} total`;
     else if (day.sessions.length === 1) { const s = day.sessions[0]; tip += `\n${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)} · ${hoursMinutes(s.duration_ms)}`; }
     const cls = ["timeline-row", wknd ? "weekend" : "", day.isEmpty ? "empty" : ""].filter(Boolean).join(" ");
-    return `<div class="${cls}"${day.isEmpty ? "" : ` data-tip="${tip}"`}><div class="label">${label}</div><div class="track">${segs}</div></div>`;
+    const overlay = day.isEmpty ? "" : depthOverlaySVG(day);
+    return `<div class="${cls}"${day.isEmpty ? "" : ` data-tip="${tip}"`}><div class="label">${label}</div><div class="track">${segs}${overlay}</div></div>`;
   }
 
   function timelineTicks() {
@@ -1156,55 +1178,6 @@
     `;
   }
 
-  function chapterRidgeline() {
-    const w = 1000, rowH = 22, amp = 28, n = D.sessions.length, h = n * rowH + 80;
-    const padL = 80, padR = 20, innerW = w - padL - padR, spanH = 18;
-    let paths = "";
-    for (let i = 0; i < n; i++) {
-      const s = D.sessions[i];
-      const y0 = 40 + i * rowH;
-      const wake = new Date(s.sleep_end); wake.setHours(0, 0, 0, 0);
-      const anchor = wake.getTime() - 6 * 3600000;
-      const samples = 200;
-      const points = [];
-      for (let k = 0; k <= samples; k++) {
-        const t = anchor + (k / samples) * spanH * 3600000;
-        let depth = 0;
-        for (const st of s.stages) {
-          if (st.stage_start.getTime() <= t && t < st.stage_end.getTime()) {
-            depth = { awake: 0.1, rem: 0.35, light: 0.6, deep: 1.0 }[st.stage_type];
-            break;
-          }
-        }
-        points.push([padL + (k / samples) * innerW, y0 - depth * amp]);
-      }
-      let d = `M${padL},${y0}`;
-      for (const [x, y] of points) d += ` L${x.toFixed(1)},${y.toFixed(1)}`;
-      d += ` L${padL + innerW},${y0} Z`;
-      const label = `${fmtDay(wake)} ${pad(wake.getDate())}`;
-      paths += `<path d="${d}" fill="url(#ridgeGrad)" stroke="oklch(0.75 0.12 280)" stroke-width="1" opacity="${0.3 + (i / n) * 0.55}"/><text class="ridge-label" x="${padL - 10}" y="${y0 + 3}" text-anchor="end">${label}</text>`;
-    }
-    let ticks = "";
-    for (let k = 0; k <= spanH; k += 3) {
-      const x = padL + (k / spanH) * innerW;
-      const hour = (18 + k) % 24;
-      ticks += `<text class="ridge-label" x="${x}" y="20" text-anchor="middle">${pad(hour)}:00</text><line x1="${x}" x2="${x}" y1="28" y2="${h - 20}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-    }
-    return `
-      <div class="chapter">
-        <div class="chapter-label"><span class="chapter-num">06</span><span class="eyebrow">Ridgeline</span></div>
-        <h2>A range of <em>mountains</em> — each one a night.</h2>
-        <p class="chapter-desc">Depth maps to altitude. The thickest peaks are your deepest dives.</p>
-      </div>
-      <div class="panel">
-        <svg viewBox="0 0 ${w} ${h}" class="ridge-svg" preserveAspectRatio="none" style="height:${h * 0.7}px">
-          <defs><linearGradient id="ridgeGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="oklch(0.7 0.15 285)" stop-opacity="0.75"/><stop offset="100%" stop-color="oklch(0.25 0.08 275)" stop-opacity="0.2"/></linearGradient></defs>
-          ${ticks}${paths}
-        </svg>
-      </div>
-    `;
-  }
-
   function nightCardHTML(s, rank) {
     const total = s.duration_ms;
     const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
@@ -1523,7 +1496,7 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterRidgeline() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }

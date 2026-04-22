@@ -209,8 +209,6 @@ body::before {
 .sm-svg { width: 100%; height: 36px; }
 .sm-duration { font-family: "Geist Mono", monospace; font-size: 9px; color: var(--paper-faint); margin-top: 4px; text-align: right; }
 
-.ridge-svg { width: 100%; display: block; }
-.ridge-label { font-family: "Geist Mono", monospace; font-size: 9px; fill: var(--paper-faint); }
 
 .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
 .night-card { background: linear-gradient(165deg, rgba(83, 52, 131, 0.12), rgba(10, 10, 24, 0.1)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 22px 20px 20px; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; }
