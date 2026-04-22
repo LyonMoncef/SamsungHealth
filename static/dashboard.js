@@ -112,73 +112,6 @@
     `;
   }
 
-  function chapterHeatmap() {
-    const rows = [];
-    let header = '<div></div>';
-    for (let h = 0; h < 24; h++) header += `<div class="hour-head">${h % 3 === 0 ? pad(h) : ""}</div>`;
-    rows.push(header);
-
-    const hourMap = {};
-    for (const s of D.sessions) {
-      let cursor = new Date(s.sleep_start);
-      cursor.setMinutes(0, 0, 0);
-      while (cursor < s.sleep_end) {
-        const key = cursor.toISOString().slice(0, 10);
-        const h = cursor.getHours();
-        if (!hourMap[key]) hourMap[key] = {};
-        if (!hourMap[key][h]) hourMap[key][h] = { stages: {} };
-        const hs = cursor.getTime(), he = hs + 3600000;
-        for (const st of s.stages) {
-          const ss = st.stage_start.getTime(), se = st.stage_end.getTime();
-          if (ss < he && se > hs) {
-            const overlap = Math.min(he, se) - Math.max(hs, ss);
-            hourMap[key][h].stages[st.stage_type] = (hourMap[key][h].stages[st.stage_type] || 0) + overlap;
-          }
-        }
-        cursor = new Date(cursor.getTime() + 3600000);
-      }
-    }
-
-    for (const s of D.sessions) {
-      const day = new Date(s.sleep_end);
-      day.setHours(0, 0, 0, 0);
-      const label = `${fmtDay(day)} ${day.getDate()}`;
-      let row = `<div class="day-label">${label}</div>`;
-      for (let h = 0; h < 24; h++) {
-        let cell = null;
-        const yesterday = new Date(day); yesterday.setDate(yesterday.getDate() - 1);
-        const todayKey = day.toISOString().slice(0, 10);
-        const yestKey = yesterday.toISOString().slice(0, 10);
-        if (h >= 18 && hourMap[yestKey]?.[h]) cell = hourMap[yestKey][h];
-        else if (h < 18 && hourMap[todayKey]?.[h]) cell = hourMap[todayKey][h];
-        if (cell) {
-          let best = null, max = 0;
-          for (const [t, ms] of Object.entries(cell.stages)) if (ms > max) { max = ms; best = t; }
-          const tip = Object.entries(cell.stages).map(([t, ms]) => `${t}: ${Math.round(ms / 60000)}m`).join(" · ");
-          row += `<div class="cell ${best}" data-tip="${fmtDateLong(day)} · ${pad(h)}:00\n${tip}"></div>`;
-        } else row += `<div class="cell"></div>`;
-      }
-      rows.push(row);
-    }
-
-    return `
-      <div class="chapter">
-        <div class="chapter-label"><span class="chapter-num">01</span><span class="eyebrow">Calendar heatmap</span></div>
-        <h2>Thirty nights, <em>unfolded</em> hour by hour.</h2>
-        <p class="chapter-desc">Each row is a night. Each cell is one hour, coloured by the dominant sleep stage.</p>
-      </div>
-      <div class="panel">
-        <div class="heatmap-wrap"><div class="heatmap">${rows.join("")}</div></div>
-        <div class="legend">
-          <span><span class="sw" style="background:${STAGE_COLORS.deep}"></span>Deep</span>
-          <span><span class="sw" style="background:${STAGE_COLORS.light}"></span>Light</span>
-          <span><span class="sw" style="background:${STAGE_COLORS.rem}"></span>REM</span>
-          <span><span class="sw" style="background:${STAGE_COLORS.awake}"></span>Awake</span>
-        </div>
-      </div>
-    `;
-  }
-
   const TSTART = 18, TSPAN = 24, TSPAN_MS = TSPAN * 3600000;
 
   function aggregateByDay(sessions) {
@@ -633,11 +566,12 @@
     let ticks = "";
     for (let h = 0; h < 24; h++) {
       const a = -Math.PI / 2 + (h / 24) * Math.PI * 2;
-      const r1 = rOuter + 4, r2 = rOuter + (h % 6 === 0 ? 16 : 8);
-      ticks += `<line x1="${cx + Math.cos(a) * r1}" y1="${cy + Math.sin(a) * r1}" x2="${cx + Math.cos(a) * r2}" y2="${cy + Math.sin(a) * r2}" stroke="rgba(255,255,255,${h % 6 === 0 ? 0.4 : 0.15})" stroke-width="1"/>`;
-      if (h % 6 === 0) {
-        const rt = rOuter + 32;
-        ticks += `<text x="${cx + Math.cos(a) * rt}" y="${cy + Math.sin(a) * rt + 4}" text-anchor="middle" font-family="Geist Mono" font-size="11" fill="rgba(232,228,245,0.6)">${pad(h)}</text>`;
+      const isMajor = h % 6 === 0, isMid = h % 3 === 0;
+      const r1 = rOuter + 4, r2 = rOuter + (isMajor ? 16 : isMid ? 10 : 6);
+      ticks += `<line x1="${cx + Math.cos(a) * r1}" y1="${cy + Math.sin(a) * r1}" x2="${cx + Math.cos(a) * r2}" y2="${cy + Math.sin(a) * r2}" stroke="rgba(255,255,255,${isMajor ? 0.4 : isMid ? 0.2 : 0.1})" stroke-width="1"/>`;
+      if (isMid) {
+        const rt = rOuter + (isMajor ? 32 : 27);
+        ticks += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${isMajor ? 11 : 9}" fill="${isMajor ? "rgba(232,228,245,0.65)" : "rgba(232,228,245,0.32)"}">${pad(h)}</text>`;
       }
     }
     const durHrs = session.duration_hours.toFixed(1);
@@ -1130,32 +1064,6 @@
     `;
   }
 
-  function smCell(session, idx) {
-    const w = 100, h = 36;
-    const yForStage = { awake: h * 0.08, rem: h * 0.3, light: h * 0.55, deep: h * 0.92 };
-    const start = session.sleep_start.getTime(), total = session.duration_ms;
-    let segs = "";
-    for (const st of session.stages) {
-      const x0 = ((st.stage_start.getTime() - start) / total) * w;
-      const x1 = ((st.stage_end.getTime() - start) / total) * w;
-      const y = yForStage[st.stage_type];
-      segs += `<line x1="${x0}" x2="${x1}" y1="${y}" y2="${y}" stroke="${STAGE_COLORS[st.stage_type]}" stroke-width="2.2" stroke-linecap="round"/>`;
-    }
-    const wake = new Date(session.sleep_end);
-    return `<div class="sm-cell${idx === focusIdx ? ' active' : ''}" data-idx="${idx}"><div class="sm-cell-head"><span class="sm-date">${fmtDay(wake)} ${wake.getDate()}</span><span class="sm-score">${session.score}</span></div><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="sm-svg">${segs}</svg><div class="sm-duration">${hoursMinutes(session.duration_ms)}</div></div>`;
-  }
-
-  function chapterSmallMultiples() {
-    return `
-      <div class="chapter">
-        <div class="chapter-label"><span class="chapter-num">05</span><span class="eyebrow">Small multiples</span></div>
-        <h2>Thirty <em>signatures</em>, side by side.</h2>
-        <p class="chapter-desc">Click any night to send it to the hypnogram and radial clock above.</p>
-      </div>
-      <div class="panel"><div class="sm-grid" id="sm-grid">${D.sessions.map(smCell).join("")}</div></div>
-    `;
-  }
-
   function nightCardHTML(s, rank) {
     const total = s.duration_ms;
     const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
@@ -1474,7 +1382,7 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
@@ -1487,12 +1395,6 @@
     document.getElementById("hypno-next")?.addEventListener("click", () => {
       focusIdx = (focusIdx + 1) % D.sessions.length;
       PREFS.focusNightIndex = focusIdx; savePrefs(); render();
-    });
-    document.querySelectorAll(".sm-cell[data-idx]").forEach((el) => {
-      el.addEventListener("click", () => {
-        focusIdx = parseInt(el.dataset.idx, 10);
-        PREFS.focusNightIndex = focusIdx; savePrefs(); render();
-      });
     });
     document.getElementById("timeline-to-history")?.addEventListener("click", () => {
       navigateTo("history/timeline");

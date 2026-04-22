@@ -143,16 +143,6 @@ body::before {
   overflow: clip;
 }
 
-.heatmap-wrap { overflow-x: auto; padding-bottom: 6px; }
-.heatmap { display: grid; grid-template-columns: 78px repeat(24, 1fr); gap: 2px; min-width: 720px; }
-.heatmap .hour-head { font-family: "Geist Mono", monospace; font-size: 9px; color: var(--paper-faint); text-align: center; padding-bottom: 6px; letter-spacing: 0.04em; }
-.heatmap .day-label { font-family: "Geist Mono", monospace; font-size: 10px; color: var(--paper-faint); padding-right: 8px; text-align: right; align-self: center; white-space: nowrap; }
-.heatmap .cell { height: 14px; border-radius: 2px; background: rgba(255, 255, 255, 0.02); position: relative; transition: transform 0.15s, filter 0.15s; }
-.heatmap .cell:hover { transform: scale(1.4); z-index: 2; filter: brightness(1.3); }
-.heatmap .cell.light { background: var(--stage-light); }
-.heatmap .cell.deep { background: var(--stage-deep); }
-.heatmap .cell.rem { background: var(--stage-rem); }
-.heatmap .cell.awake { background: var(--stage-awake); }
 
 .legend { display: flex; gap: 22px; margin-top: 22px; flex-wrap: wrap; font-family: "Geist Mono", monospace; font-size: 11px; color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.08em; }
 .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: middle; }
@@ -198,16 +188,6 @@ body::before {
 .radial-kv { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; font-family: "Geist Mono", monospace; font-size: 12px; }
 .radial-kv dt { color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.1em; }
 .radial-kv dd { color: var(--paper); }
-
-.sm-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
-.sm-cell { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px 8px 8px; transition: background 0.2s, border-color 0.2s, transform 0.2s; cursor: pointer; }
-.sm-cell:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
-.sm-cell.active { background: rgba(123, 90, 242, 0.1); border-color: var(--stage-light); }
-.sm-cell-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.sm-date { font-family: "Geist Mono", monospace; font-size: 10px; color: var(--paper-dim); }
-.sm-score { font-family: "Instrument Serif", serif; font-size: 14px; }
-.sm-svg { width: 100%; height: 36px; }
-.sm-duration { font-family: "Geist Mono", monospace; font-size: 9px; color: var(--paper-faint); margin-top: 4px; text-align: right; }
 
 
 .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
@@ -325,14 +305,12 @@ footer {
   .night-arc { margin: 0 auto; max-width: 360px; }
   .hero-stats { max-width: none; }
   .radial-wrap { grid-template-columns: 1fr; }
-  .sm-grid { grid-template-columns: repeat(5, 1fr); }
   .metrics-grid { grid-template-columns: 1fr; }
   .hypno-stats { grid-template-columns: repeat(2, 1fr); }
   .chapter { margin-top: 80px; }
   .panel { padding: 22px 18px; }
 }
 @media (max-width: 560px) {
-  .sm-grid { grid-template-columns: repeat(4, 1fr); }
   .hero h1 { font-size: 56px; }
   .top-meta { display: none; }
   .metric-big { font-size: 40px; }
@@ -344,8 +322,6 @@ footer {
 .month-sep:first-child { border-top: none; padding-top: 0; margin-top: 0; }
 .month-label { font-family: 'Instrument Serif', serif; font-size: 18px; color: #e8e4f5; }
 .month-count { font-family: 'Geist Mono', monospace; font-size: 10px; color: #6a6488; letter-spacing: 0.08em; }
-.sm-cell.weekend { background: rgba(200, 140, 50, 0.04); border-color: rgba(200, 140, 50, 0.14); }
-.sm-cell.weekend .sm-date { color: oklch(0.78 0.12 60); }
 
 /* Drift clock chapter */
 .drift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
