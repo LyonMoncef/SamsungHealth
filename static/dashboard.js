@@ -156,18 +156,14 @@
       for (const st of s.stages) {
         const left = ((st.stage_start.getTime() - anchorMs) / TSPAN_MS) * 100;
         const width = ((st.stage_end - st.stage_start) / TSPAN_MS) * 100;
-        segs += `<div class="stage-seg ${st.stage_type}" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%"></div>`;
+        segs += `<div class="stage-seg ${st.stage_type}" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%" data-stip="${stip(st, s)}"></div>`;
       }
     }
     const dayNum = wake.getDay();
     const wknd = dayNum === 0 || dayNum === 6;
     const label = `${fmtDay(wake)} ${wake.getDate()}`;
-    const totalDur = day.sessions.reduce((a, s) => a + s.duration_ms, 0);
-    let tip = fmtDateLong(wake);
-    if (day.sessions.length > 1) tip += `\n${day.sessions.length} sessions · ${hoursMinutes(totalDur)} total`;
-    else if (day.sessions.length === 1) { const s = day.sessions[0]; tip += `\n${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)} · ${hoursMinutes(s.duration_ms)}`; }
     const cls = ["timeline-row", wknd ? "weekend" : "", day.isEmpty ? "empty" : ""].filter(Boolean).join(" ");
-    return `<div class="${cls}"${day.isEmpty ? "" : ` data-tip="${tip}"`}><div class="label">${label}</div><div class="track">${segs}</div></div>`;
+    return `<div class="${cls}"><div class="label">${label}</div><div class="track">${segs}</div></div>`;
   }
 
   function timelineTicks() {
@@ -240,12 +236,6 @@
 
     document.getElementById("history-back")?.addEventListener("click", () => {
       navigateTo("dashboard");
-    });
-    const tip = document.getElementById("hover-tip");
-    document.querySelectorAll("[data-tip]").forEach((el) => {
-      el.addEventListener("mouseenter", () => { tip.textContent = el.dataset.tip; tip.classList.add("show"); });
-      el.addEventListener("mousemove", (e) => { tip.style.left = e.clientX + 14 + "px"; tip.style.top = e.clientY + 14 + "px"; });
-      el.addEventListener("mouseleave", () => tip.classList.remove("show"));
     });
   }
 
@@ -496,6 +486,31 @@
   let metricsFullLoading = false;
   let periodFilter = 'full';
   let periodFullLoading = false;
+  let _tipHandlers = null;
+
+  const STAGE_NAMES = { deep: 'Deep sleep', light: 'Light sleep', rem: 'REM', awake: 'Awake' };
+
+  function buildStageTip(d) {
+    const stageParts = ['deep', 'light', 'rem', 'awake']
+      .filter((k) => d.tot[k] > 0)
+      .map((k) => `<span class="tip-stg tip-stg-${k}">${{ deep: 'Deep', light: 'Light', rem: 'REM', awake: 'Awake' }[k]}&nbsp;<b>${hoursMinutes(d.tot[k])}</b></span>`)
+      .join('');
+    return `<div class="tip-seg"><span class="tip-dot tip-dot-${d.t}"></span><div class="tip-seg-body"><div class="tip-seg-name">${STAGE_NAMES[d.t] || d.t}</div><div class="tip-seg-times">${d.s} → ${d.e}</div><div class="tip-seg-dur">${hoursMinutes(d.dur)}</div></div></div><div class="tip-sep"></div><div class="tip-night"><div class="tip-night-date">${d.date}</div><div class="tip-night-times">${d.ns} → ${d.ne} · <b>${hoursMinutes(d.nd)}</b></div><div class="tip-night-stages">${stageParts}</div></div>`;
+  }
+
+  function stip(st, session) {
+    return JSON.stringify({
+      t: st.stage_type,
+      s: fmtHM(st.stage_start),
+      e: fmtHM(st.stage_end),
+      dur: st.stage_end - st.stage_start,
+      ns: fmtHM(session.sleep_start),
+      ne: fmtHM(session.sleep_end),
+      nd: session.duration_ms,
+      date: fmtDateLong(session.sleep_end),
+      tot: session.totals,
+    }).replace(/"/g, '&quot;');
+  }
 
   function filteredSessions() {
     const src = D.sessionsFull || D.sessions;
@@ -578,7 +593,7 @@
       const x2 = cx + Math.cos(a1) * rOuter, y2 = cy + Math.sin(a1) * rOuter;
       const x3 = cx + Math.cos(a0) * rOuter, y3 = cy + Math.sin(a0) * rOuter;
       const p = `M${x0},${y0} A${rInner},${rInner} 0 ${largeArc} 1 ${x1},${y1} L${x2},${y2} A${rOuter},${rOuter} 0 ${largeArc} 0 ${x3},${y3} Z`;
-      stageArcs += `<path d="${p}" fill="${STAGE_COLORS[st.stage_type]}" opacity="0.85"/>`;
+      stageArcs += `<path d="${p}" fill="${STAGE_COLORS[st.stage_type]}" opacity="0.85" data-stip="${stip(st, session)}"/>`;
     }
     let ticks = "";
     for (let h = 0; h < 24; h++) {
@@ -1303,11 +1318,35 @@
       });
     });
     const tip = document.getElementById("hover-tip");
-    document.querySelectorAll("[data-tip]").forEach((el) => {
-      el.addEventListener("mouseenter", () => { tip.textContent = el.dataset.tip; tip.classList.add("show"); });
-      el.addEventListener("mousemove", (e) => { tip.style.left = e.clientX + 14 + "px"; tip.style.top = e.clientY + 14 + "px"; });
-      el.addEventListener("mouseleave", () => tip.classList.remove("show"));
-    });
+    if (_tipHandlers) {
+      app.removeEventListener('mouseover', _tipHandlers.over);
+      app.removeEventListener('mouseout', _tipHandlers.out);
+      app.removeEventListener('mousemove', _tipHandlers.move);
+      app.removeEventListener('click', _tipHandlers.click);
+    }
+    let _tipPinned = false;
+    _tipHandlers = {
+      over: (e) => {
+        if (_tipPinned) return;
+        const el = e.target.closest('[data-stip]');
+        if (el) { try { tip.innerHTML = buildStageTip(JSON.parse(el.dataset.stip)); tip.classList.add('show'); } catch {} }
+        else tip.classList.remove('show');
+      },
+      out: (e) => {
+        if (_tipPinned) return;
+        if (!e.relatedTarget?.closest('[data-stip]')) tip.classList.remove('show');
+      },
+      move: (e) => { tip.style.left = (e.clientX + 16) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; },
+      click: (e) => {
+        const el = e.target.closest('[data-stip]');
+        if (el) { try { tip.innerHTML = buildStageTip(JSON.parse(el.dataset.stip)); tip.classList.add('show'); _tipPinned = true; } catch {} }
+        else { _tipPinned = false; tip.classList.remove('show'); }
+      },
+    };
+    app.addEventListener('mouseover', _tipHandlers.over);
+    app.addEventListener('mouseout', _tipHandlers.out);
+    app.addEventListener('mousemove', _tipHandlers.move);
+    app.addEventListener('click', _tipHandlers.click);
     document.querySelectorAll(".period-pill[data-period]").forEach((el) => {
       el.addEventListener("click", () => {
         periodFilter = el.dataset.period;

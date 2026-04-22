@@ -262,22 +262,44 @@ body::before {
 
 #hover-tip {
   position: fixed;
-  background: var(--ink-3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px 12px;
-  border-radius: 6px;
+  background: oklch(0.14 0.04 280);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 14px 16px;
+  border-radius: 10px;
   font-family: "Geist Mono", monospace;
   font-size: 11px;
   color: var(--paper);
   pointer-events: none;
   z-index: 100;
-  white-space: pre;
   opacity: 0;
-  transition: opacity 0.15s;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  max-width: 260px;
+  transition: opacity 0.12s;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  max-width: 240px;
+  min-width: 180px;
 }
 #hover-tip.show { opacity: 1; }
+.tip-seg { display: flex; align-items: flex-start; gap: 10px; }
+.tip-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; margin-top: 3px; }
+.tip-dot-deep { background: var(--stage-deep); }
+.tip-dot-light { background: var(--stage-light); }
+.tip-dot-rem { background: var(--stage-rem); }
+.tip-dot-awake { background: var(--stage-awake); }
+.tip-seg-body { display: flex; flex-direction: column; gap: 2px; }
+.tip-seg-name { font-size: 12px; color: var(--paper); letter-spacing: 0.02em; }
+.tip-seg-times { color: var(--paper-dim); font-size: 11px; }
+.tip-seg-dur { color: var(--paper); font-size: 13px; font-weight: 600; margin-top: 2px; }
+.tip-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+.tip-night { display: flex; flex-direction: column; gap: 4px; }
+.tip-night-date { font-size: 11px; color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.1em; }
+.tip-night-times { font-size: 11px; color: var(--paper-dim); }
+.tip-night-times b { color: var(--paper); }
+.tip-night-stages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tip-stg { font-size: 10px; color: var(--paper-faint); }
+.tip-stg b { color: var(--paper-dim); }
+.tip-stg-deep { color: oklch(0.72 0.1 260); }
+.tip-stg-rem { color: oklch(0.72 0.1 295); }
+.tip-stg-light { color: oklch(0.72 0.08 280); }
+.tip-stg-awake { color: oklch(0.72 0.1 50); }
 
 #tweaks {
   position: fixed; bottom: 20px; right: 20px;
