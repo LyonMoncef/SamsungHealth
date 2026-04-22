@@ -17,6 +17,18 @@
 | Drift clock — 3 radial views + demo toggle | `static/dashboard.js`, `static/dashboard.css` | [`1dd765e`](#2026-04-22-1dd765e) |
 | Cards full ranking view + bedtime scatter 24h | `static/dashboard.js`, `static/dashboard.css` | [`4882564`](#2026-04-22-4882564) |
 | Metrics month selector + 4 full-history views | `static/dashboard.js`, `static/dashboard.css` | [`7367906`](#2026-04-22-7367906) |
+| Sleep debt — gap-based episode grouping + median target | `static/dashboard.js` | [`89ab953`](#2026-04-22-89ab953) |
+| Chapter 10 — duration regularity (elasticity) | `static/dashboard.js`, `static/dashboard.css` | [`f99283b`](#2026-04-22-f99283b) |
+
+---
+
+## Checkpoint
+
+### `nightfall-dataviz-v1` — 2026-04-22
+[CHECKPOINT] Reference tag for all Nightfall dataviz chapters before refactor.
+- Scope: `static/dashboard.js`, `static/dashboard.css`
+- Chapters included: heatmap (01), stacked timeline (02), hypnogram (03), radial (04), small multiples (05), ridgeline (06), top nights cards (07), agenda (08), metrics + month selector + 4 full-history views (09), elasticity / duration regularity (10), drift clock with animated playback (11)
+- Key features: gap-based episode grouping, personal median sleep target, lag-1 autocorrelation, cycle count, bedtime scatter 24h, drift clock demo mode + smooth interpolation
 
 ---
 
