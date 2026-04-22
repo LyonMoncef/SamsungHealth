@@ -186,7 +186,7 @@
   }
 
   function chapterTimeline() {
-    const days = aggregateByDay(D.sessions);
+    const days = aggregateByDay(filteredSessions());
     const n = (D.sessionsFull || D.sessions).length;
     return `
       <div class="chapter">
@@ -494,6 +494,23 @@
   let driftPlayback = { playing: false, frameFrac: 0, windowSize: 30, speed: 1, rafId: null, frames: null, _src: null, _loading: false };
   let metricsMonth = null;
   let metricsFullLoading = false;
+  let periodFilter = 'full';
+  let periodFullLoading = false;
+
+  function filteredSessions() {
+    const src = D.sessionsFull || D.sessions;
+    if (periodFilter === 'full') return src;
+    const cutoff = Date.now() - (periodFilter === '7d' ? 7 : 30) * 86400000;
+    return src.filter((s) => s.sleep_start.getTime() >= cutoff);
+  }
+
+  function periodFilterBar() {
+    const pills = [['7d','7 jours'], ['30d','30 jours'], ['full','Tout']].map(([v, l]) =>
+      `<button class="period-pill${periodFilter === v ? ' active' : ''}" data-period="${v}">${l}</button>`
+    ).join('');
+    const hint = periodFilter === 'full' && !D.sessionsFull ? ' <span class="period-loading">chargement…</span>' : '';
+    return `<div class="period-filter-bar"><span class="period-filter-label">Période</span><div class="period-pills">${pills}</div>${hint}</div>`;
+  }
 
   function hypnogramSVG(session) {
     const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
@@ -949,7 +966,7 @@
   }
 
   function chapterElasticity() {
-    const src = D.sessionsFull || D.sessions;
+    const src = filteredSessions();
     const data = computeElasticityData(src);
     if (!data) return "";
     const { points, cv, lag1, stdDev, cycleDist, medianCycles, target } = data;
@@ -990,7 +1007,7 @@
   }
 
   function chapterDriftClock() {
-    const realSrc = D.sessionsFull || D.sessions;
+    const realSrc = filteredSessions();
     const src = driftDemoMode ? generateDemoSessions(365) : realSrc;
     const demoLabel = driftDemoMode
       ? `<span class="drift-demo-badge">Demo — regular schedule</span>`
@@ -1067,7 +1084,7 @@
   }
 
   function chapterCards() {
-    const src = D.sessionsFull || D.sessions;
+    const src = filteredSessions();
     const sorted = [...src].sort((a, b) => b.score - a.score);
     const best = sorted.slice(0, 2);
     const worst = sorted.slice(-2).reverse();
@@ -1126,7 +1143,7 @@
   }
 
   function metricsAvailableMonths() {
-    const src = D.sessionsFull || D.sessions;
+    const src = filteredSessions();
     const months = new Set();
     for (const s of src) {
       const d = s.sleep_end;
@@ -1136,7 +1153,7 @@
   }
 
   function sessionsForMetricsMonth() {
-    const src = D.sessionsFull || D.sessions;
+    const src = filteredSessions();
     const months = metricsAvailableMonths();
     if (!months.length) return D.sessions;
     const m = metricsMonth || months[months.length - 1];
@@ -1350,7 +1367,7 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterHypnogram() + chapterTimeline() + chapterRadial() + chapterCards() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterHypnogram() + chapterRadial() + periodFilterBar() + chapterTimeline() + chapterCards() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
@@ -1449,6 +1466,18 @@
       el.addEventListener("mouseenter", () => { tip.textContent = el.dataset.tip; tip.classList.add("show"); });
       el.addEventListener("mousemove", (e) => { tip.style.left = e.clientX + 14 + "px"; tip.style.top = e.clientY + 14 + "px"; });
       el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+    });
+    document.querySelectorAll(".period-pill[data-period]").forEach((el) => {
+      el.addEventListener("click", () => {
+        periodFilter = el.dataset.period;
+        if (periodFilter === 'full' && !D.sessionsFull && !periodFullLoading) {
+          periodFullLoading = true;
+          render();
+          window.loadFullSessions().then(() => { periodFullLoading = false; render(); }).catch(() => { periodFullLoading = false; });
+        } else {
+          render();
+        }
+      });
     });
     document.querySelectorAll(".tweak-pills").forEach((group) => {
       const key = group.dataset.key;

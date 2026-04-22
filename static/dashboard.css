@@ -214,6 +214,14 @@ body::before {
 .night-card .mini-stages .s.awake { background: var(--stage-awake); }
 .night-card .times { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--paper-dim); display: flex; justify-content: space-between; }
 
+.period-filter-bar { display: flex; align-items: center; gap: 18px; padding: 32px 0 8px; border-top: 1px solid rgba(255,255,255,0.07); margin-top: 80px; }
+.period-filter-label { font-family: "Geist Mono", monospace; font-size: 10px; color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.14em; flex-shrink: 0; }
+.period-pills { display: flex; gap: 8px; }
+.period-pill { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--paper-faint); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 5px 16px; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.period-pill:hover { background: rgba(255,255,255,0.07); color: var(--paper-dim); }
+.period-pill.active { background: rgba(123,90,242,0.18); border-color: oklch(0.6 0.15 285); color: oklch(0.82 0.1 285); }
+.period-loading { font-family: "Geist Mono", monospace; font-size: 10px; color: var(--paper-faint); letter-spacing: 0.08em; }
+
 .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .metric-card { background: linear-gradient(180deg, rgba(26, 26, 62, 0.3), rgba(10, 10, 24, 0.1)); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 28px; min-height: 260px; display: flex; flex-direction: column; }
 .metric-card .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
