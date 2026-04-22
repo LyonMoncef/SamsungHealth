@@ -19,7 +19,7 @@
 | Metrics month selector + 4 full-history views | `static/dashboard.js`, `static/dashboard.css` | [`7367906`](#2026-04-22-7367906) |
 | Sleep debt — gap-based episode grouping + median target | `static/dashboard.js` | [`89ab953`](#2026-04-22-89ab953) |
 | Chapter 10 — duration regularity (elasticity) | `static/dashboard.js`, `static/dashboard.css` | [`f99283b`](#2026-04-22-f99283b) |
-| Depth overlay on stacked timeline — remove ridgeline chapter | `static/dashboard.js`, `static/dashboard.css` | [`TBD`](#2026-04-22-TBD) |
+| Depth overlay on stacked timeline — remove ridgeline chapter | `static/dashboard.js`, `static/dashboard.css` | [`ef19349`](#2026-04-22-ef19349) |
 
 ---
 
@@ -35,7 +35,7 @@
 
 ## Changelog
 
-### 2026-04-22 `TBD`
+### 2026-04-22 `ef19349`
 refactor(frontend): depth overlay on stacked timeline, remove ridgeline chapter
 - Added `depthOverlaySVG(day)` — samples depth at 100 points across TSPAN_MS, builds SVG `<path>` with pen-up for silence gaps
 - Depth mapping: `{awake: 0.15, rem: 0.4, light: 0.65, deep: 1.0}` — deeper stages draw higher on the track
