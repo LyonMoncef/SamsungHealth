@@ -338,9 +338,13 @@ footer {
   .panel { padding: 22px 18px; }
 }
 @media (max-width: 560px) {
+  #app { padding: 24px 10px 80px; }
+  .panel { padding: 14px 10px; }
   .hero h1 { font-size: 56px; }
   .top-meta { display: none; }
   .metric-big { font-size: 40px; }
+  .timeline-row { grid-template-columns: 52px 1fr; }
+  .timeline-row .label { font-size: 9px; padding-right: 6px; }
 }
 
 /* Full history chapter */
