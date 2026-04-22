@@ -414,12 +414,13 @@
       const style = diff < 0 ? `right:50%;width:${pct}%` : `left:50%;width:${pct}%`;
       return `<div class="debt-row debt-row-full"><span class="debt-date">${n.mainSeg.sleep_end.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span><div class="debt-bar-track"><div class="debt-bar ${side}" style="${style}"></div></div><span class="debt-val" style="color:${diff<0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${diff>=0?"+":""}${diff.toFixed(1)}h</span></div>`;
     }).join("");
-    const totalDebt = nights.reduce((a, n) => a + (8 - n.totalHours), 0);
+    const target = naturalSleepTarget();
+    const totalDebt = nights.reduce((a, n) => a + (target - n.totalHours), 0);
     const debtSign = totalDebt <= 0 ? "+" : "";
     const content = `
       <div class="debt-summary-row">
         <span class="debt-summary-label">Cumulative debt (all time)</span>
-        <span class="debt-summary-val" style="color:${totalDebt>0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${debtSign}${(-totalDebt).toFixed(1)}h vs 8h/night target</span>
+        <span class="debt-summary-val" style="color:${totalDebt>0?"oklch(0.7 0.17 25)":"oklch(0.78 0.14 155)"}">${debtSign}${(-totalDebt).toFixed(1)}h vs ${target.toFixed(1)}h median target</span>
       </div>
       <div class="debt-full-list">${rows}</div>
     `;
@@ -1127,6 +1128,17 @@
     });
   }
 
+  function naturalSleepTarget() {
+    const src = D.sessionsFull || D.sessions;
+    const episodes = groupByNight(src);
+    if (!episodes.length) return 8;
+    const durations = episodes.map((e) => e.totalHours).sort((a, b) => a - b);
+    const mid = Math.floor(durations.length / 2);
+    return durations.length % 2 === 0
+      ? (durations[mid - 1] + durations[mid]) / 2
+      : durations[mid];
+  }
+
   function metricsAvailableMonths() {
     const src = D.sessionsFull || D.sessions;
     const months = new Set();
@@ -1157,8 +1169,9 @@
     if (!sessions.length) return { debt: 0, regularity: 100, bedtimeStdDev: 0, avgRem: 0, avgDeep: 0, avgLight: 0, avgAwake: 0, avgRestingHR: 0 };
     const nights = groupByNight(sessions);
     const nN = nights.length;
+    const target = naturalSleepTarget();
     let debt = 0;
-    for (const n of nights) debt += 8 - n.totalHours;
+    for (const n of nights) debt += target - n.totalHours;
     const bedMins = nights.map((n) => {
       let m = n.mainSeg.sleep_start.getHours() * 60 + n.mainSeg.sleep_start.getMinutes();
       if (m < 12 * 60) m += 24 * 60;
@@ -1238,9 +1251,10 @@
 
   function debtBars(sessions) {
     const nights = groupByNight(sessions);
+    const target = naturalSleepTarget();
     return nights.map((n) => {
       const wake = n.mainSeg.sleep_end;
-      const diff = n.totalHours - 8;
+      const diff = n.totalHours - target;
       const pct = Math.min(50, Math.abs(diff) * 14);
       const side = diff < 0 ? "deficit" : "surplus";
       const style = diff < 0 ? `right:50%;width:${pct}%` : `left:50%;width:${pct}%`;
@@ -1300,7 +1314,7 @@
           <p class="metric-caption">Each dot is a bedtime. The tighter the cloud, the more your circadian rhythm trusts you.</p>
         </div>
         <div class="metric-card metric-card-clickable" data-view="history/debt">
-          <div class="head"><h3>Sleep debt</h3><span class="hint">vs 8h target</span></div>
+          <div class="head"><h3>Sleep debt</h3><span class="hint">vs ${naturalSleepTarget().toFixed(1)}h median</span></div>
           <div class="metric-big">${debtSign}${(-summary.debt).toFixed(1)}<small>h cumulative</small></div>
           <div class="metric-body" style="margin-top:10px;">${debtBars(mSessions.slice(-30))}</div>
           <p class="metric-caption">Last 30 nights. Bars left are hours short; bars right are hours over.</p>
