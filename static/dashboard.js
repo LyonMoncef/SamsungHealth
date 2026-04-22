@@ -566,13 +566,13 @@
     let ticks = "";
     for (let h = 0; h < 24; h++) {
       const a = -Math.PI / 2 + (h / 24) * Math.PI * 2;
-      const isMajor = h % 6 === 0, isMid = h % 3 === 0;
-      const r1 = rOuter + 4, r2 = rOuter + (isMajor ? 16 : isMid ? 10 : 6);
-      ticks += `<line x1="${cx + Math.cos(a) * r1}" y1="${cy + Math.sin(a) * r1}" x2="${cx + Math.cos(a) * r2}" y2="${cy + Math.sin(a) * r2}" stroke="rgba(255,255,255,${isMajor ? 0.4 : isMid ? 0.2 : 0.1})" stroke-width="1"/>`;
-      if (isMid) {
-        const rt = rOuter + (isMajor ? 32 : 27);
-        ticks += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${isMajor ? 11 : 9}" fill="${isMajor ? "rgba(232,228,245,0.65)" : "rgba(232,228,245,0.32)"}">${pad(h)}</text>`;
-      }
+      const isMajor = h % 6 === 0, isMid = h % 2 === 0;
+      const r1 = rOuter + 4, r2 = rOuter + (isMajor ? 15 : isMid ? 9 : 6);
+      ticks += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${isMajor ? 0.4 : isMid ? 0.18 : 0.08})" stroke-width="1"/>`;
+      const rt = rOuter + (isMajor ? 31 : 26);
+      const fs = isMajor ? 10 : 8;
+      const fill = isMajor ? "rgba(232,228,245,0.65)" : h % 2 === 0 ? "rgba(232,228,245,0.3)" : "rgba(232,228,245,0.18)";
+      ticks += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${pad(h)}</text>`;
     }
     const durHrs = session.duration_hours.toFixed(1);
     const center = `<text x="${cx}" y="${cy - 8}" text-anchor="middle" font-family="Instrument Serif" font-size="48" fill="#e8e4f5">${durHrs}</text><text x="${cx}" y="${cy + 18}" text-anchor="middle" font-family="Geist Mono" font-size="10" fill="#6a6488" letter-spacing="0.15em">HOURS</text>`;
@@ -614,20 +614,16 @@
     let t = "";
     for (let h = 0; h < 24; h++) {
       const a = -Math.PI / 2 + (h / 24) * Math.PI * 2;
-      const isMajor = h % 6 === 0;
-      const isMid3 = h % 3 === 0;
-      const tickLen = isMajor ? 12 : isMid3 ? 7 : 4;
-      const tickOp = isMajor ? 0.45 : isMid3 ? 0.22 : 0.1;
+      const isMajor = h % 6 === 0, isMid = h % 2 === 0;
+      const tickLen = isMajor ? 12 : isMid ? 7 : 4;
+      const tickOp = isMajor ? 0.45 : isMid ? 0.2 : 0.08;
       const r1 = rOuter + 3, r2 = rOuter + 3 + tickLen;
       t += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${tickOp})" stroke-width="${isMajor ? 1.5 : 1}"/>`;
-      if (isMid3) {
-        const rt = rOuter + 22;
-        const label = `${h}h`;
-        const isMidnight = h === 0;
-        const fill = isMidnight ? "rgba(180,150,255,0.9)" : isMajor ? "rgba(232,228,245,0.6)" : "rgba(232,228,245,0.32)";
-        const fs = isMajor ? 11 : 9;
-        t += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${label}</text>`;
-      }
+      const rt = rOuter + (isMajor ? 24 : 20);
+      const isMidnight = h === 0;
+      const fill = isMidnight ? "rgba(180,150,255,0.9)" : isMajor ? "rgba(232,228,245,0.6)" : isMid ? "rgba(232,228,245,0.3)" : "rgba(232,228,245,0.16)";
+      const fs = isMajor ? 11 : 8;
+      t += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${pad(h)}</text>`;
     }
     return t;
   }
@@ -1382,7 +1378,7 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterHypnogram() + chapterTimeline() + chapterRadial() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
