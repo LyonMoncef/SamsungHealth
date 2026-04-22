@@ -353,6 +353,9 @@ footer {
   .metric-big { font-size: 40px; }
   .timeline-row { grid-template-columns: 52px 1fr; }
   .timeline-row .label { font-size: 9px; padding-right: 6px; }
+  .cards-duel { gap: 0 12px; }
+  .night-card .times { flex-direction: column; gap: 2px; font-size: 10px; }
+  .night-card .score .n { font-size: 44px; }
 }
 
 /* Full history chapter */
