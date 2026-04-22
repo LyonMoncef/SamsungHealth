@@ -215,27 +215,6 @@
     return days;
   }
 
-  function depthOverlaySVG(day) {
-    const SAMPLES = 100;
-    const wake = new Date(day.date); wake.setHours(0, 0, 0, 0);
-    const anchorMs = wake.getTime() - (24 - TSTART) * 3600000;
-    const allStages = day.sessions.flatMap((s) => s.stages);
-    const DEPTH = { awake: 0.15, rem: 0.4, light: 0.65, deep: 1.0 };
-    let d = "", drawing = false;
-    for (let k = 0; k <= SAMPLES; k++) {
-      const t = anchorMs + (k / SAMPLES) * TSPAN_MS;
-      let depth = 0;
-      for (const st of allStages) {
-        if (st.stage_start.getTime() <= t && t < st.stage_end.getTime()) { depth = DEPTH[st.stage_type] || 0; break; }
-      }
-      const x = (k / SAMPLES) * 100, y = (1 - depth) * 100;
-      if (depth > 0) { d += drawing ? ` L${x.toFixed(1)},${y.toFixed(1)}` : `M${x.toFixed(1)},${y.toFixed(1)}`; drawing = true; }
-      else { drawing = false; }
-    }
-    if (!d) return "";
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1"><path d="${d}" fill="none" stroke="rgba(210,200,240,0.6)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
-  }
-
   function buildTimelineRow(day) {
     const wake = new Date(day.date); wake.setHours(0, 0, 0, 0);
     const anchorMs = wake.getTime() - (24 - TSTART) * 3600000;
@@ -255,8 +234,7 @@
     if (day.sessions.length > 1) tip += `\n${day.sessions.length} sessions · ${hoursMinutes(totalDur)} total`;
     else if (day.sessions.length === 1) { const s = day.sessions[0]; tip += `\n${fmtHM(s.sleep_start)} → ${fmtHM(s.sleep_end)} · ${hoursMinutes(s.duration_ms)}`; }
     const cls = ["timeline-row", wknd ? "weekend" : "", day.isEmpty ? "empty" : ""].filter(Boolean).join(" ");
-    const overlay = day.isEmpty ? "" : depthOverlaySVG(day);
-    return `<div class="${cls}"${day.isEmpty ? "" : ` data-tip="${tip}"`}><div class="label">${label}</div><div class="track">${segs}${overlay}</div></div>`;
+    return `<div class="${cls}"${day.isEmpty ? "" : ` data-tip="${tip}"`}><div class="label">${label}</div><div class="track">${segs}</div></div>`;
   }
 
   function timelineTicks() {
