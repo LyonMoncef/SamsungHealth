@@ -900,6 +900,165 @@
     return sessions;
   }
 
+  function countCycles(stages) {
+    if (!stages || !stages.length) return 0;
+    const sorted = [...stages].sort((a, b) => a.stage_start - b.stage_start);
+    let cycles = 0, prev = null;
+    for (const st of sorted) {
+      if (st.stage_type === "rem" && prev !== "rem") cycles++;
+      prev = st.stage_type;
+    }
+    return cycles;
+  }
+
+  function computeElasticityData(sessions) {
+    const episodes = groupByNight(sessions);
+    if (episodes.length < 3) return null;
+    const target = naturalSleepTarget();
+    const points = episodes.map((e) => ({
+      hours: e.totalHours,
+      dev: e.totalHours - target,
+      cycles: countCycles(e.segments.flatMap((s) => s.stages)),
+      date: e.mainSeg.sleep_end,
+    }));
+    const hrs = points.map((p) => p.hours);
+    const mean = hrs.reduce((a, b) => a + b, 0) / hrs.length;
+    const stdDev = Math.sqrt(hrs.reduce((a, h) => a + (h - mean) ** 2, 0) / hrs.length);
+    const cv = target > 0 ? stdDev / target : 0;
+    const devs = points.map((p) => p.dev);
+    const meanDev = devs.reduce((a, b) => a + b, 0) / devs.length;
+    let num = 0, den = 0;
+    for (let i = 0; i < devs.length - 1; i++) {
+      num += (devs[i] - meanDev) * (devs[i + 1] - meanDev);
+      den += (devs[i] - meanDev) ** 2;
+    }
+    const lag1 = den > 0 ? num / den : 0;
+    const cycleDist = {};
+    for (const p of points) { const k = Math.min(p.cycles, 7); cycleDist[k] = (cycleDist[k] || 0) + 1; }
+    const sc = [...points].map((p) => p.cycles).sort((a, b) => a - b);
+    const midC = Math.floor(sc.length / 2);
+    const medianCycles = sc.length % 2 === 0 ? (sc[midC - 1] + sc[midC]) / 2 : sc[midC];
+    return { points, cv, lag1, stdDev, cycleDist, medianCycles, target };
+  }
+
+  function elasticityBandSVG(points) {
+    const barW = 5, gap = 1, padL = 44, padR = 12, padT = 20, padB = 28;
+    const n = points.length;
+    const svgW = padL + n * (barW + gap) + padR;
+    const svgH = 200;
+    const innerH = svgH - padT - padB;
+    const maxDev = Math.max(4, ...points.map((p) => Math.abs(p.dev)));
+    const baseline = padT + innerH / 2;
+    const yScale = (v) => baseline - (v / maxDev) * (innerH / 2);
+    let bars = "";
+    for (let i = 0; i < n; i++) {
+      const p = points[i];
+      const x = padL + i * (barW + gap);
+      const y1 = yScale(p.dev);
+      const barY = Math.min(baseline, y1);
+      const barH = Math.abs(baseline - y1) || 1;
+      const col = p.dev < 0 ? "oklch(0.58 0.18 260)" : "oklch(0.78 0.15 60)";
+      bars += `<rect x="${x}" y="${barY.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${col}" opacity="0.75" rx="1"/>`;
+    }
+    let yTicks = "";
+    for (const v of [-4, -2, 0, 2, 4]) {
+      if (Math.abs(v) > maxDev + 0.5) continue;
+      const y = yScale(v);
+      yTicks += `<text x="${padL - 4}" y="${y}" dominant-baseline="middle" text-anchor="end" fill="#6a6488" font-family="Geist Mono,monospace" font-size="8">${v > 0 ? "+" : ""}${v}h</text>`;
+      yTicks += `<line x1="${padL}" x2="${svgW - padR}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,${v === 0 ? 0.14 : 0.04})"/>`;
+    }
+    let xTicks = "";
+    let prevM = null;
+    for (let i = 0; i < n; i++) {
+      const d = points[i].date;
+      const mk = `${d.getFullYear()}-${d.getMonth()}`;
+      if (mk !== prevM) {
+        const x = padL + i * (barW + gap);
+        xTicks += `<text x="${x}" y="${svgH - 6}" fill="#4a4468" font-family="Geist Mono,monospace" font-size="7">${d.toLocaleDateString("en-US", { month: "short", year: "2-digit" })}</text>`;
+        prevM = mk;
+      }
+    }
+    return `<div style="overflow-x:auto;overflow-y:visible"><svg viewBox="0 0 ${svgW} ${svgH}" style="width:${Math.max(100, svgW)}px;height:${svgH}px;display:block">${yTicks}${xTicks}${bars}</svg></div>`;
+  }
+
+  function cycleDistSVG(cycleDist, totalN) {
+    const w = 260, h = 176, padL = 20, padR = 52, padT = 8, padB = 8;
+    const innerW = w - padL - padR, rowH = (h - padT - padB) / 7;
+    const maxC = Math.max(1, ...Object.values(cycleDist));
+    let rows = "";
+    for (let i = 0; i < 7; i++) {
+      const k = i + 1;
+      const count = cycleDist[k] || 0;
+      const bw = (count / maxC) * innerW;
+      const y = padT + i * rowH;
+      const isTarget = k === 4 || k === 5;
+      const col = isTarget ? "oklch(0.78 0.14 155)" : "oklch(0.58 0.14 275)";
+      rows += `<rect x="${padL}" y="${y + 2}" width="${bw.toFixed(1)}" height="${rowH - 4}" fill="${col}" opacity="${isTarget ? 0.75 : 0.4}" rx="2"/>`;
+      rows += `<text x="${padL - 4}" y="${y + rowH / 2}" dominant-baseline="middle" text-anchor="end" fill="#6a6488" font-family="Geist Mono,monospace" font-size="8">${k === 7 ? "7+" : k}</text>`;
+      if (count > 0) rows += `<text x="${padL + bw + 4}" y="${y + rowH / 2}" dominant-baseline="middle" fill="${isTarget ? "oklch(0.78 0.14 155)" : "#6a6488"}" font-family="Geist Mono,monospace" font-size="8">${((count / totalN) * 100).toFixed(0)}%</text>`;
+    }
+    return `<svg viewBox="0 0 ${w} ${h}" style="width:${w}px;height:${h}px">${rows}</svg>`;
+  }
+
+  function lagScatterSVG(points) {
+    const w = 240, h = 240, padL = 32, padR = 12, padT = 12, padB = 32;
+    const innerW = w - padL - padR, innerH = h - padT - padB;
+    const devs = points.map((p) => p.dev);
+    const maxD = Math.max(4, ...devs.map(Math.abs));
+    const sx = (v) => padL + ((v + maxD) / (2 * maxD)) * innerW;
+    const sy = (v) => padT + innerH - ((v + maxD) / (2 * maxD)) * innerH;
+    let dots = "";
+    for (let i = 0; i < devs.length - 1; i++) {
+      const elastic = (devs[i] < 0 && devs[i + 1] > 0) || (devs[i] > 0 && devs[i + 1] < 0);
+      dots += `<circle cx="${sx(devs[i]).toFixed(1)}" cy="${sy(devs[i + 1]).toFixed(1)}" r="2.5" fill="${elastic ? "oklch(0.78 0.15 60)" : "oklch(0.58 0.14 275)"}" opacity="0.45"/>`;
+    }
+    const cx = sx(0), cy = sy(0);
+    const axes = `<line x1="${padL}" x2="${w-padR}" y1="${cy}" y2="${cy}" stroke="rgba(255,255,255,0.1)"/><line x1="${cx}" x2="${cx}" y1="${padT}" y2="${padT+innerH}" stroke="rgba(255,255,255,0.1)"/>`;
+    const labels = `<text x="${padL + innerW/2}" y="${h-6}" text-anchor="middle" fill="#4a4468" font-family="Geist Mono,monospace" font-size="7">night n deviation</text><text x="8" y="${padT+innerH/2}" dominant-baseline="middle" text-anchor="middle" fill="#4a4468" font-family="Geist Mono,monospace" font-size="7" transform="rotate(-90 8 ${padT+innerH/2})">night n+1</text>`;
+    return `<svg viewBox="0 0 ${w} ${h}" style="width:${w}px;height:${h}px">${axes}${labels}${dots}</svg>`;
+  }
+
+  function chapterElasticity() {
+    const src = D.sessionsFull || D.sessions;
+    const data = computeElasticityData(src);
+    if (!data) return "";
+    const { points, cv, lag1, stdDev, cycleDist, medianCycles, target } = data;
+    let shape, pattern;
+    if (cv < 0.15) shape = "Rigid — duration barely varies.";
+    else if (cv < 0.30) shape = "Flexible — moderate duration variability.";
+    else shape = "Elastic — duration swings significantly.";
+    if (lag1 < -0.25) pattern = "Strong compression–recovery cycle: short nights reliably trigger longer ones.";
+    else if (lag1 < 0.10) pattern = "Weak autocorrelation — consecutive durations are mostly independent.";
+    else pattern = "Streaky — short nights tend to cluster together.";
+    return `
+      <div class="chapter">
+        <div class="chapter-label"><span class="chapter-num">10</span><span class="eyebrow">Duration regularity</span></div>
+        <h2>Wood, spring, or <em>elastic band</em>?</h2>
+        <p class="chapter-desc">${shape} ${pattern}</p>
+      </div>
+      <div class="elasticity-stats">
+        <div class="el-stat"><span class="el-stat-val">${(cv * 100).toFixed(0)}<small>%</small></span><span class="el-stat-label">Coefficient of variation</span></div>
+        <div class="el-stat"><span class="el-stat-val">${lag1.toFixed(2)}</span><span class="el-stat-label">Lag-1 autocorrelation</span></div>
+        <div class="el-stat"><span class="el-stat-val">${stdDev.toFixed(1)}<small>h</small></span><span class="el-stat-label">Duration std dev</span></div>
+        <div class="el-stat"><span class="el-stat-val">${medianCycles.toFixed(1)}</span><span class="el-stat-label">Median cycles / night</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Deviation from ${target.toFixed(1)}h median target · ${points.length} episodes · blue = compression · amber = extension</div>
+        ${elasticityBandSVG(points)}
+      </div>
+      <div class="elasticity-bottom">
+        <div class="panel">
+          <div class="panel-label">Sleep cycles per episode · green = healthy range (4–5)</div>
+          ${cycleDistSVG(cycleDist, points.length)}
+        </div>
+        <div class="panel">
+          <div class="panel-label">Lag-1 · amber = compression→extension · violet = same direction</div>
+          ${lagScatterSVG(points)}
+        </div>
+      </div>
+    `;
+  }
+
   function chapterDriftClock() {
     const realSrc = D.sessionsFull || D.sessions;
     const src = driftDemoMode ? generateDemoSessions(365) : realSrc;
@@ -1364,7 +1523,7 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterRidgeline() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterHeatmap() + chapterTimeline() + chapterHypnogram() + chapterRadial() + chapterSmallMultiples() + chapterRidgeline() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
