@@ -572,8 +572,14 @@
           <div class="hypno-date">${fmtDateLong(s.sleep_end)}</div>
           <div class="hypno-controls"><button id="hypno-prev">‹</button><button id="hypno-next">›</button></div>
         </div>
+        <div class="hypno-times">
+          <div class="hypno-time-block"><div class="hypno-time-val">${fmtHM(s.sleep_start)}</div><div class="hypno-time-label">Couché</div></div>
+          <div class="hypno-time-arrow">→</div>
+          <div class="hypno-time-block"><div class="hypno-time-val">${fmtHM(s.sleep_end)}</div><div class="hypno-time-label">Réveil</div></div>
+          <div class="hypno-time-dur">${hoursMinutes(s.duration_ms)}</div>
+        </div>
         <div class="hypno-stats">
-          ${stats.map((st) => `<div class="hypno-stat"><div class="k"><span class="sw" style="background:${STAGE_COLORS[st.stage]}"></span>${st.k}</div><div class="v">${st.v}</div><div class="pct">${Math.round(st.pct * 100)}% of night</div></div>`).join("")}
+          ${stats.map((st) => `<div class="hypno-stat"><div class="k"><span class="sw" style="background:${STAGE_COLORS[st.stage]}"></span>${st.k}</div><div class="v">${st.v}</div><div class="pct">${Math.round(st.pct * 100)}%</div></div>`).join("")}
         </div>
         <div class="hypno-svg-wrap">${hypnogramSVG(s)}</div>
       </div>

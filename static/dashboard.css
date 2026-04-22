@@ -169,11 +169,17 @@ body::before {
 .hypno-controls button { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--paper); width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-family: "Geist Mono", monospace; transition: background 0.15s; }
 .hypno-controls button:hover { background: rgba(255, 255, 255, 0.08); }
 
-.hypno-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
-.hypno-stat { display: flex; flex-direction: column; gap: 6px; }
-.hypno-stat .k { display: flex; align-items: center; gap: 8px; font-family: "Geist Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--paper-faint); }
-.hypno-stat .k .sw { width: 10px; height: 10px; border-radius: 2px; }
-.hypno-stat .v { font-family: "Instrument Serif", serif; font-size: 28px; letter-spacing: -0.01em; }
+.hypno-times { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.hypno-time-block { display: flex; flex-direction: column; gap: 4px; }
+.hypno-time-val { font-family: "Instrument Serif", serif; font-size: 42px; font-style: italic; letter-spacing: -0.02em; line-height: 1; }
+.hypno-time-label { font-family: "Geist Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--paper-faint); }
+.hypno-time-arrow { font-family: "Geist Mono", monospace; font-size: 18px; color: var(--paper-faint); flex-shrink: 0; }
+.hypno-time-dur { font-family: "Geist Mono", monospace; font-size: 13px; color: var(--paper-dim); margin-left: auto; }
+.hypno-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.hypno-stat { display: flex; flex-direction: column; gap: 5px; }
+.hypno-stat .k { display: flex; align-items: center; gap: 6px; font-family: "Geist Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--paper-dim); }
+.hypno-stat .k .sw { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.hypno-stat .v { font-family: "Instrument Serif", serif; font-size: 26px; letter-spacing: -0.01em; }
 .hypno-stat .pct { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--paper-dim); }
 .hypno-svg-wrap { position: relative; width: 100%; }
 .hypno-svg { width: 100%; display: block; }
@@ -334,6 +340,8 @@ footer {
   .radial-wrap { grid-template-columns: 1fr; }
   .metrics-grid { grid-template-columns: 1fr; }
   .hypno-stats { grid-template-columns: repeat(2, 1fr); }
+  .hypno-time-val { font-size: 34px; }
+  .hypno-time-dur { font-size: 12px; }
   .chapter { margin-top: 80px; }
   .panel { padding: 22px 18px; }
 }
