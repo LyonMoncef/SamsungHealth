@@ -569,8 +569,8 @@
       const isMajor = h % 6 === 0, isMid = h % 2 === 0;
       const r1 = rOuter + 4, r2 = rOuter + (isMajor ? 15 : isMid ? 9 : 6);
       ticks += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${isMajor ? 0.4 : isMid ? 0.18 : 0.08})" stroke-width="1"/>`;
-      const rt = rOuter + (isMajor ? 31 : 26);
-      const fs = isMajor ? 10 : 8;
+      const rt = rOuter + (isMajor ? 36 : 30);
+      const fs = isMajor ? 13 : 10;
       const fill = isMajor ? "rgba(232,228,245,0.65)" : h % 2 === 0 ? "rgba(232,228,245,0.3)" : "rgba(232,228,245,0.18)";
       ticks += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${pad(h)}</text>`;
     }
@@ -619,10 +619,10 @@
       const tickOp = isMajor ? 0.45 : isMid ? 0.2 : 0.08;
       const r1 = rOuter + 3, r2 = rOuter + 3 + tickLen;
       t += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${tickOp})" stroke-width="${isMajor ? 1.5 : 1}"/>`;
-      const rt = rOuter + (isMajor ? 24 : 20);
+      const rt = rOuter + (isMajor ? 28 : 23);
       const isMidnight = h === 0;
       const fill = isMidnight ? "rgba(180,150,255,0.9)" : isMajor ? "rgba(232,228,245,0.6)" : isMid ? "rgba(232,228,245,0.3)" : "rgba(232,228,245,0.16)";
-      const fs = isMajor ? 11 : 8;
+      const fs = isMajor ? 13 : 10;
       t += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${pad(h)}</text>`;
     }
     return t;
