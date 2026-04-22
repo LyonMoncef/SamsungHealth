@@ -190,32 +190,29 @@ body::before {
 .radial-kv dd { color: var(--paper); }
 
 
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
-.night-card { background: linear-gradient(165deg, rgba(83, 52, 131, 0.12), rgba(10, 10, 24, 0.1)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 22px 20px 20px; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; }
-.night-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.14); }
-.night-card .rank { font-family: "Geist Mono", monospace; font-size: 10px; color: var(--paper-faint); letter-spacing: 0.14em; text-transform: uppercase; }
-.night-card .date { font-family: "Instrument Serif", serif; font-size: 22px; font-style: italic; margin-top: 4px; margin-bottom: 18px; }
+.cards-duel { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0 32px; }
+.cards-duel-sep { background: rgba(255,255,255,0.07); }
+.cards-col { display: flex; flex-direction: column; gap: 16px; }
+.cards-col-label { font-family: "Geist Mono", monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.cards-col.best .cards-col-label { color: oklch(0.72 0.14 150); }
+.cards-col.worst .cards-col-label { color: oklch(0.72 0.14 35); }
+.night-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 22px 20px 20px; border-left-width: 3px; transition: transform 0.2s; }
+.night-card:hover { transform: translateY(-2px); }
+.night-card.best { border-left-color: oklch(0.72 0.14 150); }
+.night-card.worst { border-left-color: oklch(0.72 0.14 35); }
+.night-card .date { font-family: "Instrument Serif", serif; font-size: 20px; font-style: italic; margin-bottom: 14px; }
 .night-card .score { display: flex; align-items: baseline; gap: 4px; }
-.night-card .score .n { font-family: "Instrument Serif", serif; font-size: 64px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; }
+.night-card .score .n { font-family: "Instrument Serif", serif; font-size: 56px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; }
+.night-card.best .score .n { color: oklch(0.78 0.12 150); }
+.night-card.worst .score .n { color: oklch(0.78 0.12 35); }
 .night-card .score .label { font-family: "Geist Mono", monospace; font-size: 10px; color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.12em; }
-.night-card .mini-stages { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 18px 0 12px; background: rgba(255, 255, 255, 0.04); }
+.night-card .mini-stages { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 14px 0 10px; background: rgba(255,255,255,0.04); }
 .night-card .mini-stages .s { height: 100%; }
 .night-card .mini-stages .s.deep { background: var(--stage-deep); }
 .night-card .mini-stages .s.light { background: var(--stage-light); }
 .night-card .mini-stages .s.rem { background: var(--stage-rem); }
 .night-card .mini-stages .s.awake { background: var(--stage-awake); }
 .night-card .times { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--paper-dim); display: flex; justify-content: space-between; }
-.night-card::after { content: ""; position: absolute; top: 16px; right: 18px; width: 4px; height: 4px; border-radius: 50%; background: var(--star); box-shadow: 0 0 6px var(--star), 16px 8px 0 -1px rgba(232, 228, 245, 0.5), 28px -2px 0 -2px rgba(232, 228, 245, 0.3); }
-
-.agenda-day-head { font-family: "Geist Mono", monospace; font-size: 10px; text-align: center; padding-bottom: 12px; color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid rgba(255, 255, 255, 0.06); margin-bottom: 8px; }
-.agenda-day-head .num { display: block; font-family: "Instrument Serif", serif; font-size: 24px; color: var(--paper); margin-top: 4px; text-transform: none; letter-spacing: 0; }
-.agenda-day { position: relative; background: rgba(255, 255, 255, 0.015); border-radius: 6px; }
-.agenda-day::before { content: ""; position: absolute; left: 0; right: 0; top: 33.33%; height: 1px; background: rgba(255, 255, 255, 0.06); }
-.agenda-seg { position: absolute; left: 4px; right: 4px; border-radius: 3px; }
-.agenda-seg.deep { background: var(--stage-deep); }
-.agenda-seg.light { background: var(--stage-light); }
-.agenda-seg.rem { background: var(--stage-rem); }
-.agenda-seg.awake { background: var(--stage-awake); }
 
 .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .metric-card { background: linear-gradient(180deg, rgba(26, 26, 62, 0.3), rgba(10, 10, 24, 0.1)); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 28px; min-height: 260px; display: flex; flex-direction: column; }

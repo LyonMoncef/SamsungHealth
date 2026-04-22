@@ -1060,60 +1060,32 @@
     `;
   }
 
-  function nightCardHTML(s, rank) {
+  function nightCardHTML(s, pole) {
     const total = s.duration_ms;
     const segs = ["deep", "light", "rem", "awake"].map((k) => `<div class="s ${k}" style="width:${(s.totals[k] / total) * 100}%"></div>`).join("");
-    return `<div class="night-card"><div class="rank">Rank ${pad(rank)}</div><div class="date">${fmtDateLong(s.sleep_end)}</div><div class="score"><span class="n">${s.score}</span><span class="label">/ 100</span></div><div class="mini-stages">${segs}</div><div class="times"><span>${fmtHM(s.sleep_start)}</span><span>${hoursMinutes(s.duration_ms)}</span><span>${fmtHM(s.sleep_end)}</span></div></div>`;
+    return `<div class="night-card ${pole}"><div class="date">${fmtDateLong(s.sleep_end)}</div><div class="score"><span class="n">${s.score}</span><span class="label">/ 100</span></div><div class="mini-stages">${segs}</div><div class="times"><span>${fmtHM(s.sleep_start)}</span><span>${hoursMinutes(s.duration_ms)}</span><span>${fmtHM(s.sleep_end)}</span></div></div>`;
   }
 
   function chapterCards() {
     const src = D.sessionsFull || D.sessions;
-    const top = [...src].sort((a, b) => b.score - a.score).slice(0, 4);
+    const sorted = [...src].sort((a, b) => b.score - a.score);
+    const best = sorted.slice(0, 2);
+    const worst = sorted.slice(-2).reverse();
     return `
       <div class="chapter">
-        <div class="chapter-label"><span class="chapter-num">07</span><span class="eyebrow">Top nights</span></div>
-        <h2>The nights that <em>earned their stars</em>.</h2>
-        <p class="chapter-desc">Your four highest-scoring nights — a blend of duration, efficiency, REM%, and low fragmentation.</p>
+        <div class="chapter-label"><span class="chapter-num">07</span><span class="eyebrow">Best &amp; worst nights</span></div>
+        <h2>The two extremes of your <em>sleep archive</em>.</h2>
+        <p class="chapter-desc">Score combines duration, REM%, deep sleep%, and fragmentation.</p>
       </div>
-      <div class="cards-grid">${top.map((s, i) => nightCardHTML(s, i + 1)).join("")}</div>
-    `;
-  }
-
-  function chapterAgenda() {
-    const last7 = D.sessions.slice(-7);
-    const startHour = 18, totalH = 18;
-    const hoursList = [];
-    for (let i = 0; i <= totalH; i++) {
-      const hour = (startHour + i) % 24;
-      const topPct = (i / totalH) * 100;
-      hoursList.push(`<div style="position:absolute;top:${topPct}%;right:8px;transform:translateY(-50%);font-family:'Geist Mono',monospace;font-size:9px;color:#6a6488;">${pad(hour)}:00</div>`);
-    }
-    const heads = last7.map((s) => {
-      const wake = new Date(s.sleep_end);
-      return `<div class="agenda-day-head">${fmtDay(wake)}<span class="num">${pad(wake.getDate())}</span></div>`;
-    }).join("");
-    const days = last7.map((s) => {
-      const wake = new Date(s.sleep_end); wake.setHours(0, 0, 0, 0);
-      const anchor = wake.getTime() - (24 - startHour) * 3600000;
-      const spanMs = totalH * 3600000;
-      const segs = s.stages.map((st) => {
-        const topPct = ((st.stage_start.getTime() - anchor) / spanMs) * 100;
-        const heightPct = ((st.stage_end - st.stage_start) / spanMs) * 100;
-        return `<div class="agenda-seg ${st.stage_type}" style="top:${topPct}%;height:${heightPct}%"></div>`;
-      }).join("");
-      return `<div class="agenda-day" style="height:460px;">${segs}</div>`;
-    }).join("");
-    return `
-      <div class="chapter">
-        <div class="chapter-label"><span class="chapter-num">08</span><span class="eyebrow">Week agenda</span></div>
-        <h2>Your last seven nights, <em>stood upright</em>.</h2>
-        <p class="chapter-desc">Time flows downward. Weekends push bedtime later.</p>
-      </div>
-      <div class="panel">
-        <div style="display:grid;grid-template-columns:60px repeat(7,1fr);gap:2px;">
-          <div></div>${heads}
-          <div style="position:relative; height:460px; border-right:1px solid rgba(255,255,255,0.06);">${hoursList.join("")}</div>
-          ${days}
+      <div class="cards-duel">
+        <div class="cards-col best">
+          <div class="cards-col-label">Best</div>
+          ${best.map((s) => nightCardHTML(s, "best")).join("")}
+        </div>
+        <div class="cards-duel-sep"></div>
+        <div class="cards-col worst">
+          <div class="cards-col-label">Worst</div>
+          ${worst.map((s) => nightCardHTML(s, "worst")).join("")}
         </div>
       </div>
     `;
@@ -1378,7 +1350,7 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterHypnogram() + chapterTimeline() + chapterRadial() + chapterCards() + chapterAgenda() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + chapterHypnogram() + chapterTimeline() + chapterRadial() + chapterCards() + chapterMetrics() + chapterElasticity() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
