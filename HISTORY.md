@@ -20,6 +20,7 @@
 | Sleep debt — gap-based episode grouping + median target | `static/dashboard.js` | [`89ab953`](#2026-04-22-89ab953) |
 | Chapter 10 — duration regularity (elasticity) | `static/dashboard.js`, `static/dashboard.css` | [`f99283b`](#2026-04-22-f99283b) |
 | Depth overlay on stacked timeline — remove ridgeline chapter | `static/dashboard.js`, `static/dashboard.css` | [`ef19349`](#2026-04-22-ef19349) |
+| Remove heatmap + small multiples; radial 3h tick labels | `static/dashboard.js`, `static/dashboard.css` | [`f818ae4`](#2026-04-22-f818ae4) |
 
 ---
 
@@ -34,6 +35,13 @@
 ---
 
 ## Changelog
+
+### 2026-04-22 `f818ae4`
+refactor(frontend): remove heatmap + small multiples, add 3h tick labels to radial clock
+- Removed `chapterHeatmap()` and all heatmap CSS (`.heatmap-wrap`, `.heatmap`, `.cell`, `.hour-head`, `.day-label`)
+- Removed `smCell()`, `chapterSmallMultiples()`, `.sm-cell` click listener in `bindEvents()`, and all small multiples CSS
+- Removed both chapters from `render()` pipeline
+- `radialSVG`: added tick labels at every 3h mark (03, 09, 15, 21) at font-size 9 / opacity 0.32, alongside existing 6h major labels (00, 06, 12, 18) at font-size 11 / opacity 0.65; uses `dominant-baseline="middle"` for correct vertical centering
 
 ### 2026-04-22 `ef19349`
 refactor(frontend): depth overlay on stacked timeline, remove ridgeline chapter
