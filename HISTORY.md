@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `f803fd8`
+feat(phase-a.5): modules render cartographer (anchor_resolver + note_renderer + orphan_detector + index_generator) + 14 tests GREEN
+- Added `agents/cartographer/anchor_resolver.py` — `resolve_anchors_for_file()` retourne `ResolveResult` (3 buckets : `active` avec lignes refreshed, `orphans` avec last_seen, `unmatched` slugs en code sans annotation file)
+- Added `agents/cartographer/note_renderer.py` — `render_note()` produit la note vault complète : frontmatter (type/language/git_blob/last_synced ISO-Z/loc/annotations/imports/exports/tags) + H1 + Code mirror callout + orphan warning callout (si orphans) + code interleaved avec `> [!note]+` callouts au bon endroit (single = après marker line, range = après end_line) + appendix symbols/imports/exports
+- Added `agents/cartographer/orphan_detector.py` — `detect_orphans()` retourne `OrphanDiff` (new_orphans : annotation active mais slug absent du code ; resolved_orphans : annotation status=orphan mais marker revenu)
+- Added `agents/cartographer/index_generator.py` — `generate_orphans_index()`, `generate_coverage_index()` (source files sans annotation), `generate_tags_index()` (groupe par tag)
+- Tests : 124/124 GREEN (110 existants + 4 anchor_resolver + 4 note_renderer + 3 orphan_detector + 3 index_generator)
+- Phase A.5 task #6 ✓ ; reste #7 CLI bootstrap, #8 subagent+skills, #9 hook, #10 changelog gen, #11 plan-keeper extension
+
 ### 2026-04-23 `3032836`
 feat(phase-a.5): contrats Pydantic cartographer + 4 modules core (markers/walker/IO/injector) + 42 tests GREEN
 - Added `agents/contracts/cartographer.py` (7 types) — `AnchorKind`, `AnchorLocation`, `Annotation` (slug regex `^[a-z0-9][a-z0-9-]{2,40}$`), `CartographyBrief` (mode full/diff/check), `CartographyReport` (overall complete/partial/failed, next_recommended commit/review/anchor-review/none), `AnnotationOpBrief`/`Report`
