@@ -1,4 +1,13 @@
 from .base import AgentInputBase, AgentOutputBase, NextRecommended
+from .cartographer import (
+    AnchorKind,
+    AnchorLocation,
+    Annotation,
+    AnnotationOpBrief,
+    AnnotationOpReport,
+    CartographyBrief,
+    CartographyReport,
+)
 from .coder import CodeArtifact, CodeBrief
 from .documenter import DocArtifact, DocBrief
 from .git_steward import GitOperationBrief, GitOperationReport
@@ -46,4 +55,11 @@ __all__ = [
     "PlanAuditReport",
     "PlanDeviation",
     "DeviationType",
+    "CartographyBrief",
+    "CartographyReport",
+    "AnnotationOpBrief",
+    "AnnotationOpReport",
+    "Annotation",
+    "AnchorLocation",
+    "AnchorKind",
 ]

@@ -7,3 +7,6 @@ tree-sitter>=0.21.0
 tree-sitter-python>=0.21.0
 tree-sitter-javascript>=0.21.0
 tree-sitter-kotlin>=0.3.0
+
+# code-cartographer — annotation files frontmatter (YAML)
+PyYAML>=6.0

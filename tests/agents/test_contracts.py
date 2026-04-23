@@ -604,6 +604,292 @@ class TestPlanKeeper:
 
 
 # ---------------------------------------------------------------------------
+# cartographer (Phase A.5 — code-as-vault)
+# ---------------------------------------------------------------------------
+
+class TestCartographer:
+    # --- AnchorLocation ---------------------------------------------------
+
+    def test_anchor_single_valid(self):
+        from agents.contracts.cartographer import AnchorLocation
+
+        a = AnchorLocation(file="server/routers/sleep.py", kind="single", line=21)
+        assert a.kind == "single"
+        assert a.line == 21
+        assert a.begin_line is None
+        assert a.end_line is None
+
+    def test_anchor_range_valid(self):
+        from agents.contracts.cartographer import AnchorLocation
+
+        a = AnchorLocation(
+            file="server/routers/sleep.py", kind="range",
+            begin_line=18, end_line=30,
+        )
+        assert a.kind == "range"
+        assert a.begin_line == 18
+        assert a.end_line == 30
+        assert a.line is None
+
+    def test_anchor_kind_literal_enforced(self):
+        from agents.contracts.cartographer import AnchorLocation
+
+        with pytest.raises(ValidationError):
+            AnchorLocation(file="x.py", kind="weird", line=1)
+
+    # --- Annotation -------------------------------------------------------
+
+    def test_annotation_minimal_valid(self):
+        from agents.contracts.cartographer import Annotation, AnchorLocation
+
+        ann = Annotation(
+            slug="sleep-perf-cap",
+            file_path="docs/vault/annotations/server/routers/sleep/sleep-perf-cap.md",
+            anchors=[AnchorLocation(file="server/routers/sleep.py", kind="single", line=21)],
+            scope="single-file",
+            status="active",
+            created_by="human",
+            references={"issue": 142},
+        )
+        assert ann.slug == "sleep-perf-cap"
+        assert ann.scope == "single-file"
+
+    def test_annotation_slug_pattern_enforced(self):
+        from agents.contracts.cartographer import Annotation, AnchorLocation
+
+        anchors = [AnchorLocation(file="x.py", kind="single", line=1)]
+        common = dict(
+            file_path="docs/vault/annotations/x.md",
+            anchors=anchors, scope="single-file", status="active",
+            created_by="human", references={},
+        )
+
+        for good in ("sleep-perf-cap", "n1-query-risk", "abc", "a1b", "x" * 41):
+            Annotation(slug=good, **common)
+
+        for bad in ("Sleep_Perf", "x", "_temp", "ab", "x" * 42, "UPPER", "with space", "kebab--ok"):
+            if bad == "kebab--ok":
+                # double-dash is allowed by the regex; skip false positive
+                continue
+            with pytest.raises(ValidationError):
+                Annotation(slug=bad, **common)
+
+    def test_annotation_scope_literal(self):
+        from agents.contracts.cartographer import Annotation, AnchorLocation
+
+        anchors = [AnchorLocation(file="x.py", kind="single", line=1)]
+        common = dict(
+            slug="abc-def", file_path="x.md", anchors=anchors,
+            status="active", created_by="human", references={},
+        )
+        for s in ("single-file", "cross-file"):
+            Annotation(scope=s, **common)
+        with pytest.raises(ValidationError):
+            Annotation(scope="multi-galaxy", **common)
+
+    def test_annotation_status_literal(self):
+        from agents.contracts.cartographer import Annotation, AnchorLocation
+
+        anchors = [AnchorLocation(file="x.py", kind="single", line=1)]
+        common = dict(
+            slug="abc-def", file_path="x.md", anchors=anchors,
+            scope="single-file", created_by="human", references={},
+        )
+        for s in ("active", "orphan", "archived"):
+            Annotation(status=s, **common)
+        with pytest.raises(ValidationError):
+            Annotation(status="ghost", **common)
+
+    def test_annotation_created_by_literal(self):
+        from agents.contracts.cartographer import Annotation, AnchorLocation
+
+        anchors = [AnchorLocation(file="x.py", kind="single", line=1)]
+        common = dict(
+            slug="abc-def", file_path="x.md", anchors=anchors,
+            scope="single-file", status="active", references={},
+        )
+        for s in ("human", "agent"):
+            Annotation(created_by=s, **common)
+        with pytest.raises(ValidationError):
+            Annotation(created_by="alien", **common)
+
+    # --- CartographyBrief -------------------------------------------------
+
+    def test_cartography_brief_minimal_valid(self):
+        from agents.contracts.cartographer import CartographyBrief
+
+        b = CartographyBrief(
+            task_id="t", invoked_by="h", work_dir="w",
+            mode="full",
+        )
+        assert b.mode == "full"
+        assert b.languages == ["python", "javascript", "kotlin"]
+        assert b.diff_files == []
+        assert b.detect_orphans is True
+        assert b.update_last_verified is True
+
+    def test_cartography_brief_mode_literal(self):
+        from agents.contracts.cartographer import CartographyBrief
+
+        for m in ("full", "diff", "check"):
+            CartographyBrief(task_id="t", invoked_by="h", work_dir="w", mode=m)
+        with pytest.raises(ValidationError):
+            CartographyBrief(task_id="t", invoked_by="h", work_dir="w", mode="partial")
+
+    def test_cartography_brief_languages_literal(self):
+        from agents.contracts.cartographer import CartographyBrief
+
+        CartographyBrief(
+            task_id="t", invoked_by="h", work_dir="w",
+            mode="full", languages=["python"],
+        )
+        with pytest.raises(ValidationError):
+            CartographyBrief(
+                task_id="t", invoked_by="h", work_dir="w",
+                mode="full", languages=["cobol"],
+            )
+
+    # --- CartographyReport ------------------------------------------------
+
+    def test_cartography_report_valid(self):
+        from agents.contracts.cartographer import CartographyReport
+
+        r = CartographyReport(
+            task_id="t", agent="code-cartographer", status="success", summary="ok",
+            notes_generated=34, notes_updated=0, notes_skipped=0,
+            annotations_processed=0,
+            new_orphans=[], resolved_orphans=[],
+            parse_errors=[],
+            overall="complete",
+        )
+        assert r.overall == "complete"
+        assert r.notes_generated == 34
+
+    def test_cartography_report_overall_literal(self):
+        from agents.contracts.cartographer import CartographyReport
+
+        for v in ("complete", "partial", "failed"):
+            CartographyReport(
+                task_id="t", agent="code-cartographer", status="success", summary="s",
+                notes_generated=0, notes_updated=0, notes_skipped=0,
+                annotations_processed=0,
+                new_orphans=[], resolved_orphans=[], parse_errors=[],
+                overall=v,
+            )
+        with pytest.raises(ValidationError):
+            CartographyReport(
+                task_id="t", agent="code-cartographer", status="success", summary="s",
+                notes_generated=0, notes_updated=0, notes_skipped=0,
+                annotations_processed=0,
+                new_orphans=[], resolved_orphans=[], parse_errors=[],
+                overall="meh",
+            )
+
+    def test_cartography_report_next_recommended_literal_restricted(self):
+        from agents.contracts.cartographer import CartographyReport
+
+        for v in ("commit", "review", "anchor-review", "none"):
+            CartographyReport(
+                task_id="t", agent="code-cartographer", status="success", summary="s",
+                notes_generated=0, notes_updated=0, notes_skipped=0,
+                annotations_processed=0,
+                new_orphans=[], resolved_orphans=[], parse_errors=[],
+                overall="complete", next_recommended=v,
+            )
+        with pytest.raises(ValidationError):
+            CartographyReport(
+                task_id="t", agent="code-cartographer", status="success", summary="s",
+                notes_generated=0, notes_updated=0, notes_skipped=0,
+                annotations_processed=0,
+                new_orphans=[], resolved_orphans=[], parse_errors=[],
+                overall="complete", next_recommended="merge",
+            )
+
+    # --- AnnotationOpBrief ------------------------------------------------
+
+    def test_annotation_op_brief_create_valid(self):
+        from agents.contracts.cartographer import AnnotationOpBrief
+
+        b = AnnotationOpBrief(
+            task_id="t", invoked_by="h", work_dir="w",
+            op="create", slug="sleep-perf-cap",
+            file_path="server/routers/sleep.py", target_line=21,
+        )
+        assert b.op == "create"
+        assert b.slug == "sleep-perf-cap"
+        assert b.target_line == 21
+
+    def test_annotation_op_brief_op_literal(self):
+        from agents.contracts.cartographer import AnnotationOpBrief
+
+        for op in ("create", "update", "delete", "anchor-review"):
+            AnnotationOpBrief(
+                task_id="t", invoked_by="h", work_dir="w",
+                op=op, slug="abc-def",
+            )
+        with pytest.raises(ValidationError):
+            AnnotationOpBrief(
+                task_id="t", invoked_by="h", work_dir="w",
+                op="reincarnate", slug="abc-def",
+            )
+
+    def test_annotation_op_brief_slug_pattern(self):
+        from agents.contracts.cartographer import AnnotationOpBrief
+
+        with pytest.raises(ValidationError):
+            AnnotationOpBrief(
+                task_id="t", invoked_by="h", work_dir="w",
+                op="create", slug="BadSlug",
+            )
+
+    def test_annotation_op_brief_range_pair(self):
+        from agents.contracts.cartographer import AnnotationOpBrief
+
+        b = AnnotationOpBrief(
+            task_id="t", invoked_by="h", work_dir="w",
+            op="create", slug="sleep-pipeline",
+            file_path="server/routers/sleep.py", target_range=(18, 30),
+        )
+        assert b.target_range == (18, 30)
+
+    # --- AnnotationOpReport -----------------------------------------------
+
+    def test_annotation_op_report_valid(self):
+        from agents.contracts.cartographer import AnnotationOpReport
+
+        r = AnnotationOpReport(
+            task_id="t", agent="code-cartographer", status="success", summary="created",
+            slug="sleep-perf-cap", op_performed="create",
+            files_modified=[
+                "server/routers/sleep.py",
+                "docs/vault/annotations/server/routers/sleep/sleep-perf-cap.md",
+            ],
+            note_rerendered=True,
+            overall="success",
+        )
+        assert r.note_rerendered is True
+        assert r.overall == "success"
+
+    def test_annotation_op_report_overall_literal(self):
+        from agents.contracts.cartographer import AnnotationOpReport
+
+        for v in ("success", "needs_clarification", "failed"):
+            AnnotationOpReport(
+                task_id="t", agent="code-cartographer", status="success", summary="s",
+                slug="abc-def", op_performed="create",
+                files_modified=[], note_rerendered=False,
+                overall=v,
+            )
+        with pytest.raises(ValidationError):
+            AnnotationOpReport(
+                task_id="t", agent="code-cartographer", status="success", summary="s",
+                slug="abc-def", op_performed="create",
+                files_modified=[], note_rerendered=False,
+                overall="probably",
+            )
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting : __init__ re-exports
 # ---------------------------------------------------------------------------
 
@@ -630,9 +916,18 @@ class TestPackageReExports:
             PlanAuditBrief,
             PlanAuditReport,
             PlanDeviation,
+            CartographyBrief,
+            CartographyReport,
+            AnnotationOpBrief,
+            AnnotationOpReport,
+            Annotation,
+            AnchorLocation,
+            AnchorKind,
         )
 
         assert AgentInputBase is not None
         assert GitOperationReport is not None
         assert PentestReport is not None
+        assert CartographyReport is not None
+        assert AnchorKind is not None
         assert PlanAuditReport is not None
