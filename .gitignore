@@ -39,3 +39,6 @@ Thumbs.db
 work/
 # Pentester POC scripts — fork-safe redundancy (already covered by work/)
 **/poc/
+
+# Code-as-vault logs (Phase B+, volatile — regénérés depuis JSONL sources)
+docs/vault/logs/

@@ -1,3 +1,9 @@
 fastapi
 uvicorn[standard]
 pydantic
+
+# code-cartographer (Phase A.5) — universal AST parsing for Python/JS/Kotlin
+tree-sitter>=0.21.0
+tree-sitter-python>=0.21.0
+tree-sitter-javascript>=0.21.0
+tree-sitter-kotlin>=0.3.0
