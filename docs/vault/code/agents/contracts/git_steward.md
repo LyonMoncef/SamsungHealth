@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/git_steward.py
 git_blob: a5e72a976b3f881d3918f09c98c16c37f244f9f6
-last_synced: '2026-04-23T10:21:38Z'
+last_synced: '2026-04-23T10:31:18Z'
 loc: 42
 annotations: []
 imports:

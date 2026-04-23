@@ -10,7 +10,7 @@ Miroir Obsidian de la codebase + annotations ancrées. Voir [plan complet](../..
 
 ```bash
 # 1. Définir le path mirror Windows (en WSL)
-export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth/code-vault
+export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth
 # (ajouter dans ~/.zshrc ou ~/.bashrc pour rendre permanent)
 
 # 2. Bootstrap initial
@@ -21,7 +21,9 @@ make vault-mirror
 
 ### Côté Obsidian Windows
 
-Dans ton vault PKM principal (`C:\Users\idsmf\Documents\PKM\vault\`), navigue vers `02_Projects/SamsungHealth/code-vault/` — c'est le mirror, déjà visible comme un sous-dossier de ton vault. Pas de second vault à ouvrir, recherche/graphe unifiés avec ton PKM.
+Dans ton vault PKM principal (`C:\Users\idsmf\Documents\PKM\vault\`), le dossier `02_Projects/SamsungHealth/` **EST** le mirror : même structure que `docs/vault/` du repo (`code/`, `specs/`, `changelog/`, `_index/`, `annotations/`, `codex/`, `_template/`, `assets/`, `MIRROR-README.md`). Pas de second vault à ouvrir, recherche/graphe unifiés avec ton PKM.
+
+**Important** : tout ce qui vit sous `02_Projects/SamsungHealth/` côté PKM est généré depuis le repo. Toute édition manuelle est perdue au prochain sync. Le contenu source-of-truth vit dans `SamsungHealth/docs/vault/` côté repo WSL.
 
 ### Règles de l'usage mirror
 

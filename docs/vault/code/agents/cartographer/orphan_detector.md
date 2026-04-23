@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/orphan_detector.py
 git_blob: e35f0b6a39c0845f7b1a32d9f0b7dfa106c2328e
-last_synced: '2026-04-23T10:21:38Z'
+last_synced: '2026-04-23T10:31:18Z'
 loc: 51
 annotations: []
 imports:

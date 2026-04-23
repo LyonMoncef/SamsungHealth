@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_annotation_io.py
 git_blob: 81ae225a845d3ea383700ecc71cf9fd46fdcf933
-last_synced: '2026-04-23T10:21:39Z'
+last_synced: '2026-04-23T10:31:18Z'
 loc: 175
 annotations: []
 imports:

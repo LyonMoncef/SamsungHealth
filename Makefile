@@ -15,7 +15,7 @@ setup-hooks:
 vault-mirror:
 	@if [ -z "$$CARTOGRAPHER_MIRROR_TO" ]; then \
 		echo "❌ Set CARTOGRAPHER_MIRROR_TO env var first."; \
-		echo "   ex: export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth/code-vault"; \
+		echo "   ex: export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth"; \
 		exit 1; \
 	fi
 	python3 -m agents.cartographer.cli --full --mirror-to "$$CARTOGRAPHER_MIRROR_TO"
