@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `a3f9c30`
+feat(phase-a.6): annotation-suggester subagent + contrat Pydantic + hook post-commit opt-in (CARTOGRAPHER_SUGGEST=1) (8 tests GREEN)
+- Added `agents/contracts/annotation_suggester.py` — `AnnotationSuggestionBrief` (triggered_by post_commit/manual/skill, max_suggestions=5, confidence_threshold), `SuggestedAnnotation` (slug regex + file/line ou begin_line/end_line + rationale + body_draft + confidence low/medium/high + triggers liste), `AnnotationSuggestionReport` (overall suggestions_pending/no_suggestion/failed, next_recommended annotate/commit/none)
+- Updated `agents/contracts/__init__.py` — +4 re-exports
+- Added `.claude/agents/annotation-suggester.md` — subagent (Read/Grep/Bash, sonnet, color cyan). Heuristiques 8 triggers (issue_ref/pr_ref/kw:workaround/perf/security/semantic, complexity, regression_zone). Filtre dédoublonnage marqueurs existants + cap max_suggestions. Output `${WORK_DIR}/suggestions.md` pour review humaine. **JAMAIS d'écriture sur code/annotations** — propose seulement
+- Added `.githooks/post-commit` (executable, opt-in via `$CARTOGRAPHER_SUGGEST=1`) — enregistre `work/post-commit-suggest/<sha>/brief.json` que l'humain materialise via `/annotate suggest --brief <path>`. Hook ne lance pas Claude Code lui-même (incompatible avec git hook context)
+- Tests : 146/146 GREEN (139 + 7 nouveaux TestAnnotationSuggester + 1 re-export check)
+- **Phase A.6 ✓** — A.5 + A.6 = code-vault complet avec proposition d'annotations automatique
+
 ### 2026-04-23 `dc2f108`
 feat(cartographer): --mirror-to + bootstrap miroir Windows pour Obsidian (workaround EISDIR WSL chokidar) + Makefile target vault-mirror + doc
 - **Contexte** : Obsidian Windows échoue avec `EISDIR: illegal operation on a directory, watch \\wsl.localhost\...` quand on essaie d'ouvrir un dossier sous WSL — bug connu chokidar/Electron sur les UNC paths WSL. Solution adoptée : mirror sens unique vers `/mnt/c/.../PKM/vault/02_Projects/SamsungHealth/code-vault/`
