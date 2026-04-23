@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/__init__.py
 git_blob: d2d160cb5c1ca46f483bcd2c4226eba013802eee
-last_synced: '2026-04-23T08:13:16Z'
+last_synced: '2026-04-23T08:43:08Z'
 loc: 65
 annotations: []
 imports:

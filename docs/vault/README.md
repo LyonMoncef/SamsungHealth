@@ -4,13 +4,30 @@ Miroir Obsidian de la codebase + annotations ancrées. Voir [plan complet](../..
 
 ## Comment ouvrir
 
-Ce dossier est **un vault Obsidian dédié** (séparé du vault PKM principal).
+⚠️ **Repo sous WSL** : Obsidian Windows ne peut pas watch les paths `\\wsl.localhost\...` (chokidar EISDIR). Solution adoptée : **mirror sens unique vers Windows**.
 
-1. Ouvrir Obsidian → `Open folder as vault` → pointer vers `docs/vault/`
-2. Le graphe affichera des clusters par module (`server/`, `agents/`, `static/`, `android-app/`)
-3. Cmd+click sur un wikilink (ex: `[[../database#get_connection]]`) navigue vers la note cible
+### Setup
 
-Tu peux aussi ajouter ce dossier à ton vault PKM principal via `Settings → Files & Links → Add external folder` si tu préfères une recherche unifiée.
+```bash
+# 1. Définir le path mirror Windows (en WSL)
+export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth/code-vault
+# (ajouter dans ~/.zshrc ou ~/.bashrc pour rendre permanent)
+
+# 2. Bootstrap initial
+make vault-mirror
+
+# 3. À partir de ce moment, le hook pre-commit re-mirror automatiquement à chaque commit
+```
+
+### Côté Obsidian Windows
+
+Dans ton vault PKM principal (`C:\Users\idsmf\Documents\PKM\vault\`), navigue vers `02_Projects/SamsungHealth/code-vault/` — c'est le mirror, déjà visible comme un sous-dossier de ton vault. Pas de second vault à ouvrir, recherche/graphe unifiés avec ton PKM.
+
+### Règles de l'usage mirror
+
+- **Le mirror est read-only** : toute édition côté Windows est perdue au prochain sync. Voir `MIRROR-README.md` à la racine du mirror.
+- **Édition d'annotation** : faire côté repo WSL via `/annotate edit <slug>` (ouvre `docs/vault/annotations/<...>/<slug>.md`) ou éditer directement le fichier en VSCode/nano. L'agent `code-cartographer` se charge habituellement de cette édition.
+- **Code source** : édité dans le repo (jamais dans le mirror). La note `code/<...>.md` est régénérée à chaque commit.
 
 ## Structure
 

@@ -18,14 +18,19 @@ fi
 # of their anchor source files, handled inside the CLI).
 SOURCE_FILES=$(echo "$CHANGED" | grep -E '\.(py|js|mjs|cjs|kt|kts|html|htm|css)$' || true)
 
+MIRROR_FLAG=""
+if [ -n "$CARTOGRAPHER_MIRROR_TO" ]; then
+  MIRROR_FLAG="--mirror-to $CARTOGRAPHER_MIRROR_TO"
+fi
+
 if [ -z "$SOURCE_FILES" ]; then
   # Annotation-only commit — re-scan all source files referenced by changed annotations
   # (cheap fallback: full scan, ~5s on this repo)
   echo "[pre-commit] annotation change detected → full vault re-sync"
-  python3 -m agents.cartographer.cli --full
+  python3 -m agents.cartographer.cli --full $MIRROR_FLAG
 else
   echo "[pre-commit] cartographer --diff $(echo "$SOURCE_FILES" | wc -l) file(s)"
-  python3 -m agents.cartographer.cli --diff $SOURCE_FILES
+  python3 -m agents.cartographer.cli --diff $SOURCE_FILES $MIRROR_FLAG
 fi
 
 # Stage regenerated notes + indexes

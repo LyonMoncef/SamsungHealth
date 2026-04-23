@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from glob import glob
@@ -55,6 +56,7 @@ def run(
     vault_root: str,
     source_globs: list[str] | None = None,
     diff_files: list[str] | None = None,
+    mirror_to: str | None = None,
 ) -> CartographyReport:
     source_globs = source_globs or DEFAULT_SOURCE_GLOBS
 
@@ -102,6 +104,9 @@ def run(
         overall = "failed" if (diff.new_orphans or parse_errors) else "complete"
     else:
         overall = "complete" if not parse_errors else "partial"
+
+    if mode in ("full", "diff") and mirror_to:
+        _mirror_vault(vault_root, mirror_to)
 
     return CartographyReport(
         task_id=os.environ.get("CARTOGRAPHER_TASK_ID", "cli"),
@@ -279,6 +284,30 @@ def _strip_ext(path: str) -> str:
     return os.path.splitext(path)[0]
 
 
+def _mirror_vault(vault_root: str, mirror_to: str) -> None:
+    """One-way copy of `vault_root/` → `mirror_to/`.
+
+    Replaces the target directory entirely so that stale notes (deleted source
+    files, renamed slugs) don't linger in the mirror. Read-only target —
+    edits in the mirror are lost on next sync.
+    """
+    if not os.path.isdir(vault_root):
+        return
+    if os.path.exists(mirror_to):
+        shutil.rmtree(mirror_to)
+    shutil.copytree(vault_root, mirror_to)
+    # Drop a README at the root so opening the mirror in Obsidian shows the warning
+    readme = os.path.join(mirror_to, "MIRROR-README.md")
+    with open(readme, "w", encoding="utf-8") as fp:
+        fp.write(
+            "# ⚠️ Read-only mirror\n\n"
+            f"Ce dossier est un **miroir auto-généré** de `{vault_root}` "
+            f"(repo WSL). Toute édition ici est **perdue** au prochain `code-cartographer` sync.\n\n"
+            "Pour éditer une annotation, utiliser `/annotate edit <slug>` "
+            "côté repo WSL (ou éditer `docs/vault/annotations/...md` directement).\n"
+        )
+
+
 def _git_blob_sha(repo_root: str, rel: str) -> str | None:
     try:
         out = subprocess.check_output(
@@ -316,6 +345,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     g.add_argument("--check", action="store_true")
     p.add_argument("--repo-root", default=os.getcwd())
     p.add_argument("--vault-root", default=os.path.join(os.getcwd(), "docs", "vault"))
+    p.add_argument(
+        "--mirror-to",
+        default=os.environ.get("CARTOGRAPHER_MIRROR_TO"),
+        help="One-way copy target (default: $CARTOGRAPHER_MIRROR_TO env var, none if unset)",
+    )
     return p.parse_args(argv)
 
 
@@ -337,6 +371,7 @@ def main(argv: list[str] | None = None) -> int:
         repo_root=ns.repo_root,
         vault_root=ns.vault_root,
         diff_files=diff_files,
+        mirror_to=ns.mirror_to,
     )
     print(
         f"[code-cartographer] mode={mode} overall={report.overall} "

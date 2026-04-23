@@ -42,3 +42,5 @@ work/
 
 # Code-as-vault logs (Phase B+, volatile — regénérés depuis JSONL sources)
 docs/vault/logs/
+# Obsidian local config (graph layout, hotkeys, plugins state) — pollue les diffs
+docs/vault/.obsidian/

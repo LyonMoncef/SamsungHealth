@@ -1,4 +1,4 @@
-.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest setup-hooks
+.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest setup-hooks vault-mirror
 
 ## install : install Python dependencies + activate git hooks
 install:
@@ -10,6 +10,16 @@ install:
 setup-hooks:
 	git config core.hooksPath .githooks
 	@echo "✓ git hooks active (.githooks/) — pre-commit cartographer sync + pre-push branch check"
+
+## vault-mirror : full re-render + copie vers $CARTOGRAPHER_MIRROR_TO (Windows/PKM)
+vault-mirror:
+	@if [ -z "$$CARTOGRAPHER_MIRROR_TO" ]; then \
+		echo "❌ Set CARTOGRAPHER_MIRROR_TO env var first."; \
+		echo "   ex: export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth/code-vault"; \
+		exit 1; \
+	fi
+	python3 -m agents.cartographer.cli --full --mirror-to "$$CARTOGRAPHER_MIRROR_TO"
+	@echo "✓ Vault mirror updated → $$CARTOGRAPHER_MIRROR_TO"
 
 ## dev : start the FastAPI server (reload + accessible from phone on LAN)
 dev:

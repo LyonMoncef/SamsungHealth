@@ -2,13 +2,14 @@
 type: code-source
 language: python
 file_path: agents/cartographer/cli.py
-git_blob: ''
-last_synced: '2026-04-23T08:13:16Z'
-loc: 353
+git_blob: 91a6576bd8331ce22999dfdd961d658df3169ee2
+last_synced: '2026-04-23T08:44:17Z'
+loc: 388
 annotations: []
 imports:
 - argparse
 - os
+- shutil
 - subprocess
 - sys
 - glob
@@ -35,10 +36,11 @@ exports:
 
   '
 - trip_ext(p
-- it_blob_sha(r
-- it_short_sha(r
-- arse_args(a
-- in(a
+- irror_vault(v
+- '_root: str, r'
+- 'o_root: str) -'
+- 'list[str]) '
+- r] |
 tags:
 - code
 - python
@@ -64,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from glob import glob
@@ -109,6 +112,7 @@ def run(
     vault_root: str,
     source_globs: list[str] | None = None,
     diff_files: list[str] | None = None,
+    mirror_to: str | None = None,
 ) -> CartographyReport:
     source_globs = source_globs or DEFAULT_SOURCE_GLOBS
 
@@ -156,6 +160,9 @@ def run(
         overall = "failed" if (diff.new_orphans or parse_errors) else "complete"
     else:
         overall = "complete" if not parse_errors else "partial"
+
+    if mode in ("full", "diff") and mirror_to:
+        _mirror_vault(vault_root, mirror_to)
 
     return CartographyReport(
         task_id=os.environ.get("CARTOGRAPHER_TASK_ID", "cli"),
@@ -333,6 +340,30 @@ def _strip_ext(path: str) -> str:
     return os.path.splitext(path)[0]
 
 
+def _mirror_vault(vault_root: str, mirror_to: str) -> None:
+    """One-way copy of `vault_root/` → `mirror_to/`.
+
+    Replaces the target directory entirely so that stale notes (deleted source
+    files, renamed slugs) don't linger in the mirror. Read-only target —
+    edits in the mirror are lost on next sync.
+    """
+    if not os.path.isdir(vault_root):
+        return
+    if os.path.exists(mirror_to):
+        shutil.rmtree(mirror_to)
+    shutil.copytree(vault_root, mirror_to)
+    # Drop a README at the root so opening the mirror in Obsidian shows the warning
+    readme = os.path.join(mirror_to, "MIRROR-README.md")
+    with open(readme, "w", encoding="utf-8") as fp:
+        fp.write(
+            "# ⚠️ Read-only mirror\n\n"
+            f"Ce dossier est un **miroir auto-généré** de `{vault_root}` "
+            f"(repo WSL). Toute édition ici est **perdue** au prochain `code-cartographer` sync.\n\n"
+            "Pour éditer une annotation, utiliser `/annotate edit <slug>` "
+            "côté repo WSL (ou éditer `docs/vault/annotations/...md` directement).\n"
+        )
+
+
 def _git_blob_sha(repo_root: str, rel: str) -> str | None:
     try:
         out = subprocess.check_output(
@@ -370,6 +401,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     g.add_argument("--check", action="store_true")
     p.add_argument("--repo-root", default=os.getcwd())
     p.add_argument("--vault-root", default=os.path.join(os.getcwd(), "docs", "vault"))
+    p.add_argument(
+        "--mirror-to",
+        default=os.environ.get("CARTOGRAPHER_MIRROR_TO"),
+        help="One-way copy target (default: $CARTOGRAPHER_MIRROR_TO env var, none if unset)",
+    )
     return p.parse_args(argv)
 
 
@@ -391,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
         repo_root=ns.repo_root,
         vault_root=ns.vault_root,
         diff_files=diff_files,
+        mirror_to=ns.mirror_to,
     )
     print(
         f"[code-cartographer] mode={mode} overall={report.overall} "
@@ -412,25 +449,27 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `run` (function) — lines 52-123
-- `iscover_sources(r` (function) — lines 130-138
-- `iscover_annotations(v` (function) — lines 141-150
+- `run` (function) — lines 53-128
+- `iscover_sources(r` (function) — lines 135-143
+- `iscover_annotations(v` (function) — lines 146-155
 - `ender_one(
-` (function) — lines 153-205
-- `uild_active(s` (function) — lines 208-223
-- `mpty_file_symbols(s` (function) — lines 226-228
-- `ll_markers(r` (function) — lines 231-246
+` (function) — lines 158-210
+- `uild_active(s` (function) — lines 213-228
+- `mpty_file_symbols(s` (function) — lines 231-233
+- `ll_markers(r` (function) — lines 236-251
 - `rite_indexes(
-` (function) — lines 249-275
-- `trip_ext(p` (function) — lines 278-279
-- `it_blob_sha(r` (function) — lines 282-293
-- `it_short_sha(r` (function) — lines 296-304
-- `arse_args(a` (function) — lines 311-319
-- `in(a` (function) — lines 322-349
+` (function) — lines 254-280
+- `trip_ext(p` (function) — lines 283-284
+- `irror_vault(v` (function) — lines 287-308
+- `_root: str, r` (function) — lines 311-322
+- `o_root: str) -` (function) — lines 325-333
+- `list[str]) ` (function) — lines 340-353
+- `r] |` (function) — lines 356-384
 
 ### Imports
 - `argparse`
 - `os`
+- `shutil`
 - `subprocess`
 - `sys`
 - `glob`
@@ -456,7 +495,8 @@ if __name__ == "__main__":
 - `rite_indexes(
 `
 - `trip_ext(p`
-- `it_blob_sha(r`
-- `it_short_sha(r`
-- `arse_args(a`
-- `in(a`
+- `irror_vault(v`
+- `_root: str, r`
+- `o_root: str) -`
+- `list[str]) `
+- `r] |`

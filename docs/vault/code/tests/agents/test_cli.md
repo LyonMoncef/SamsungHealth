@@ -1,3 +1,32 @@
+---
+type: code-source
+language: python
+file_path: tests/agents/test_cli.py
+git_blob: b4c0dc6f1ffd6cfbffca18e62fd74b5194e71f1a
+last_synced: '2026-04-23T08:44:17Z'
+loc: 173
+annotations: []
+imports:
+- pathlib
+- pytest
+exports:
+- TestRunFull
+- TestRunDiff
+- TestRunCheck
+- TestMirror
+tags:
+- code
+- python
+---
+
+# tests/agents/test_cli.py
+
+> [!info] Code mirror
+> Ce fichier est un **miroir auto-généré** de [`tests/agents/test_cli.py`](../../../tests/agents/test_cli.py).
+> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
+> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
+
+```python
 """RED-first tests for agents.cartographer.cli.
 
 The CLI orchestrates everything: walk source tree, parse markers, resolve
@@ -171,3 +200,24 @@ class TestMirror:
             source_globs=["server/**/*.py"],
             mirror_to=None,
         )
+```
+
+---
+
+## Appendix — symbols & navigation *(auto)*
+
+### Symbols
+- `TestRunFull` (class) — lines 15-58
+- `TestRunDiff` (class) — lines 61-78
+- `TestRunCheck` (class) — lines 81-117
+- `TestMirror` (class) — lines 120-173
+
+### Imports
+- `pathlib`
+- `pytest`
+
+### Exports
+- `TestRunFull`
+- `TestRunDiff`
+- `TestRunCheck`
+- `TestMirror`
