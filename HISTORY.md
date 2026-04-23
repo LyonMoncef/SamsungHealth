@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `25f51de`
+feat(phase-a.5): générateur changelog vault (1 note par commit, frontmatter+body) + bootstrap 30 dernières notes (7 tests GREEN)
+- Added `agents/cartographer/changelog_generator.py` — `parse_git_log_records()` (NUL-delimited+RS format), `load_recent_commits()` (git log + git show --name-only par commit), `render_changelog_note()` (frontmatter type/sha/full_sha/date/author/commit_type/scope/files/tags + body Files touched), `generate_changelog()` idempotent (skip si fichier existe sauf `regenerate=True`), CLI `python -m agents.cartographer.changelog_generator --limit N --regenerate`
+- Parse Conventional Commits (extrait `commit_type` et `scope` depuis `feat(scope): subject`)
+- Tests : 136/136 GREEN (129 + 7 nouveaux ; mocking via `monkeypatch.setattr` sur `load_recent_commits`)
+- **Bootstrap exécuté** : 30 notes dans `docs/vault/changelog/` (filename `<YYYY-MM-DD>-<short-sha>.md`)
+- **Hook pre-commit déclenché en live** : 2 fichiers staged → 2 notes vault re-rendues + auto-stagées ✓
+- Phase A.5 task #10 ✓ ; reste #11 plan-keeper extension (3 deviation_types vault)
+
 ### 2026-04-23 `d6f030d`
 feat(phase-a.5): hook pre-commit cartographer (re-render notes vault sur staged sources) + make setup-hooks active core.hooksPath
 - Added `.githooks/pre-commit` — filtre les fichiers staged par extensions source (`.py|.js|.mjs|.cjs|.kt|.kts|.html|.htm|.css`) ou path `docs/vault/annotations/`. Si annotation seule → `--full` (re-scan complet 5s). Si sources staged → `--diff <files>` (incrémental). Auto-stage `docs/vault/code/` + `docs/vault/_index/` régénérés. Skippable via `--no-verify` (déconseillé)
