@@ -26,7 +26,7 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — il respecte le contrat `S
    - `module` → sections : contexte, contrats données (Pydantic + SQL), endpoints, logging, tests, RGPD, dépendances
    - `ui` → sections : layout, tokens design, interactions, états, accessibilité, parité dev/prod, assertions de rendu
    - `rgpd` → sections : finalité, base légale, données collectées, durée conservation, droits utilisateur, audit, certificat
-3. Rédiger la spec dans `vault/02_Projects/SamsungHealth/specs/<DATE>-spec-<slug>.md` avec frontmatter standard (`title`, `phase`, `slug`, `status: draft`, `branch`, `tags`)
+3. Rédiger la spec dans `docs/vault/specs/<DATE>-spec-<slug>.md` avec frontmatter standard (`title`, `phase`, `slug`, `status: draft`, `branch`, `tags`)
 4. Couvrir tous les `key_points` du brief — si l'un n'a pas pu être traité, le lister dans `blockers` du résultat
 5. Écrire `${WORK_DIR}/result.json` au format `SpecArtifact` :
    - `spec_path` (chemin vault)
@@ -37,7 +37,7 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — il respecte le contrat `S
 
 ## Règles strictes
 
-- Tu n'écris QUE dans `vault/02_Projects/SamsungHealth/specs/` — pas de code, pas de tests, pas de HISTORY.md
+- Tu n'écris QUE dans `docs/vault/specs/` — pas de code, pas de tests, pas de HISTORY.md
 - Pas d'invention : si une donnée manque (ex : nom de table, contrainte), demande clarification via `status: needs_clarification`
 - Frontmatter complet obligatoire — sans ça, le skill suivant `/tdd` n'a pas les hooks de navigation
 - Ne lance PAS de Bash — pas de git, pas de pytest, pas de gh

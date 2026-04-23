@@ -21,7 +21,8 @@ vault_links:
 # Plan V2 — SamsungHealth Refactor complet (master)
 
 > Plan approuvé le 2026-04-23. Source dans Claude Code : `/home/tats/.claude/plans/glittery-napping-rossum.md`.
-> Ce fichier est la copie Obsidian de référence pour navigation via graphe et backlinks.
+> Ce fichier est **versionné dans le repo** depuis Phase A.8 (`docs/vault/specs/`) — single source of truth.
+> Visible dans Obsidian via le **vault dédié** `C:\Users\idsmf\Documents\Obsidian\SamsungHealth\` (mirror auto, separated from PKM perso).
 
 ## Contexte
 

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/spec_indexer.py
 git_blob: a102a995925fcf42a5d8378e18f086dc40e24d8b
-last_synced: '2026-04-23T10:40:53Z'
+last_synced: '2026-04-23T10:49:29Z'
 loc: 132
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/annotation_suggester.py
 git_blob: 51784c63a759a728a1bb984e8e02d2bff9d7fb66
-last_synced: '2026-04-23T10:40:53Z'
+last_synced: '2026-04-23T10:49:29Z'
 loc: 40
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/plan_keeper.py
 git_blob: 024cb7ca8d021f46cd6eaae696aab5bbc13fa4b9
-last_synced: '2026-04-23T10:40:53Z'
+last_synced: '2026-04-23T10:49:29Z'
 loc: 47
 annotations: []
 imports:

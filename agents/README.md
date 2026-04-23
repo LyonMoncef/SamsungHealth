@@ -4,8 +4,8 @@ Système d'agents à responsabilité unique pour exécuter le master plan V2 (re
 
 ## Source of truth
 
-- **Master plan** : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-refactor-master.md`
-- **Plan multi-agents** : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-multi-agents-architecture.md`
+- **Master plan** : `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md`
+- **Plan multi-agents** : `docs/vault/specs/2026-04-23-plan-v2-multi-agents-architecture.md`
 - **Branche long-lived** : `refactor/v2`
 - **Sous-branche méta-projet** : `refactor/phase-a-foundation-agents`
 

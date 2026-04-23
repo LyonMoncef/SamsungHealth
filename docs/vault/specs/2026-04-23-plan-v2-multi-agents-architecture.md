@@ -20,8 +20,9 @@ viz_primary: mermaid-gitgraph
 
 # Plan — Architecture multi-agents pour SamsungHealth V2
 
-> **Master plan de la refonte** : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-refactor-master.md` (approuvé 2026-04-23)
+> **Master plan de la refonte** : `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md` (approuvé 2026-04-23)
 > Ce plan définit **comment** exécuter le master plan avec des agents à responsabilité unique.
+> Les specs vivent **dans le repo** (`docs/vault/specs/`) depuis Phase A.8 — vault Obsidian dédié `C:\Users\idsmf\Documents\Obsidian\SamsungHealth\` (séparé du PKM).
 
 ## Context
 
@@ -649,7 +650,7 @@ Workflows `.github/workflows/recurring-*.yml` tournent le 1er du mois :
 
 ### Codex pipeline (réutilisé tel quel depuis DataSaillance)
 
-`codex-pipeline.yml` → `extractor.py` → `job_runner.py` → entrées Codex auto-générées dans `vault/02_Projects/SamsungHealth/codex/`.
+`codex-pipeline.yml` → `extractor.py` → `job_runner.py` → entrées Codex auto-générées dans `docs/vault/codex/`.
 
 **Adaptation** : `codex-jobs.yml` à la racine, jobs :
 - `feature-summary` (PR `feat` mergée → dev → `vault/.../codex/feature/{N}-{slug}.md`)

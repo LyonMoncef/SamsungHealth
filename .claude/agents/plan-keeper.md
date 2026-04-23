@@ -16,13 +16,13 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `PlanAuditBrief` 
 
 - `triggered_by` — `skill | agent | commit | manual | post_delivery`
 - `recent_changes` — fichiers/symboles modifiés depuis dernier audit (vide = full audit)
-- `plan_paths` — plans à scanner (vide = auto-discover : tous les .md dans `vault/02_Projects/SamsungHealth/specs/` avec frontmatter `status: approved` ou `ready`)
+- `plan_paths` — plans à scanner (vide = auto-discover : tous les .md dans `docs/vault/specs/` avec frontmatter `status: approved` ou `ready`)
 - `severity_threshold` — niveau qui passe `overall: block` (default `medium`)
 
 ## Workflow
 
 1. **Charger les plans actifs** :
-   - Si `plan_paths` vide : `glob vault/02_Projects/SamsungHealth/specs/*.md` puis lire frontmatter (Read), garder ceux `status: approved | ready`
+   - Si `plan_paths` vide : `glob docs/vault/specs/*.md` puis lire frontmatter (Read), garder ceux `status: approved | ready`
    - Sinon : utiliser la liste fournie
    - Toujours inclure : master plan + multi-agents plan + spec en cours de la phase active
 

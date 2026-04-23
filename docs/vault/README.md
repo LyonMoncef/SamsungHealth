@@ -1,6 +1,6 @@
 # SamsungHealth — Code-as-vault
 
-Miroir Obsidian de la codebase + annotations ancrées. Voir [plan complet](../../../mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-code-as-vault.md) (Obsidian) ou `/home/tats/.claude/plans/expressive-napping-blum.md` (Claude Code).
+Miroir Obsidian de la codebase + annotations ancrées. Voir [plan complet](specs/2026-04-23-plan-code-as-vault.md) ou `/home/tats/.claude/plans/expressive-napping-blum.md` (Claude Code).
 
 ## Comment ouvrir
 

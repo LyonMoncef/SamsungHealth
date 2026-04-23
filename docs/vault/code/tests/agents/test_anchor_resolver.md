@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_anchor_resolver.py
 git_blob: 1cb172fe1abdc63146cc23e37090e612b60b916a
-last_synced: '2026-04-23T10:40:53Z'
+last_synced: '2026-04-23T10:49:30Z'
 loc: 86
 annotations: []
 imports:

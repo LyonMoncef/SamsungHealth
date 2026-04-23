@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/conftest.py
 git_blob: 1e940a45fbb3d5264b550c1d4416ce5ac64aa4c6
-last_synced: '2026-04-23T10:40:54Z'
+last_synced: '2026-04-23T10:49:30Z'
 loc: 34
 annotations: []
 imports:

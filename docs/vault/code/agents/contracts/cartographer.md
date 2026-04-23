@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/cartographer.py
 git_blob: eb5ff9e8f96627969fb1dee28e80c15be46b145a
-last_synced: '2026-04-23T10:40:53Z'
+last_synced: '2026-04-23T10:49:29Z'
 loc: 67
 annotations: []
 imports:

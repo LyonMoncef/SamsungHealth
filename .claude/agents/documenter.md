@@ -30,7 +30,7 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `DocBrief` (`agen
      ```
    - Si `scope = checkpoint` ou `release-archive` : entry dans `## Checkpoint` avec `[CHECKPOINT]` keyword
 3. **Create Codex entry** dans le vault :
-   - Path : `vault/02_Projects/SamsungHealth/codex/<scope>/<N>-<slug>.md` ou (si pas de N issue) `vault/.../codex/<scope>/<commit_hash>-<slug>.md`
+   - Path : `docs/vault/codex/<scope>/<N>-<slug>.md` ou (si pas de N issue) `docs/vault/codex/<scope>/<commit_hash>-<slug>.md`
    - Frontmatter : `type`, `title`, `created`, `tags`, `git_commit`, `files_touched`, `related_dailies`, `related_specs`
    - Body : ce qui a changé, pourquoi, fichiers clés
 4. Écrire `${WORK_DIR}/result.json` au format `DocArtifact` :
@@ -41,7 +41,7 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `DocBrief` (`agen
 
 ## Règles strictes
 
-- Tu n'éditeS QUE `HISTORY.md`, `NOTES.md`, et fichiers sous `vault/02_Projects/SamsungHealth/codex/` (path scoping enforced par hook)
+- Tu n'éditeS QUE `HISTORY.md`, `NOTES.md`, et fichiers sous `docs/vault/codex/` (path scoping enforced par hook)
 - **Idempotence** : avant d'ajouter une entry, vérifie qu'elle n'existe pas déjà (grep le hash dans HISTORY.md, grep le path dans le vault)
 - Pas de modification de commit existant — seulement append (newest first dans Changelog, dernière ligne de la table Features)
 - Pas de Bash — tu lis via Read, tu navigues via Grep/Glob
