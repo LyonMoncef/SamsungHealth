@@ -9,8 +9,8 @@ Miroir Obsidian de la codebase + annotations ancrées. Voir [plan complet](../..
 ### Setup
 
 ```bash
-# 1. Définir le path mirror Windows (en WSL)
-export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth
+# 1. Définir le path du vault Obsidian DÉDIÉ (séparé du PKM, en WSL)
+export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/Obsidian/SamsungHealth
 # (ajouter dans ~/.zshrc ou ~/.bashrc pour rendre permanent)
 
 # 2. Bootstrap initial
@@ -21,9 +21,20 @@ make vault-mirror
 
 ### Côté Obsidian Windows
 
-Dans ton vault PKM principal (`C:\Users\idsmf\Documents\PKM\vault\`), le dossier `02_Projects/SamsungHealth/` **EST** le mirror : même structure que `docs/vault/` du repo (`code/`, `specs/`, `changelog/`, `_index/`, `annotations/`, `codex/`, `_template/`, `assets/`, `MIRROR-README.md`). Pas de second vault à ouvrir, recherche/graphe unifiés avec ton PKM.
+`C:\Users\idsmf\Documents\Obsidian\SamsungHealth\` est un **vault Obsidian dédié** (séparé du vault PKM perso). À ouvrir avec `File → Open vault → Open folder as vault` → pointer vers ce dossier.
 
-**Important** : tout ce qui vit sous `02_Projects/SamsungHealth/` côté PKM est généré depuis le repo. Toute édition manuelle est perdue au prochain sync. Le contenu source-of-truth vit dans `SamsungHealth/docs/vault/` côté repo WSL.
+Structure miroir du repo (`docs/vault/`) :
+- `code/` — notes miroirs auto-générées (1 par fichier source)
+- `specs/` — specs versionnées
+- `tests/` — tests miroirs (intégrés via globs)
+- `changelog/` — 1 note par commit
+- `annotations/` — annotations vault avec ancres
+- `codex/` — release archives
+- `_index/` — orphans, coverage, specs, tags
+- `_template/` — templates de session
+- `assets/` — images embarquées
+
+**Important** : tout est généré depuis le repo. Toute édition manuelle dans ce vault est perdue au prochain sync. Source de vérité = `SamsungHealth/docs/vault/` côté repo WSL.
 
 ### Règles de l'usage mirror
 

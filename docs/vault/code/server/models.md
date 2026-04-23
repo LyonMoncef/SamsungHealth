@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/models.py
 git_blob: 5706f27c34bd6e78819147bc5227fa99fdc383b2
-last_synced: '2026-04-23T10:31:18Z'
+last_synced: '2026-04-23T10:40:53Z'
 loc: 90
 annotations: []
 imports:

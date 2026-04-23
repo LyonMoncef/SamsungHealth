@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_spec_indexer.py
 git_blob: 3f01d2c1d3360e44567b19495fe70c7096282cf4
-last_synced: '2026-04-23T10:31:18Z'
+last_synced: '2026-04-23T10:40:54Z'
 loc: 151
 annotations: []
 imports:

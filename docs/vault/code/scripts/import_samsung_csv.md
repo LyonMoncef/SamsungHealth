@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: scripts/import_samsung_csv.py
 git_blob: 038f9c4235e77939e91c817f7b788b78353b595f
-last_synced: '2026-04-23T10:31:18Z'
+last_synced: '2026-04-23T10:40:53Z'
 loc: 690
 annotations: []
 imports:

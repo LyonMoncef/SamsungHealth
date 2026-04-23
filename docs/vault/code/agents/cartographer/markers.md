@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/markers.py
 git_blob: 7a9ec31fc129c575d3229f078402ffd2ce21669e
-last_synced: '2026-04-23T10:31:18Z'
+last_synced: '2026-04-23T10:40:53Z'
 loc: 125
 annotations: []
 imports:

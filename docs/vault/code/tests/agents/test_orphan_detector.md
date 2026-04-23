@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_orphan_detector.py
 git_blob: 938f741d8b206195febc9d30e7e27cdb070c7747
-last_synced: '2026-04-23T10:31:18Z'
+last_synced: '2026-04-23T10:40:54Z'
 loc: 73
 annotations: []
 imports:
