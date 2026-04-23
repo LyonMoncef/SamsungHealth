@@ -53,6 +53,18 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `3032836`
+feat(phase-a.5): contrats Pydantic cartographer + 4 modules core (markers/walker/IO/injector) + 42 tests GREEN
+- Added `agents/contracts/cartographer.py` (7 types) — `AnchorKind`, `AnchorLocation`, `Annotation` (slug regex `^[a-z0-9][a-z0-9-]{2,40}$`), `CartographyBrief` (mode full/diff/check), `CartographyReport` (overall complete/partial/failed, next_recommended commit/review/anchor-review/none), `AnnotationOpBrief`/`Report`
+- Updated `agents/contracts/__init__.py` — +7 re-exports
+- Added `agents/cartographer/markers.py` — `parse_markers()` détecte `@vault:slug` dans Python/JS/Kotlin/HTML/CSS, gère single + range begin/end + non-contigu (même slug ×N), `infer_language()`, `MarkerParseError` sur unbalanced begin/end ou slug invalide
+- Added `agents/cartographer/annotation_io.py` — `resolve_annotation_path()` (single-file → `<pkg>/<file>/<slug>.md`, cross-file → `_cross/`, no anchor → `_orphans/`), `read_annotation()`, `write_annotation()` avec auto-frontmatter ISO-Z, `update_status()`
+- Added `agents/cartographer/marker_injector.py` — `inject_single()` EOL idempotent, `inject_range()` avec préservation indentation, `remove_marker()` distingue own-line (drop) vs EOL (strip)
+- Added `agents/cartographer/walker.py` — `walk_file()` universel via tree-sitter, retourne `FileSymbols` (loc + symbols + imports + exports), best-effort sur Kotlin/syntax errors
+- Updated `requirements.txt` — ajout `PyYAML>=6.0` (frontmatter annotation)
+- Tests : 110/110 GREEN (68 contrats existants + 21 nouveaux cartographer + 17 markers + 8 IO + 10 injector + 7 walker)
+- Phase A.5 task #4 + #5 ✓ ; reste #6 render, #7 CLI, #8 subagent+skills, #9 hook, #10 changelog, #11 plan-keeper extension
+
 ### 2026-04-21 `d032741`
 feat(data): Samsung Health CSV import pipeline + full DB schema (21 tables)
 - Added `scripts/explore_samsung_export.py` — reads Samsung Health CSV export, outputs schema only (column names + type tokens), no personal values
