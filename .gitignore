@@ -34,3 +34,6 @@ Thumbs.db
 
 # Design handoff exports
 *.zip
+
+# Multi-agent runtime artifacts (briefs/results/traces per task-id) — never commit
+work/

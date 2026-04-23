@@ -15,6 +15,42 @@
 
 ---
 
+## Checkpoint
+
+### `checkpoint-before-v2-refactor-2026-04-23` — 2026-04-23 → `5343c9b`
+chore(checkpoint): safety tag before V2 full security/RGPD refactor
+- Reason: Major refactor — migration SQLite → Postgres, multi-user auth (email+pwd + Google OAuth), chiffrement AES-256-GCM, endpoints RGPD, Android Compose shell + dual-track UI (WebView dev / Compose natif prod), logging structuré sharded, docker-compose dev/prod
+- Scope: tout le repo — `server/`, `android-app/`, `static/`, `tests/`, `alembic/` (nouveau), `docker-compose*.yml` (nouveau), CI workflows
+- Target branch : `chore/v2-refactor` long-lived, target des PRs de la refonte
+- Anchor: `5343c9b feat(data): Samsung Health CSV import pipeline (#5)` — origin/main HEAD au moment de la bifurcation
+- Plan de référence : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-refactor-master.md`
+- Plan multi-agents : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-multi-agents-architecture.md`
+- Estimation : ~6-8 semaines, livraison incrémentale (V1 = WebView, V2 = Compose natif)
+- [CHECKPOINT]
+
+### `nightfall-loom-v1` — 2026-04-23 → `ee09025`
+chore(release-archive): tag état de l'app au moment de l'enregistrement loom
+- Scope: `static/dashboard.js`, `static/dashboard.css`, `static/index.html`, `static/api.js`
+- Branche source : `feat/nightfall-history` (PR #6 closed sans merge le 2026-04-23 — refonte V2 priorisée)
+- Differs from `nightfall-dataviz-v1` par les commits de polish loom :
+  - Period filter bar (7j/30j/full) + radial sous l'hypnogram (cc50998, d146174)
+  - Stage tooltips riches sur timeline et radial clock (c776c96)
+  - Bed/wake times prominents au-dessus des KPIs hypnogram (551a17a)
+  - Mobile spacing épuré (4a71955, a2f22d1)
+  - Perf partial-render donut + labels donut + period 6m default (ee09025)
+- Codex : `vault/02_Projects/SamsungHealth/codex/release/nightfall-loom-v1.md`
+- Pour ressortir l'état : `git checkout nightfall-loom-v1 && make dev`
+- [CHECKPOINT]
+
+### `nightfall-dataviz-v1` — 2026-04-22 → `1631c80`
+[CHECKPOINT] Reference tag for all Nightfall dataviz chapters before refactor.
+- Branche source : `feat/nightfall-history` (archivée, PR #6 closed)
+- Scope: `static/dashboard.js`, `static/dashboard.css`
+- Chapters included: heatmap (01), stacked timeline (02), hypnogram (03), radial (04), small multiples (05), ridgeline (06), top nights cards (07), agenda (08), metrics + month selector + 4 full-history views (09), elasticity / duration regularity (10), drift clock with animated playback (11)
+- Key features: gap-based episode grouping, personal median sleep target, lag-1 autocorrelation, cycle count, bedtime scatter 24h, drift clock demo mode + smooth interpolation
+
+---
+
 ## Changelog
 
 ### 2026-04-21 `d032741`
