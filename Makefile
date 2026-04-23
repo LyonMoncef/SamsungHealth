@@ -1,9 +1,15 @@
-.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest
+.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest setup-hooks
 
-## install : install Python dependencies
+## install : install Python dependencies + activate git hooks
 install:
 	pip install -r requirements.txt -q
 	pip install pytest pytest-asyncio httpx ruff -q
+	$(MAKE) setup-hooks
+
+## setup-hooks : point git at .githooks/ (pre-commit cartographer sync, pre-push branch check)
+setup-hooks:
+	git config core.hooksPath .githooks
+	@echo "✓ git hooks active (.githooks/) — pre-commit cartographer sync + pre-push branch check"
 
 ## dev : start the FastAPI server (reload + accessible from phone on LAN)
 dev:
