@@ -2,11 +2,12 @@
 type: code-source
 language: python
 file_path: agents/contracts/__init__.py
-git_blob: d2d160cb5c1ca46f483bcd2c4226eba013802eee
-last_synced: '2026-04-23T08:43:08Z'
-loc: 65
+git_blob: 312f6d1384d517b4125ed7867e40197161872d1c
+last_synced: '2026-04-23T09:16:04Z'
+loc: 75
 annotations: []
 imports:
+- .annotation_suggester
 - .base
 - .cartographer
 - .coder
@@ -31,6 +32,12 @@ tags:
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
+from .annotation_suggester import (
+    AnnotationSuggestionBrief,
+    AnnotationSuggestionReport,
+    SuggestedAnnotation,
+    SuggestionConfidence,
+)
 from .base import AgentInputBase, AgentOutputBase, NextRecommended
 from .cartographer import (
     AnchorKind,
@@ -95,6 +102,10 @@ __all__ = [
     "Annotation",
     "AnchorLocation",
     "AnchorKind",
+    "AnnotationSuggestionBrief",
+    "AnnotationSuggestionReport",
+    "SuggestedAnnotation",
+    "SuggestionConfidence",
 ]
 ```
 
@@ -103,6 +114,7 @@ __all__ = [
 ## Appendix — symbols & navigation *(auto)*
 
 ### Imports
+- `.annotation_suggester`
 - `.base`
 - `.cartographer`
 - `.coder`

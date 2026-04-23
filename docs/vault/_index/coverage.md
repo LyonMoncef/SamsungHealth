@@ -1,6 +1,6 @@
 ---
 type: vault-index
-last_synced: 2026-04-23T08:43:08Z
+last_synced: 2026-04-23T08:44:33Z
 ---
 
 # Coverage — source files without annotation

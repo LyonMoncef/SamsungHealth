@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/agents/test_contracts.py
-git_blob: a57ae7b915677297b0eee291f293bf58eada92d7
-last_synced: '2026-04-23T08:31:26Z'
-loc: 936
+git_blob: d0e0a1da0a5bc30a4fff929c158c2ba9099c1af1
+last_synced: '2026-04-23T09:16:04Z'
+loc: 1046
 annotations: []
 imports:
 - pytest
@@ -29,6 +29,7 @@ exports:
 
   '
 - "tographer:\n    #"
+- "otationSuggester:\n    d"
 - "kageReExports:\n    d"
 tags:
 - code
@@ -938,6 +939,110 @@ class TestCartographer:
 
 
 # ---------------------------------------------------------------------------
+# annotation_suggester (Phase A.6)
+# ---------------------------------------------------------------------------
+
+class TestAnnotationSuggester:
+    def test_brief_minimal_valid(self):
+        from agents.contracts.annotation_suggester import AnnotationSuggestionBrief
+
+        b = AnnotationSuggestionBrief(
+            task_id="t", invoked_by="hook", work_dir="w",
+            triggered_by="post_commit",
+        )
+        assert b.commit_sha is None
+        assert b.diff_files == []
+        assert b.max_suggestions == 5
+        assert b.confidence_threshold == "low"
+
+    def test_brief_triggered_by_literal(self):
+        from agents.contracts.annotation_suggester import AnnotationSuggestionBrief
+
+        for t in ("post_commit", "manual", "skill"):
+            AnnotationSuggestionBrief(
+                task_id="t", invoked_by="h", work_dir="w", triggered_by=t,
+            )
+        with pytest.raises(ValidationError):
+            AnnotationSuggestionBrief(
+                task_id="t", invoked_by="h", work_dir="w", triggered_by="cron",
+            )
+
+    def test_suggested_annotation_valid(self):
+        from agents.contracts.annotation_suggester import SuggestedAnnotation
+
+        s = SuggestedAnnotation(
+            slug="perf-cap",
+            file="server/x.py",
+            line=21,
+            rationale="Commit message mentions perf cap",
+            body_draft="# Why",
+            confidence="high",
+            triggers=["keyword:perf", "issue_ref:#142"],
+        )
+        assert s.slug == "perf-cap"
+        assert s.confidence == "high"
+
+    def test_suggested_slug_pattern(self):
+        from agents.contracts.annotation_suggester import SuggestedAnnotation
+
+        with pytest.raises(ValidationError):
+            SuggestedAnnotation(
+                slug="BadSlug", file="x.py", line=1,
+                rationale="r", body_draft="b", confidence="low",
+            )
+
+    def test_suggested_confidence_literal(self):
+        from agents.contracts.annotation_suggester import SuggestedAnnotation
+
+        for c in ("low", "medium", "high"):
+            SuggestedAnnotation(
+                slug="abc-def", file="x.py", line=1,
+                rationale="r", body_draft="b", confidence=c,
+            )
+        with pytest.raises(ValidationError):
+            SuggestedAnnotation(
+                slug="abc-def", file="x.py", line=1,
+                rationale="r", body_draft="b", confidence="meh",
+            )
+
+    def test_report_overall_literal(self):
+        from agents.contracts.annotation_suggester import AnnotationSuggestionReport
+
+        for v in ("suggestions_pending", "no_suggestion", "failed"):
+            AnnotationSuggestionReport(
+                task_id="t", agent="annotation-suggester",
+                status="success", summary="s",
+                suggestions=[], files_scanned=0, triggers_fired=[],
+                overall=v,
+            )
+        with pytest.raises(ValidationError):
+            AnnotationSuggestionReport(
+                task_id="t", agent="annotation-suggester",
+                status="success", summary="s",
+                suggestions=[], files_scanned=0, triggers_fired=[],
+                overall="??",
+            )
+
+    def test_report_next_recommended_literal_restricted(self):
+        from agents.contracts.annotation_suggester import AnnotationSuggestionReport
+
+        for v in ("annotate", "commit", "none"):
+            AnnotationSuggestionReport(
+                task_id="t", agent="annotation-suggester",
+                status="success", summary="s",
+                suggestions=[], files_scanned=0, triggers_fired=[],
+                overall="no_suggestion", next_recommended=v,
+            )
+        with pytest.raises(ValidationError):
+            AnnotationSuggestionReport(
+                task_id="t", agent="annotation-suggester",
+                status="success", summary="s",
+                suggestions=[], files_scanned=0, triggers_fired=[],
+                overall="no_suggestion", next_recommended="merge",
+            )
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting : __init__ re-exports
 # ---------------------------------------------------------------------------
 
@@ -971,6 +1076,10 @@ class TestPackageReExports:
             Annotation,
             AnchorLocation,
             AnchorKind,
+            AnnotationSuggestionBrief,
+            AnnotationSuggestionReport,
+            SuggestedAnnotation,
+            SuggestionConfidence,
         )
 
         assert AgentInputBase is not None
@@ -978,6 +1087,8 @@ class TestPackageReExports:
         assert PentestReport is not None
         assert CartographyReport is not None
         assert AnchorKind is not None
+        assert AnnotationSuggestionReport is not None
+        assert SuggestionConfidence is not None
         assert PlanAuditReport is not None
 ```
 
@@ -1002,8 +1113,10 @@ class TestPackageReExports:
 ` (class) — lines 484-606
 - `tographer:
     #` (class) — lines 613-892
+- `otationSuggester:
+    d` (class) — lines 899-996
 - `kageReExports:
-    d` (class) — lines 899-936
+    d` (class) — lines 1003-1046
 
 ### Imports
 - `pytest`
@@ -1026,5 +1139,7 @@ class TestPackageReExports:
 `
 - `tographer:
     #`
+- `otationSuggester:
+    d`
 - `kageReExports:
     d`

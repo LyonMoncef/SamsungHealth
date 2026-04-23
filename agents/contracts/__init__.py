@@ -1,3 +1,9 @@
+from .annotation_suggester import (
+    AnnotationSuggestionBrief,
+    AnnotationSuggestionReport,
+    SuggestedAnnotation,
+    SuggestionConfidence,
+)
 from .base import AgentInputBase, AgentOutputBase, NextRecommended
 from .cartographer import (
     AnchorKind,
@@ -62,4 +68,8 @@ __all__ = [
     "Annotation",
     "AnchorLocation",
     "AnchorKind",
+    "AnnotationSuggestionBrief",
+    "AnnotationSuggestionReport",
+    "SuggestedAnnotation",
+    "SuggestionConfidence",
 ]
