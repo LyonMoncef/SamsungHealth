@@ -47,7 +47,27 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `PlanAuditBrief` 
    | `skill_added_not_in_plan` | Skill `.claude/skills/X/SKILL.md` présent mais pas dans tableau Skills du plan |
    | `file_orphan` | Fichier source créé sans correspondance dans aucun plan ni spec (lien plan → file impossible à établir) |
    | `duration_estimate_drift` | Date frontmatter d'une spec ≥ 50% au-delà de l'estimation initiale du plan parent |
+   | `vault_orphan_annotation` | Annotation dans `docs/vault/annotations/_orphans/` non résolue depuis ≥ 3 commits — l'humain l'a oubliée. Severity `low` (1-2 commits) → `medium` (3-7) → `high` (8+) |
+   | `vault_missing_note` | Fichier source matchant la convention de globs cartographer (`server/**/*.py`, etc.) sans note vault correspondante dans `docs/vault/code/` — bug du sync ou hook désactivé. Severity `medium` |
+   | `vault_outdated` | Note vault dont frontmatter `git_blob` ne matche pas le SHA actuel du fichier source (`git ls-files -s <path>` extract column 2). Indique sync raté. Severity `medium` |
    | `other` | Tout le reste (scope text mismatch, decision documentée mais non appliquée, etc.) |
+
+   ### Détections vault — détail technique
+
+   Pour les 3 types `vault_*`, l'agent peut s'appuyer sur le CLI cartographer en mode read-only :
+
+   ```bash
+   # Détecte vault_orphan_annotation + vault_outdated en un seul shot
+   python3 -m agents.cartographer.cli --check
+   # exit 1 si new_orphans non vides
+
+   # Détecte vault_missing_note
+   ls docs/vault/annotations/_orphans/*.md 2>/dev/null
+   ```
+
+   Pour `vault_missing_note` : croise les `Glob` `server/**/*.py` (etc.) avec l'existence des `.md` correspondants dans `docs/vault/code/`. Mismatch = déviation.
+
+   Pour `vault_outdated` : pour chaque note vault dans `docs/vault/code/`, lire le frontmatter `git_blob` + `file_path`, puis comparer à `git ls-files -s <file_path>` colonne 2 (sha actuel). Différent = déviation.
 
 4. **Pour chaque déviation détectée** : produire `PlanDeviation` avec
    - `severity` (info < low < medium < high < critical) — sévérité = impact sur la cohérence à long terme :

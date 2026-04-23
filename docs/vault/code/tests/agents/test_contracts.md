@@ -1,3 +1,48 @@
+---
+type: code-source
+language: python
+file_path: tests/agents/test_contracts.py
+git_blob: a57ae7b915677297b0eee291f293bf58eada92d7
+last_synced: '2026-04-23T08:31:26Z'
+loc: 936
+annotations: []
+imports:
+- pytest
+- pydantic
+exports:
+- TestAgentInputBase
+- TestAgentOutputBase
+- TestSpecWriter
+- TestTestWriter
+- TestCoder
+- TestReviewer
+- 'stDocumenter:
+
+  '
+- 'stGitSteward:
+
+  '
+- 'stPentester:
+
+  '
+- 'stPlanKeeper:
+
+  '
+- "tographer:\n    #"
+- "kageReExports:\n    d"
+tags:
+- code
+- python
+---
+
+# tests/agents/test_contracts.py
+
+> [!info] Code mirror
+> Ce fichier est un **miroir auto-généré** de [`tests/agents/test_contracts.py`](../../../tests/agents/test_contracts.py).
+> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
+> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
+
+```python
 """RED-first tests for agents/contracts/*.
 
 Validates that every Pydantic contract :
@@ -934,3 +979,52 @@ class TestPackageReExports:
         assert CartographyReport is not None
         assert AnchorKind is not None
         assert PlanAuditReport is not None
+```
+
+---
+
+## Appendix — symbols & navigation *(auto)*
+
+### Symbols
+- `TestAgentInputBase` (class) — lines 20-52
+- `TestAgentOutputBase` (class) — lines 55-95
+- `TestSpecWriter` (class) — lines 102-141
+- `TestTestWriter` (class) — lines 148-171
+- `TestCoder` (class) — lines 178-207
+- `TestReviewer` (class) — lines 214-237
+- `stDocumenter:
+` (class) — lines 244-262
+- `stGitSteward:
+` (class) — lines 269-324
+- `stPentester:
+` (class) — lines 331-477
+- `stPlanKeeper:
+` (class) — lines 484-606
+- `tographer:
+    #` (class) — lines 613-892
+- `kageReExports:
+    d` (class) — lines 899-936
+
+### Imports
+- `pytest`
+- `pydantic`
+
+### Exports
+- `TestAgentInputBase`
+- `TestAgentOutputBase`
+- `TestSpecWriter`
+- `TestTestWriter`
+- `TestCoder`
+- `TestReviewer`
+- `stDocumenter:
+`
+- `stGitSteward:
+`
+- `stPentester:
+`
+- `stPlanKeeper:
+`
+- `tographer:
+    #`
+- `kageReExports:
+    d`

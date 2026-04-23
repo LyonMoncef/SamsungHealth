@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/contracts/plan_keeper.py
-git_blob: 78c97f86db30354a584fa5ebb9602e6cb4213eef
-last_synced: '2026-04-23T08:13:16Z'
-loc: 42
+git_blob: cec7090397e58d2908b9dc9838e7afdbbe2a33a4
+last_synced: '2026-04-23T08:31:26Z'
+loc: 45
 annotations: []
 imports:
 - typing
@@ -44,6 +44,9 @@ DeviationType = Literal[
     "skill_added_not_in_plan",
     "file_orphan",
     "duration_estimate_drift",
+    "vault_orphan_annotation",
+    "vault_missing_note",
+    "vault_outdated",
     "other",
 ]
 
@@ -77,9 +80,9 @@ class PlanAuditReport(AgentOutputBase):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `PlanAuditBrief` (class) — lines 21-25
-- `PlanDeviation` (class) — lines 28-34
-- `PlanAuditReport` (class) — lines 37-42
+- `PlanAuditBrief` (class) — lines 24-28
+- `PlanDeviation` (class) — lines 31-37
+- `PlanAuditReport` (class) — lines 40-45
 
 ### Imports
 - `typing`

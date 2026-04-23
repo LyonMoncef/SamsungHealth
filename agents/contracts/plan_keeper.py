@@ -14,6 +14,9 @@ DeviationType = Literal[
     "skill_added_not_in_plan",
     "file_orphan",
     "duration_estimate_drift",
+    "vault_orphan_annotation",
+    "vault_missing_note",
+    "vault_outdated",
     "other",
 ]
 
