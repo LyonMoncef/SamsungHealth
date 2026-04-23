@@ -1,0 +1,55 @@
+---
+type: vault-index
+last_synced: 2026-04-23T08:13:16Z
+---
+
+# Coverage — source files without annotation
+
+- `agents/__init__.py`
+- `agents/cartographer/__init__.py`
+- `agents/cartographer/anchor_resolver.py`
+- `agents/cartographer/annotation_io.py`
+- `agents/cartographer/cli.py`
+- `agents/cartographer/index_generator.py`
+- `agents/cartographer/marker_injector.py`
+- `agents/cartographer/markers.py`
+- `agents/cartographer/note_renderer.py`
+- `agents/cartographer/orphan_detector.py`
+- `agents/cartographer/walker.py`
+- `agents/contracts/__init__.py`
+- `agents/contracts/base.py`
+- `agents/contracts/cartographer.py`
+- `agents/contracts/coder.py`
+- `agents/contracts/documenter.py`
+- `agents/contracts/git_steward.py`
+- `agents/contracts/pentester.py`
+- `agents/contracts/plan_keeper.py`
+- `agents/contracts/reviewer.py`
+- `agents/contracts/spec_writer.py`
+- `agents/contracts/test_writer.py`
+- `android-app/app/src/main/java/com/samsunghealth/MainActivity.kt`
+- `android-app/app/src/main/java/com/samsunghealth/data/ApiClient.kt`
+- `android-app/app/src/main/java/com/samsunghealth/data/HealthConnectManager.kt`
+- `android-app/app/src/main/java/com/samsunghealth/data/PreferencesManager.kt`
+- `android-app/app/src/main/java/com/samsunghealth/ui/SettingsScreen.kt`
+- `android-app/app/src/main/java/com/samsunghealth/ui/SyncScreen.kt`
+- `android-app/app/src/main/java/com/samsunghealth/viewmodel/SyncViewModel.kt`
+- `scripts/explore_samsung_export.py`
+- `scripts/generate_sample.py`
+- `scripts/import_csv.py`
+- `scripts/import_samsung_csv.py`
+- `server/__init__.py`
+- `server/database.py`
+- `server/main.py`
+- `server/models.py`
+- `server/routers/__init__.py`
+- `server/routers/exercise.py`
+- `server/routers/heartrate.py`
+- `server/routers/sleep.py`
+- `server/routers/steps.py`
+- `static/api.js`
+- `static/app.js`
+- `static/dashboard.css`
+- `static/dashboard.js`
+- `static/index.html`
+- `static/style.css`

@@ -1,0 +1,357 @@
+---
+type: code-source
+language: css
+file_path: static/style.css
+git_blob: d1ed2b8e6fe20c18b6335a60f55e05950278bd22
+last_synced: '2026-04-23T08:13:16Z'
+loc: 329
+annotations: []
+imports: []
+exports: []
+tags:
+- code
+- css
+---
+
+# static/style.css
+
+> [!info] Code mirror
+> Ce fichier est un **miroir auto-généré** de [`static/style.css`](../../../static/style.css).
+> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
+> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
+
+```css
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+header button {
+    background: #16213e;
+    color: #e0e0e0;
+    border: 1px solid #0f3460;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 18px;
+}
+
+header button:hover {
+    background: #0f3460;
+}
+
+h1 {
+    font-size: 1.4rem;
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #16213e;
+    padding-bottom: 0;
+}
+
+.tab {
+    background: transparent;
+    color: #8888aa;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab:hover {
+    color: #e0e0e0;
+}
+
+.tab.active {
+    color: #e0e0e0;
+    border-bottom-color: #533483;
+}
+
+.panel {
+    display: none;
+}
+
+.panel.active {
+    display: block;
+}
+
+/* Sleep grid */
+#grid-wrapper {
+    overflow-x: auto;
+}
+
+#sleep-grid {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+}
+
+#sleep-grid th,
+#sleep-grid td {
+    border: 1px solid #16213e;
+    text-align: center;
+    padding: 4px 2px;
+    font-size: 0.75rem;
+}
+
+#sleep-grid th {
+    background: #16213e;
+    position: sticky;
+    top: 0;
+}
+
+#sleep-grid th:first-child {
+    width: 80px;
+    min-width: 80px;
+}
+
+#sleep-grid td:first-child {
+    background: #16213e;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#sleep-grid td.sleep {
+    background: #533483;
+}
+
+#sleep-grid td.sleep:hover {
+    background: #7b2ff7;
+}
+
+#sleep-grid td.stage-light {
+    background: #4a90d9;
+}
+
+#sleep-grid td.stage-light:hover {
+    background: #5da0e9;
+}
+
+#sleep-grid td.stage-deep {
+    background: #1a3a6e;
+}
+
+#sleep-grid td.stage-deep:hover {
+    background: #254a8e;
+}
+
+#sleep-grid td.stage-rem {
+    background: #7b2ff7;
+}
+
+#sleep-grid td.stage-rem:hover {
+    background: #9b5ff9;
+}
+
+#sleep-grid td.stage-awake {
+    background: #d4731a;
+}
+
+#sleep-grid td.stage-awake:hover {
+    background: #e8932a;
+}
+
+/* Tooltip */
+.tooltip {
+    display: none;
+    position: fixed;
+    background: #0f3460;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 100;
+    white-space: pre-line;
+}
+
+.tooltip.visible {
+    display: block;
+}
+
+/* Steps chart */
+.steps-day {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.steps-label {
+    width: 80px;
+    font-size: 0.8rem;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.steps-bar-wrapper {
+    flex: 1;
+    height: 22px;
+    background: #16213e;
+    border-radius: 3px;
+    position: relative;
+}
+
+.steps-bar {
+    height: 100%;
+    background: #2ecc71;
+    border-radius: 3px;
+    transition: width 0.3s;
+    min-width: 1px;
+}
+
+.steps-value {
+    width: 60px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+/* Heart rate chart */
+.hr-day {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.hr-label {
+    width: 80px;
+    font-size: 0.8rem;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.hr-range-wrapper {
+    flex: 1;
+    height: 22px;
+    background: #16213e;
+    border-radius: 3px;
+    position: relative;
+}
+
+.hr-range-bar {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #e74c3c);
+    border-radius: 3px;
+    opacity: 0.7;
+}
+
+.hr-avg-marker {
+    position: absolute;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: #fff;
+    border-radius: 1px;
+}
+
+.hr-value {
+    width: 120px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Exercise cards */
+.exercise-date-group {
+    margin-bottom: 16px;
+}
+
+.exercise-date-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #8888aa;
+}
+
+.exercise-card {
+    background: #16213e;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.exercise-type {
+    font-weight: 600;
+    text-transform: capitalize;
+    font-size: 0.95rem;
+}
+
+.exercise-time {
+    font-size: 0.8rem;
+    color: #8888aa;
+}
+
+.exercise-duration {
+    font-size: 0.9rem;
+    color: #2ecc71;
+    font-weight: 600;
+}
+
+/* Trends stat cards */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    background: #16213e;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-card .stat-label {
+    font-size: 0.8rem;
+    color: #8888aa;
+    margin-bottom: 8px;
+}
+
+.stat-card .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.stat-card .stat-unit {
+    font-size: 0.8rem;
+    color: #8888aa;
+}
+```
+
+---
+
+## Appendix — symbols & navigation *(auto)*

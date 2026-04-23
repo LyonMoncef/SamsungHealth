@@ -1,0 +1,117 @@
+"""RED-first tests for agents.cartographer.cli.
+
+The CLI orchestrates everything: walk source tree, parse markers, resolve
+anchors, render notes, write `_index/`. Three modes:
+- `--full`  : (re-)render every note, scan whole repo
+- `--diff <files>` : only the listed files (used by pre-commit)
+- `--check` : dry-run, exit non-zero if any orphan/unmatched marker found
+"""
+
+from pathlib import Path
+
+import pytest
+
+
+class TestRunFull:
+    def test_full_creates_notes_for_each_source_file(self, tmp_path: Path):
+        from agents.cartographer.cli import run
+
+        # Mini repo: 1 python file + 1 js file
+        (tmp_path / "server").mkdir()
+        (tmp_path / "server/main.py").write_text("def hi(): return 1\n")
+        (tmp_path / "static").mkdir()
+        (tmp_path / "static/x.js").write_text("function r() { return 1; }\n")
+
+        report = run(
+            mode="full",
+            repo_root=str(tmp_path),
+            vault_root=str(tmp_path / "docs/vault"),
+            source_globs=["server/**/*.py", "static/**/*.js"],
+        )
+        assert report.overall == "complete"
+        assert report.notes_generated == 2
+        assert (tmp_path / "docs/vault/code/server/main.md").exists()
+        assert (tmp_path / "docs/vault/code/static/x.md").exists()
+
+        # Frontmatter + code preserved
+        content = (tmp_path / "docs/vault/code/server/main.md").read_text()
+        assert "type: code-source" in content
+        assert "def hi(): return 1" in content
+
+    def test_full_generates_index_files(self, tmp_path: Path):
+        from agents.cartographer.cli import run
+
+        (tmp_path / "server").mkdir()
+        (tmp_path / "server/x.py").write_text("x = 1\n")
+
+        run(
+            mode="full",
+            repo_root=str(tmp_path),
+            vault_root=str(tmp_path / "docs/vault"),
+            source_globs=["server/**/*.py"],
+        )
+        assert (tmp_path / "docs/vault/_index/orphans.md").exists()
+        assert (tmp_path / "docs/vault/_index/coverage.md").exists()
+        assert (tmp_path / "docs/vault/_index/annotations-by-tag.md").exists()
+        # Coverage lists the un-annotated file
+        cov = (tmp_path / "docs/vault/_index/coverage.md").read_text()
+        assert "server/x.py" in cov
+
+
+class TestRunDiff:
+    def test_diff_only_renders_listed_files(self, tmp_path: Path):
+        from agents.cartographer.cli import run
+
+        (tmp_path / "server").mkdir()
+        (tmp_path / "server/a.py").write_text("a = 1\n")
+        (tmp_path / "server/b.py").write_text("b = 1\n")
+
+        report = run(
+            mode="diff",
+            repo_root=str(tmp_path),
+            vault_root=str(tmp_path / "docs/vault"),
+            source_globs=["server/**/*.py"],
+            diff_files=["server/a.py"],
+        )
+        assert report.notes_generated == 1
+        assert (tmp_path / "docs/vault/code/server/a.md").exists()
+        assert not (tmp_path / "docs/vault/code/server/b.md").exists()
+
+
+class TestRunCheck:
+    def test_check_returns_failed_on_orphan(self, tmp_path: Path):
+        from agents.cartographer.cli import run
+
+        # source file without the slug + annotation file referencing it = orphan
+        (tmp_path / "server").mkdir()
+        (tmp_path / "server/x.py").write_text("x = 1\n")
+        ann_dir = tmp_path / "docs/vault/annotations/server/x"
+        ann_dir.mkdir(parents=True)
+        (ann_dir / "lost.md").write_text(
+            "---\nslug: lost\nstatus: active\nanchors:\n"
+            "  - file: server/x.py\n    kind: single\n    line: 1\n"
+            "scope: single-file\ncreated_by: human\nreferences: {}\n---\nbody\n"
+        )
+
+        report = run(
+            mode="check",
+            repo_root=str(tmp_path),
+            vault_root=str(tmp_path / "docs/vault"),
+            source_globs=["server/**/*.py"],
+        )
+        assert report.overall == "failed"
+        assert "lost" in report.new_orphans
+
+    def test_check_passes_when_clean(self, tmp_path: Path):
+        from agents.cartographer.cli import run
+
+        (tmp_path / "server").mkdir()
+        (tmp_path / "server/x.py").write_text("x = 1\n")
+
+        report = run(
+            mode="check",
+            repo_root=str(tmp_path),
+            vault_root=str(tmp_path / "docs/vault"),
+            source_globs=["server/**/*.py"],
+        )
+        assert report.overall == "complete"
