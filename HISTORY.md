@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `48e5876`
+feat(vault): vault Obsidian dédié pour SamsungHealth (séparé du PKM perso)
+- **Path final** : `C:\Users\idsmf\Documents\Obsidian\SamsungHealth\` = `/mnt/c/Users/idsmf/Documents/Obsidian/SamsungHealth/`
+- **Avant** : mirror posé dans `PKM/vault/02_Projects/SamsungHealth/` (intégré au vault PKM perso)
+- **Maintenant** : vault Obsidian distinct, ouvert via `File → Open vault → Open folder as vault`
+- `vault/02_Projects/SamsungHealth/` côté PKM **supprimé entièrement** (plus rien là-bas)
+- `CARTOGRAPHER_MIRROR_TO` mis à jour : `~/.zshrc`, `Makefile` exemple, `docs/vault/README.md` setup
+- Bootstrap : 78 notes vault dans le nouveau path, structure identique au repo
+
 ### 2026-04-23 `4c5c8db`
 feat(vault): sortir SamsungHealth du PKM (le mirror EST le dossier 02_Projects/SamsungHealth/) + migrate codex/release + work template vers repo
 - **Cleanup PKM** : suppression `vault/02_Projects/SamsungHealth/` entier (codex/, work/, specs/ stubs, code-vault/) — structure remplacée par mirror direct
