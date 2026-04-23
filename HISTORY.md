@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `40a195f`
+feat(phase-a.5): subagent code-cartographer + 3 skills (/sync-vault /annotate /anchor-review) avec linked-list pattern
+- Added `.claude/agents/code-cartographer.md` — subagent (tools : Read/Write/Grep/Glob/Bash, model sonnet, color teal). Workflow : invoque le CLI cartographer pour `full|diff|check`, gère les `AnnotationOpBrief` (create/update/delete/anchor-review). Règle stricte : sync sens unique code+annotations → notes vault rendues, jamais l'inverse
+- Added `.claude/skills/sync-vault/SKILL.md` — wrapper du CLI. Sans arg = mode diff sur staged+modified. Args : `--full`, `--diff <files>`, `--check`. Next default `/commit`
+- Added `.claude/skills/annotate/SKILL.md` — CRUD annotation. Forms : `<slug> --at <file>:<line>`, `<slug> --range <file>:<start>-<end>`, `edit <slug>`, `delete <slug>`. Valide slug regex, refuse collisions, inject marker + crée annotation file + re-render. Next `/sync-vault --diff`
+- Added `.claude/skills/anchor-review/SKILL.md` — résolution orphans. Sans arg = liste. Avec slug = fuzzy match candidats + validation humaine OBLIGATOIRE avant ré-injection. Déplace l'annotation hors `_orphans/` + status active. Next `/commit`
+- Tests : 129/129 GREEN (pas de tests sur les .md de skills — invoqués manuellement)
+- Phase A.5 task #8 ✓ ; reste #9 hook pre-commit, #10 changelog gen, #11 plan-keeper extension
+
 ### 2026-04-23 `46f85e4`
 feat(phase-a.5): CLI code-cartographer (full/diff/check) + bootstrap initial 47 notes vault + 3 indexes (5 tests GREEN)
 - Added `agents/cartographer/cli.py` — `run(mode, repo_root, vault_root, ...)` orchestrateur + `main()` argv (`--full`, `--diff <files>`, `--check`). Découvre sources via globs, parse markers, walk AST, résout anchors, render notes vault, écrit `_index/` (mode full uniquement), retourne `CartographyReport`. `--check` = dry-run, exit 1 si new orphans
