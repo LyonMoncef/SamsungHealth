@@ -325,6 +325,159 @@ class TestGitSteward:
 
 
 # ---------------------------------------------------------------------------
+# pentester
+# ---------------------------------------------------------------------------
+
+class TestPentester:
+    def test_brief_minimal_valid(self):
+        from agents.contracts.pentester import PentestBrief
+
+        b = PentestBrief(
+            task_id="t", invoked_by="h", work_dir="w",
+            branch="chore/x",
+        )
+        assert b.scope_mode == "full_repo"
+        assert b.severity_threshold == "medium"
+        assert b.allow_poc_generation is True
+        assert b.allow_poc_execution is False
+        assert b.quick is False
+        assert "sast" in b.scan_modes
+        assert "dast" not in b.scan_modes  # not in default
+
+    def test_brief_scope_mode_literal(self):
+        from agents.contracts.pentester import PentestBrief
+
+        for sm in ("full_repo", "diff_only", "files_only"):
+            PentestBrief(task_id="t", invoked_by="h", work_dir="w", branch="b", scope_mode=sm)
+        with pytest.raises(ValidationError):
+            PentestBrief(task_id="t", invoked_by="h", work_dir="w", branch="b", scope_mode="weird")
+
+    def test_brief_severity_threshold_literal(self):
+        from agents.contracts.pentester import PentestBrief
+
+        for sev in ("info", "low", "medium", "high", "critical"):
+            PentestBrief(task_id="t", invoked_by="h", work_dir="w", branch="b", severity_threshold=sev)
+        with pytest.raises(ValidationError):
+            PentestBrief(task_id="t", invoked_by="h", work_dir="w", branch="b", severity_threshold="extreme")
+
+    def test_brief_scan_modes_literal_items(self):
+        from agents.contracts.pentester import PentestBrief
+
+        PentestBrief(
+            task_id="t", invoked_by="h", work_dir="w", branch="b",
+            scan_modes=["sast", "sca", "secrets", "dast", "semantic", "rgpd"],
+        )
+        with pytest.raises(ValidationError):
+            PentestBrief(
+                task_id="t", invoked_by="h", work_dir="w", branch="b",
+                scan_modes=["telepathic"],
+            )
+
+    def test_finding_valid(self):
+        from agents.contracts.pentester import PentestFinding
+
+        f = PentestFinding(
+            severity="high",
+            category="injection",
+            cwe="CWE-89",
+            owasp="A03:2021",
+            location="server/routers/sleep.py:42",
+            description="Raw SQL with user input",
+            exploit_scenario="curl ?id=1' OR '1'='1",
+            remediation="Use parametrized queries",
+            references=["https://owasp.org/Top10/A03_2021-Injection/"],
+        )
+        assert f.severity == "high"
+        assert f.proof_of_concept_path is None  # default
+
+    def test_finding_severity_literal(self):
+        from agents.contracts.pentester import PentestFinding
+
+        for s in ("critical", "high", "medium", "low", "info"):
+            PentestFinding(
+                severity=s, category="other", location="x", description="d",
+                exploit_scenario="e", remediation="r",
+            )
+        with pytest.raises(ValidationError):
+            PentestFinding(
+                severity="apocalyptic", category="other", location="x", description="d",
+                exploit_scenario="e", remediation="r",
+            )
+
+    def test_finding_category_literal(self):
+        from agents.contracts.pentester import PentestFinding
+
+        for c in ("injection", "auth", "crypto", "secrets", "rgpd",
+                  "deps", "config", "logic", "ssrf", "xss", "other"):
+            PentestFinding(
+                severity="low", category=c, location="x", description="d",
+                exploit_scenario="e", remediation="r",
+            )
+        with pytest.raises(ValidationError):
+            PentestFinding(
+                severity="low", category="vibes", location="x", description="d",
+                exploit_scenario="e", remediation="r",
+            )
+
+    def test_report_valid(self):
+        from agents.contracts.pentester import PentestReport, PentestFinding
+
+        f = PentestFinding(
+            severity="medium", category="auth", location="server/x.py:1",
+            description="d", exploit_scenario="e", remediation="r",
+        )
+        r = PentestReport(
+            task_id="t", agent="pentester", status="success", summary="1 medium found",
+            findings=[f],
+            scan_modes_run=["sast", "secrets"],
+            tools_used=["bandit", "gitleaks"],
+            critical_count=0, high_count=0, medium_count=1, low_count=0, info_count=0,
+            overall="warn",
+            next_recommended="commit",
+        )
+        assert r.findings[0].category == "auth"
+        assert r.overall == "warn"
+
+    def test_report_overall_literal(self):
+        from agents.contracts.pentester import PentestReport
+
+        for v in ("pass", "block_merge", "warn"):
+            PentestReport(
+                task_id="t", agent="pentester", status="success", summary="s",
+                findings=[], scan_modes_run=[], tools_used=[],
+                critical_count=0, high_count=0, medium_count=0, low_count=0, info_count=0,
+                overall=v,
+            )
+        with pytest.raises(ValidationError):
+            PentestReport(
+                task_id="t", agent="pentester", status="success", summary="s",
+                findings=[], scan_modes_run=[], tools_used=[],
+                critical_count=0, high_count=0, medium_count=0, low_count=0, info_count=0,
+                overall="meh",
+            )
+
+    def test_report_next_recommended_literal_restricted(self):
+        from agents.contracts.pentester import PentestReport
+
+        for v in ("impl", "review", "commit", "none"):
+            PentestReport(
+                task_id="t", agent="pentester", status="success", summary="s",
+                findings=[], scan_modes_run=[], tools_used=[],
+                critical_count=0, high_count=0, medium_count=0, low_count=0, info_count=0,
+                overall="pass",
+                next_recommended=v,
+            )
+        with pytest.raises(ValidationError):
+            PentestReport(
+                task_id="t", agent="pentester", status="success", summary="s",
+                findings=[], scan_modes_run=[], tools_used=[],
+                critical_count=0, high_count=0, medium_count=0, low_count=0, info_count=0,
+                overall="pass",
+                next_recommended="merge",  # not in pentester's allowed nexts
+            )
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting : __init__ re-exports
 # ---------------------------------------------------------------------------
 
@@ -345,7 +498,11 @@ class TestPackageReExports:
             DocArtifact,
             GitOperationBrief,
             GitOperationReport,
+            PentestBrief,
+            PentestFinding,
+            PentestReport,
         )
 
         assert AgentInputBase is not None
         assert GitOperationReport is not None
+        assert PentestReport is not None

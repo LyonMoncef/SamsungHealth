@@ -1,4 +1,4 @@
-.PHONY: dev dev-mobile test lint install ci-test ci-lint
+.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest
 
 ## install : install Python dependencies
 install:
@@ -41,3 +41,23 @@ ci-test:
 ci-lint:
 	pip install ruff -q
 	ruff check server/ scripts/
+
+## security-install : install pentester toolchain (SAST/SCA/secrets)
+security-install:
+	pip install bandit pip-audit safety semgrep -q
+	@echo ""
+	@echo "✓ Installed: bandit, pip-audit, safety, semgrep"
+	@echo "⚠ gitleaks not pip-installable — install via:"
+	@echo "  brew install gitleaks                       # macOS"
+	@echo "  apt install gitleaks                        # Debian/Ubuntu (>= 23.04)"
+	@echo "  go install github.com/zricethezav/gitleaks/v8@latest   # any platform with Go"
+	@echo ""
+
+## pentest : escape hatch — run all SAST/SCA/secrets tools manually (prefer /pentest skill)
+pentest:
+	@echo "→ bandit (SAST)" ; bandit -r server/ scripts/ -q || true
+	@echo "→ pip-audit (SCA)" ; pip-audit || true
+	@echo "→ semgrep (SAST multi-rules)" ; semgrep --config=auto server/ scripts/ --quiet || true
+	@command -v gitleaks > /dev/null && (echo "→ gitleaks (secrets)" ; gitleaks detect --no-banner) || echo "⚠ gitleaks not installed — skipped"
+	@echo ""
+	@echo "ℹ For structured findings + POC generation, use the /pentest skill instead."

@@ -37,3 +37,5 @@ Thumbs.db
 
 # Multi-agent runtime artifacts (briefs/results/traces per task-id) — never commit
 work/
+# Pentester POC scripts — fork-safe redundancy (already covered by work/)
+**/poc/
