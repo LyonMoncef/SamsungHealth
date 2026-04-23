@@ -53,6 +53,19 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `dc2f108`
+feat(cartographer): --mirror-to + bootstrap miroir Windows pour Obsidian (workaround EISDIR WSL chokidar) + Makefile target vault-mirror + doc
+- **Contexte** : Obsidian Windows échoue avec `EISDIR: illegal operation on a directory, watch \\wsl.localhost\...` quand on essaie d'ouvrir un dossier sous WSL — bug connu chokidar/Electron sur les UNC paths WSL. Solution adoptée : mirror sens unique vers `/mnt/c/.../PKM/vault/02_Projects/SamsungHealth/code-vault/`
+- Updated `agents/cartographer/cli.py` — `run()` accepte `mirror_to`, `_mirror_vault()` fait `rmtree+copytree` (purge stale notes) + écrit `MIRROR-README.md` warning. CLI flag `--mirror-to`, défaut env var `$CARTOGRAPHER_MIRROR_TO`
+- Updated `tests/agents/test_cli.py` — `TestMirror` (3 tests : copy, overwrite stale, no-op si None)
+- Updated `.githooks/pre-commit` — passe `--mirror-to $CARTOGRAPHER_MIRROR_TO` si l'env var est définie
+- Updated `Makefile` — target `vault-mirror` (full re-render + copy)
+- Updated `docs/vault/README.md` — section "Comment ouvrir" remplacée par setup mirror Windows + règles read-only
+- Updated `.gitignore` — `docs/vault/.obsidian/` (config locale Obsidian, pollue les diffs)
+- Persisté `export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/PKM/vault/02_Projects/SamsungHealth/code-vault` dans `~/.zshrc`
+- Bootstrap mirror exécuté : 50 notes code + 30 changelog + 3 indexes + MIRROR-README.md visibles dans le PKM Obsidian Windows
+- Tests : 139/139 GREEN (136 + 3 mirror)
+
 ### 2026-04-23 `8f08068`
 feat(plan-keeper): +3 deviation_types vault (vault_orphan_annotation/vault_missing_note/vault_outdated) + détection détaillée dans subagent prompt
 - Updated `agents/contracts/plan_keeper.py` — `DeviationType` Literal étendu à 11 valeurs (8 originaux + 3 vault_*)
