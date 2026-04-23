@@ -484,7 +484,7 @@
   let driftPlayback = { playing: false, frameFrac: 0, windowSize: 30, speed: 1, rafId: null, frames: null, _src: null, _loading: false };
   let metricsMonth = null;
   let metricsFullLoading = false;
-  let periodFilter = 'full';
+  let periodFilter = '6m';
   let periodFullLoading = false;
   let _tipHandlers = null;
 
@@ -514,21 +514,25 @@
 
   function filteredSessions() {
     const src = D.sessionsFull || D.sessions;
-    if (periodFilter === 'full') return src;
+    if (periodFilter === '6m') {
+      const d = new Date(); d.setMonth(d.getMonth() - 6);
+      const cutoff = d.getTime();
+      return src.filter((s) => s.sleep_start.getTime() >= cutoff);
+    }
     const cutoff = Date.now() - (periodFilter === '7d' ? 7 : 30) * 86400000;
     return src.filter((s) => s.sleep_start.getTime() >= cutoff);
   }
 
   function periodFilterBar() {
-    const pills = [['7d','7 jours'], ['30d','30 jours'], ['full','Tout']].map(([v, l]) =>
+    const pills = [['7d','7 jours'], ['30d','30 jours'], ['6m','6 mois']].map(([v, l]) =>
       `<button class="period-pill${periodFilter === v ? ' active' : ''}" data-period="${v}">${l}</button>`
     ).join('');
-    const hint = periodFilter === 'full' && !D.sessionsFull ? ' <span class="period-loading">chargement…</span>' : '';
+    const hint = periodFilter === '6m' && !D.sessionsFull ? ' <span class="period-loading">chargement…</span>' : '';
     return `<div class="period-filter-bar"><span class="period-filter-label">Période</span><div class="period-pills">${pills}</div>${hint}</div>`;
   }
 
   function hypnogramSVG(session) {
-    const w = 1000, h = 260, padL = 70, padR = 20, padT = 16, padB = 40;
+    const w = 1000, h = 260, padL = 120, padR = 20, padT = 16, padB = 40;
     const innerW = w - padL - padR, innerH = h - padT - padB;
     const yForStage = { awake: padT + innerH * 0.08, rem: padT + innerH * 0.32, light: padT + innerH * 0.58, deep: padT + innerH * 0.88 };
     const start = session.sleep_start.getTime(), end = session.sleep_end.getTime(), total = end - start;
@@ -543,11 +547,13 @@
     }
     const yLabels = Object.entries(yForStage).map(([k, y]) => `<line class="hypno-grid-line" x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}"/><text class="hypno-y-label" x="${padL - 12}" y="${y + 4}" text-anchor="end">${k}</text>`).join("");
     const hours = total / 3600000;
+    const tickStep = window.innerWidth <= 560 ? 2 : 1;
     let xTicks = "";
     for (let i = 0; i <= hours; i++) {
+      if (i % tickStep !== 0) continue;
       const t = session.sleep_start.getTime() + i * 3600000;
       const x = padL + (i / hours) * innerW;
-      xTicks += `<text class="hypno-x-label" x="${x}" y="${h - 14}" text-anchor="middle">${pad(new Date(t).getHours())}:00</text>`;
+      xTicks += `<text class="hypno-x-label" x="${x}" y="${h - 14}" text-anchor="middle">${pad(new Date(t).getHours())}h</text>`;
     }
     return `<svg class="hypno-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${yLabels}${segs}${xTicks}</svg>`;
   }
@@ -587,7 +593,7 @@
   }
 
   function radialSVG(session) {
-    const w = 520, cx = w / 2, cy = w / 2, rOuter = w * 0.46, rInner = w * 0.32;
+    const w = 580, cx = w / 2, cy = w / 2, rOuter = 239, rInner = 166;
     let stageArcs = "";
     for (const st of session.stages) {
       const a0 = angleForTime(st.stage_start);
@@ -607,37 +613,52 @@
       const isMajor = h % 6 === 0, isMid = h % 2 === 0;
       const r1 = rOuter + 4, r2 = rOuter + (isMajor ? 15 : isMid ? 9 : 6);
       ticks += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${isMajor ? 0.4 : isMid ? 0.18 : 0.08})" stroke-width="1"/>`;
-      const rt = rOuter + (isMajor ? 36 : 30);
-      const fs = isMajor ? 13 : 10;
+      const rt = rOuter + (isMajor ? 28 : 20);
+      const fs = isMajor ? 18 : 13;
       const fill = isMajor ? "rgba(232,228,245,0.65)" : h % 2 === 0 ? "rgba(232,228,245,0.3)" : "rgba(232,228,245,0.18)";
       ticks += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${pad(h)}</text>`;
     }
     const durHrs = session.duration_hours.toFixed(1);
     const center = `<text x="${cx}" y="${cy - 8}" text-anchor="middle" font-family="Instrument Serif" font-size="48" fill="#e8e4f5">${durHrs}</text><text x="${cx}" y="${cy + 18}" text-anchor="middle" font-family="Geist Mono" font-size="10" fill="#6a6488" letter-spacing="0.15em">HOURS</text>`;
-    return `<svg viewBox="0 0 ${w} ${w}" class="radial-svg"><circle cx="${cx}" cy="${cy}" r="${(rOuter + rInner) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rOuter - rInner}"/>${stageArcs}${ticks}${center}</svg>`;
+    const aStart = angleForTime(session.sleep_start);
+    const aEnd = angleForTime(session.sleep_end);
+    function endpointMark(a, label) {
+      const dotR = rOuter + 7;
+      const txtR = rInner - 35;
+      const dx = (cx + Math.cos(a) * dotR).toFixed(1), dy = (cy + Math.sin(a) * dotR).toFixed(1);
+      const lx = (cx + Math.cos(a) * txtR).toFixed(1), ly = (cy + Math.sin(a) * txtR).toFixed(1);
+      return `<circle cx="${dx}" cy="${dy}" r="5" fill="rgba(232,228,245,0.9)"/>` +
+        `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-family="Instrument Serif" font-size="22" font-style="italic" fill="rgba(232,228,245,0.9)">${label}</text>`;
+    }
+    const endpoints = endpointMark(aStart, fmtHM(session.sleep_start)) + endpointMark(aEnd, fmtHM(session.sleep_end));
+    return `<svg viewBox="0 0 ${w} ${w}" class="radial-svg" style="overflow:visible"><circle cx="${cx}" cy="${cy}" r="${(rOuter + rInner) / 2}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${rOuter - rInner}"/>${stageArcs}${ticks}${endpoints}${center}</svg>`;
   }
 
   function chapterRadial() {
     const s = D.sessions[focusIdx];
+    const stats = [
+      { k: "Couché", v: fmtHM(s.sleep_start), stage: null },
+      { k: "Réveil", v: fmtHM(s.sleep_end), stage: null },
+      { k: "Durée", v: hoursMinutes(s.duration_ms), stage: null },
+      { k: "Score", v: `${s.score} / 100`, stage: null },
+    ];
     return `
       <div class="chapter">
         <div class="chapter-label"><span class="chapter-num">04</span><span class="eyebrow">Radial clock</span></div>
         <h2>A night shaped like a <em>clock face</em>.</h2>
         <p class="chapter-desc">Twelve at the top, noon at the bottom. The ring's colour shifts with every stage.</p>
       </div>
-      <div class="panel">
-        <div class="radial-wrap">
-          <div>${radialSVG(s)}</div>
-          <div class="radial-info">
-            <h3>${fmtDateLong(s.sleep_end)}</h3>
-            <p>Read clockwise from midnight. The ring is your night, with each colour marking a sleep stage in real time.</p>
-            <dl class="radial-kv">
-              <dt>Bedtime</dt><dd>${fmtHM(s.sleep_start)}</dd>
-              <dt>Wake</dt><dd>${fmtHM(s.sleep_end)}</dd>
-              <dt>Duration</dt><dd>${hoursMinutes(s.duration_ms)}</dd>
-              <dt>Efficiency</dt><dd>${Math.round(s.efficiency * 100)}%</dd>
-              <dt>Score</dt><dd>${s.score} / 100</dd>
-            </dl>
+      <div class="panel" style="overflow:visible">
+        <div class="radial-layout">
+          <div class="radial-svg-cell">${radialSVG(s)}</div>
+          <div class="radial-info-cell">
+            <div class="hypno-header">
+              <div class="hypno-date">${fmtDateLong(s.sleep_end)}</div>
+              <div class="hypno-controls"><button id="radial-prev">‹</button><button id="radial-next">›</button></div>
+            </div>
+            <div class="hypno-stats" style="margin-top:20px">
+              ${stats.map((st) => `<div class="hypno-stat"><div class="k">${st.k}</div><div class="v">${st.v}</div></div>`).join("")}
+            </div>
           </div>
         </div>
       </div>
@@ -657,10 +678,10 @@
       const tickOp = isMajor ? 0.45 : isMid ? 0.2 : 0.08;
       const r1 = rOuter + 3, r2 = rOuter + 3 + tickLen;
       t += `<line x1="${(cx + Math.cos(a) * r1).toFixed(1)}" y1="${(cy + Math.sin(a) * r1).toFixed(1)}" x2="${(cx + Math.cos(a) * r2).toFixed(1)}" y2="${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="rgba(255,255,255,${tickOp})" stroke-width="${isMajor ? 1.5 : 1}"/>`;
-      const rt = rOuter + (isMajor ? 28 : 23);
+      const rt = rOuter + (isMajor ? 34 : 28);
       const isMidnight = h === 0;
       const fill = isMidnight ? "rgba(180,150,255,0.9)" : isMajor ? "rgba(232,228,245,0.6)" : isMid ? "rgba(232,228,245,0.3)" : "rgba(232,228,245,0.16)";
-      const fs = isMajor ? 13 : 10;
+      const fs = isMajor ? 17 : 13;
       t += `<text x="${(cx + Math.cos(a) * rt).toFixed(1)}" y="${(cy + Math.sin(a) * rt).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="Geist Mono" font-size="${fs}" fill="${fill}">${pad(h)}</text>`;
     }
     return t;
@@ -1229,20 +1250,28 @@
 
   function render() {
     if (driftPlayback.rafId) { cancelAnimationFrame(driftPlayback.rafId); driftPlayback.rafId = null; driftPlayback.playing = false; }
-    app.innerHTML = topbar() + hero() + chapterHypnogram() + chapterRadial() + periodFilterBar() + chapterTimeline() + chapterCards() + chapterMetrics() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
+    app.innerHTML = topbar() + hero() + `<div id="focus-hypno">${chapterHypnogram()}</div>` + `<div id="focus-radial">${chapterRadial()}</div>` + periodFilterBar() + chapterTimeline() + chapterCards() + chapterMetrics() + chapterDriftClock() + footer() + tweaksPanel() + `<div id="hover-tip"></div>`;
     bindEvents();
     applyPrefs();
   }
 
+  function bindFocusEvents() {
+    const prev = () => { focusIdx = (focusIdx - 1 + D.sessions.length) % D.sessions.length; PREFS.focusNightIndex = focusIdx; savePrefs(); renderFocus(); };
+    const next = () => { focusIdx = (focusIdx + 1) % D.sessions.length; PREFS.focusNightIndex = focusIdx; savePrefs(); renderFocus(); };
+    document.getElementById("hypno-prev")?.addEventListener("click", prev);
+    document.getElementById("hypno-next")?.addEventListener("click", next);
+    document.getElementById("radial-prev")?.addEventListener("click", prev);
+    document.getElementById("radial-next")?.addEventListener("click", next);
+  }
+
+  function renderFocus() {
+    document.getElementById("focus-hypno").innerHTML = chapterHypnogram();
+    document.getElementById("focus-radial").innerHTML = chapterRadial();
+    bindFocusEvents();
+  }
+
   function bindEvents() {
-    document.getElementById("hypno-prev")?.addEventListener("click", () => {
-      focusIdx = (focusIdx - 1 + D.sessions.length) % D.sessions.length;
-      PREFS.focusNightIndex = focusIdx; savePrefs(); render();
-    });
-    document.getElementById("hypno-next")?.addEventListener("click", () => {
-      focusIdx = (focusIdx + 1) % D.sessions.length;
-      PREFS.focusNightIndex = focusIdx; savePrefs(); render();
-    });
+    bindFocusEvents();
     document.getElementById("timeline-to-history")?.addEventListener("click", () => {
       navigateTo("history/timeline");
     });
@@ -1329,8 +1358,16 @@
       app.removeEventListener('mouseout', _tipHandlers.out);
       app.removeEventListener('mousemove', _tipHandlers.move);
       app.removeEventListener('click', _tipHandlers.click);
+      if (_tipHandlers.scroll) window.removeEventListener('scroll', _tipHandlers.scroll);
     }
     let _tipPinned = false;
+    function _posTip(cx, cy) {
+      const TW = 268, TH = 210;
+      const tx = cx + 16 + TW > window.innerWidth ? cx - TW - 8 : cx + 16;
+      tip.style.left = Math.max(8, tx) + 'px';
+      tip.style.top = Math.max(8, Math.min(cy + 14, window.innerHeight - TH - 8)) + 'px';
+    }
+    function _dismiss() { _tipPinned = false; tip.classList.remove('show'); }
     _tipHandlers = {
       over: (e) => {
         if (_tipPinned) return;
@@ -1342,21 +1379,23 @@
         if (_tipPinned) return;
         if (!e.relatedTarget?.closest('[data-stip]')) tip.classList.remove('show');
       },
-      move: (e) => { tip.style.left = (e.clientX + 16) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; },
+      move: (e) => { _posTip(e.clientX, e.clientY); },
       click: (e) => {
         const el = e.target.closest('[data-stip]');
-        if (el) { try { tip.innerHTML = buildStageTip(JSON.parse(el.dataset.stip)); tip.classList.add('show'); _tipPinned = true; } catch {} }
-        else { _tipPinned = false; tip.classList.remove('show'); }
+        if (el) { try { tip.innerHTML = buildStageTip(JSON.parse(el.dataset.stip)); _posTip(e.clientX, e.clientY); tip.classList.add('show'); _tipPinned = true; } catch {} }
+        else { _dismiss(); }
       },
+      scroll: () => _dismiss(),
     };
     app.addEventListener('mouseover', _tipHandlers.over);
     app.addEventListener('mouseout', _tipHandlers.out);
     app.addEventListener('mousemove', _tipHandlers.move);
     app.addEventListener('click', _tipHandlers.click);
+    window.addEventListener('scroll', _tipHandlers.scroll, { passive: true });
     document.querySelectorAll(".period-pill[data-period]").forEach((el) => {
       el.addEventListener("click", () => {
         periodFilter = el.dataset.period;
-        if (periodFilter === 'full' && !D.sessionsFull && !periodFullLoading) {
+        if (periodFilter === '6m' && !D.sessionsFull && !periodFullLoading) {
           periodFullLoading = true;
           render();
           window.loadFullSessions().then(() => { periodFullLoading = false; render(); }).catch(() => { periodFullLoading = false; });
@@ -1394,8 +1433,8 @@
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "t" || e.key === "T") document.getElementById("tweaks")?.classList.toggle("show");
-    if (e.key === "ArrowLeft") { focusIdx = (focusIdx - 1 + D.sessions.length) % D.sessions.length; render(); }
-    if (e.key === "ArrowRight") { focusIdx = (focusIdx + 1) % D.sessions.length; render(); }
+    if (e.key === "ArrowLeft") { focusIdx = (focusIdx - 1 + D.sessions.length) % D.sessions.length; renderFocus(); }
+    if (e.key === "ArrowRight") { focusIdx = (focusIdx + 1) % D.sessions.length; renderFocus(); }
   });
   window.addEventListener("message", (e) => {
     if (!e.data) return;

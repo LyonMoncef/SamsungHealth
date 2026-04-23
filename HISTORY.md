@@ -26,6 +26,15 @@
 
 ## Checkpoint
 
+### `checkpoint-before-v2-refactor-2026-04-23` — 2026-04-23
+chore(checkpoint): safety tag before V2 full security/RGPD refactor
+- Reason: Major refactor — migration SQLite → Postgres, multi-user auth (email+pwd + Google OAuth), chiffrement AES-256-GCM, endpoints RGPD, Android Compose shell + dual-track UI (WebView dev / Compose natif prod), logging structuré sharded, docker-compose dev/prod
+- Scope: tout le repo — `server/`, `android-app/`, `static/`, `tests/`, `alembic/` (nouveau), `docker-compose*.yml` (nouveau), CI workflows
+- Target branch : `v2-refactor` long-lived, target des PRs de la refonte
+- Plan de référence : `/home/tats/.claude/plans/glittery-napping-rossum.md` + `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-refactor-master.md`
+- Estimation : ~6-8 semaines, livraison incrémentale (V1 = WebView, V2 = Compose natif)
+- [CHECKPOINT]
+
 ### `nightfall-dataviz-v1` — 2026-04-22
 [CHECKPOINT] Reference tag for all Nightfall dataviz chapters before refactor.
 - Scope: `static/dashboard.js`, `static/dashboard.css`

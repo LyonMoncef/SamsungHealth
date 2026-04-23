@@ -183,17 +183,19 @@ body::before {
 .hypno-stat .pct { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--paper-dim); }
 .hypno-svg-wrap { position: relative; width: 100%; }
 .hypno-svg { width: 100%; display: block; }
-.hypno-y-label { font-family: "Geist Mono", monospace; font-size: 10px; fill: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.1em; }
-.hypno-x-label { font-family: "Geist Mono", monospace; font-size: 10px; fill: var(--paper-faint); }
+.hypno-y-label { font-family: "Geist Mono", monospace; font-size: 30px; fill: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.1em; }
+.hypno-x-label { font-family: "Geist Mono", monospace; font-size: 26px; fill: var(--paper-faint); }
 .hypno-grid-line { stroke: rgba(255, 255, 255, 0.05); stroke-width: 1; }
 
-.radial-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
-.radial-svg { width: 100%; aspect-ratio: 1; max-width: 520px; }
-.radial-info h3 { font-family: "Instrument Serif", serif; font-size: 40px; font-weight: 400; font-style: italic; letter-spacing: -0.01em; margin-bottom: 14px; }
-.radial-info p { color: var(--paper-dim); font-size: 15px; line-height: 1.6; margin-bottom: 24px; max-width: 40ch; }
-.radial-kv { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; font-family: "Geist Mono", monospace; font-size: 12px; }
-.radial-kv dt { color: var(--paper-faint); text-transform: uppercase; letter-spacing: 0.1em; }
-.radial-kv dd { color: var(--paper); }
+.radial-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.radial-svg-cell { min-width: 0; }
+.radial-info-cell { min-width: 0; }
+.radial-svg { width: 100%; aspect-ratio: 1; }
+@media (max-width: 900px) {
+  .radial-layout { grid-template-columns: 1fr; gap: 0; }
+  .radial-svg-cell { order: 2; max-width: 380px; margin: 24px auto 0; }
+  .radial-info-cell { order: 1; }
+}
 
 
 .cards-duel { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0 32px; }
@@ -206,7 +208,7 @@ body::before {
 .night-card:hover { transform: translateY(-2px); }
 .night-card.best { border-left-color: oklch(0.72 0.14 150); }
 .night-card.worst { border-left-color: oklch(0.72 0.14 35); }
-.night-card .date { font-family: "Instrument Serif", serif; font-size: 20px; font-style: italic; margin-bottom: 14px; }
+.night-card .date { font-family: "Instrument Serif", serif; font-size: 20px; font-style: italic; margin-bottom: 14px; min-height: 2.6em; }
 .night-card .score { display: flex; align-items: baseline; gap: 4px; }
 .night-card .score .n { font-family: "Instrument Serif", serif; font-size: 56px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; }
 .night-card.best .score .n { color: oklch(0.78 0.12 150); }
@@ -334,11 +336,10 @@ footer {
 
 @media (max-width: 900px) {
   #app { padding: 32px 20px 80px; }
-  .hero { grid-template-columns: 1fr; gap: 40px; }
+  .hero { grid-template-columns: 1fr; gap: 16px; }
   .night-arc { margin: 0 auto; max-width: 360px; }
   .hero-stats { max-width: none; }
-  .radial-wrap { grid-template-columns: 1fr; }
-  .metrics-grid { grid-template-columns: 1fr; }
+.metrics-grid { grid-template-columns: 1fr; }
   .hypno-stats { grid-template-columns: repeat(2, 1fr); }
   .hypno-time-val { font-size: 34px; }
   .hypno-time-dur { font-size: 12px; }
@@ -346,9 +347,10 @@ footer {
   .panel { padding: 22px 18px; }
 }
 @media (max-width: 560px) {
-  #app { padding: 24px 10px 80px; }
-  .panel { padding: 14px 10px; }
+  #app { padding: 24px 20px 80px; }
+  .panel { padding: 14px 10px; margin-left: -20px; margin-right: -20px; }
   .hero h1 { font-size: 56px; }
+  .hero-stats { margin-top: 20px; }
   .top-meta { display: none; }
   .metric-big { font-size: 40px; }
   .timeline-row { grid-template-columns: 52px 1fr; }
