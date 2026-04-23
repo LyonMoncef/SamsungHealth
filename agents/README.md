@@ -20,6 +20,7 @@ agents/
 │   ├── coder.py
 │   ├── reviewer.py
 │   ├── documenter.py
+│   ├── git_steward.py          ← Phase A — gestion git/gh + HISTORY
 │   ├── migration_writer.py     ← Phase B
 │   ├── logq_analyst.py         ← Phase B
 │   └── ui_parity.py            ← Phase D
@@ -53,7 +54,7 @@ Chaque skill produit un brief.json sur disque, spawn le subagent correspondant v
 
 | Phase | Statut | Scope |
 |-------|--------|-------|
-| **A** — Foundation agents | en cours | contrats Pydantic + 5 subagents + hooks + settings + skills + budget enforcer |
+| **A** — Foundation agents | en cours | contrats Pydantic + 6 subagents (spec-writer, test-writer, coder-backend, reviewer, documenter, **git-steward**) + hooks + settings + skills + budget enforcer |
 | B — Observabilité | bloquée par P0 master | Phoenix self-hosted, OTel, dashboard `/admin/harness/*`, alerts |
 | C — Agents CI | bloquée par P1 master | pr-review, codex-*, audit-security via Anthropic SDK |
 | D — Agents Android | bloquée par P3 master | coder-android, ui-parity-checker |
@@ -67,7 +68,35 @@ Chaque skill produit un brief.json sur disque, spawn le subagent correspondant v
 - `spec-writer` n'écrit que dans le vault Obsidian
 - `reviewer` est read-only
 - `documenter` n'écrit que dans `HISTORY.md` + vault `codex/`
+- `git-steward` n'utilise que `git`/`gh` via Bash + Edit limité à `HISTORY.md`, `NOTES.md`, `.gitignore`
 - Tout cela enforced par `.claude/hooks/enforce-path-scope.sh`
+
+## `git-steward` — gardien des opérations git/gh
+
+Agent dédié à toutes les opérations git/gh + maintenance HISTORY.md, invoqué automatiquement après chaque save (via hook `PostToolUse Edit|Write`) et avant tout commit/PR/checkpoint.
+
+**Rôle** : éviter de saturer le contexte de la session principale avec du raisonnement git (résolution conflits, divergence local/origin, renommage branche, multi-tag, audit tags pushés vs locaux, edits HISTORY split entre branches, …).
+
+**Workflow** :
+1. **Pré-flight check** — branche conforme `feat/|fix/|chore/|hotfix/|release/|refactor/|spike/`, sync origin, conflicts pending, stash oublié, fichiers staged sensibles
+2. **Commit** — génère message single-line (CLAUDE.md global rule), pas de Co-Authored-By trailer, update HISTORY.md (Features + Changelog), commit
+3. **Tag/Checkpoint** — avant op destructive crée `checkpoint-<scope>-<date>` annoté + push + entry HISTORY `## Checkpoint`
+4. **PR** — vérifie base correcte (`feat/* → dev`, `release/* → main`), génère titre + body conforme template
+5. **Conflict resolution** — diagnostique sémantique vs textuel, propose résolution avec rationale, n'auto-résout JAMAIS sans approval
+6. **Branch hygiene** — détecte stale (mergées non-supprimées) + divergentes (local ahead/behind), propose cleanup explicite
+
+**Skills associés (linked-list)** :
+
+| Skill | Invoque | Next default |
+|-------|---------|--------------|
+| `/git-status` | git-steward (audit complet) | `/commit` ou `/git-fix` |
+| `/commit` | git-steward (compose msg + HISTORY + commit) | `/git-status` ou `/pr` |
+| `/checkpoint <scope>` | git-steward (tag + push + HISTORY entry) | `/git-status` |
+| `/pr` (existant, à enrichir) | git-steward + `documenter` | merge wait |
+| `/release` (existant, à enrichir) | git-steward (release PR + tag) | `/smoke` |
+| `/git-fix` | git-steward (résout conflit/divergence avec approval) | `/commit` |
+
+**Mode automatique post-save** : hook `.claude/hooks/post-edit-git-steward.sh` invoque git-steward en audit silencieux après chaque `Edit|Write`. Si l'audit produit un commit candidat propre (1 fichier ou groupe sémantique cohérent), il propose `/commit` dans le delivery du skill courant. Pas d'auto-commit silencieux — l'humain valide toujours via `/commit`.
 
 ## Budget
 
