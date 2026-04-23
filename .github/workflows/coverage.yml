@@ -1,0 +1,58 @@
+name: Coverage map
+
+on:
+  push:
+    branches: [main, dev]
+    paths-ignore:
+      - "**/*.md"
+      - ".claude/**"
+      - "docs/vault/**"
+  pull_request:
+    branches: [main, dev]
+    paths-ignore:
+      - "**/*.md"
+      - ".claude/**"
+      - "docs/vault/**"
+
+jobs:
+  build-coverage-map:
+    name: Build coverage map
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx pytest-cov coverage
+
+      - name: Generate coverage map
+        run: |
+          python -m agents.cartographer.coverage_map
+          # Manifest is gitignored — surface size + sample to logs
+          test -f docs/vault/_index/coverage-map.json
+          jq '.by_file | to_entries | map({file: .key, pct: .value.pct, n_tests: (.value.tests | length)}) | sort_by(.pct)' \
+            docs/vault/_index/coverage-map.json | head -50
+
+      - name: Coverage threshold gate (opt-in via env)
+        if: env.COVERAGE_MIN_PCT != ''
+        env:
+          COVERAGE_MIN_PCT: ${{ vars.COVERAGE_MIN_PCT }}
+        run: |
+          PCT=$(jq '.totals.percent_covered // 0' coverage.json)
+          MIN=${COVERAGE_MIN_PCT:-0}
+          echo "Coverage: $PCT% (gate: ≥ $MIN%)"
+          python3 -c "import sys; pct=float('$PCT'); mn=float('$MIN'); sys.exit(0 if pct >= mn else 1)"
+
+      - name: Upload coverage map artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-map
+          path: |
+            docs/vault/_index/coverage-map.json
+            coverage.json
+          retention-days: 14
