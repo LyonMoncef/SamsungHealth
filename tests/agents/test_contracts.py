@@ -478,6 +478,132 @@ class TestPentester:
 
 
 # ---------------------------------------------------------------------------
+# plan_keeper
+# ---------------------------------------------------------------------------
+
+class TestPlanKeeper:
+    def test_brief_minimal_valid(self):
+        from agents.contracts.plan_keeper import PlanAuditBrief
+
+        b = PlanAuditBrief(
+            task_id="t", invoked_by="h", work_dir="w",
+            triggered_by="commit",
+        )
+        assert b.severity_threshold == "medium"
+        assert b.recent_changes == []
+        assert b.plan_paths == []  # default = auto-discover
+
+    def test_brief_triggered_by_literal(self):
+        from agents.contracts.plan_keeper import PlanAuditBrief
+
+        for t in ("skill", "agent", "commit", "manual", "post_delivery"):
+            PlanAuditBrief(task_id="t", invoked_by="h", work_dir="w", triggered_by=t)
+        with pytest.raises(ValidationError):
+            PlanAuditBrief(task_id="t", invoked_by="h", work_dir="w", triggered_by="cosmic")
+
+    def test_brief_severity_threshold_literal(self):
+        from agents.contracts.plan_keeper import PlanAuditBrief
+
+        for sev in ("info", "low", "medium", "high", "critical"):
+            PlanAuditBrief(
+                task_id="t", invoked_by="h", work_dir="w",
+                triggered_by="manual", severity_threshold=sev,
+            )
+        with pytest.raises(ValidationError):
+            PlanAuditBrief(
+                task_id="t", invoked_by="h", work_dir="w",
+                triggered_by="manual", severity_threshold="apocalyptic",
+            )
+
+    def test_deviation_valid(self):
+        from agents.contracts.plan_keeper import PlanDeviation
+
+        d = PlanDeviation(
+            deviation_type="agent_added_not_in_plan",
+            severity="medium",
+            location="agents/contracts/plan_keeper.py",
+            plan_affected="vault/.../plan-v2-multi-agents-architecture.md",
+            description="Agent plan-keeper créé sans entry dans inventaire",
+            proposed_patch="Ajouter ligne dans table §Inventaire des agents groupe 1",
+        )
+        assert d.deviation_type == "agent_added_not_in_plan"
+
+    def test_deviation_type_literal(self):
+        from agents.contracts.plan_keeper import PlanDeviation
+
+        for t in (
+            "agent_added_not_in_plan",
+            "branch_naming_mismatch",
+            "phase_scope_drift",
+            "directory_structure_drift",
+            "skill_added_not_in_plan",
+            "file_orphan",
+            "duration_estimate_drift",
+            "other",
+        ):
+            PlanDeviation(
+                deviation_type=t, severity="low", location="x",
+                plan_affected="p.md", description="d", proposed_patch="p",
+            )
+        with pytest.raises(ValidationError):
+            PlanDeviation(
+                deviation_type="vibes", severity="low", location="x",
+                plan_affected="p.md", description="d", proposed_patch="p",
+            )
+
+    def test_report_valid(self):
+        from agents.contracts.plan_keeper import PlanAuditReport, PlanDeviation
+
+        d = PlanDeviation(
+            deviation_type="branch_naming_mismatch", severity="low",
+            location=".githooks/pre-push", plan_affected="vault/x.md",
+            description="d", proposed_patch="p",
+        )
+        r = PlanAuditReport(
+            task_id="t", agent="plan-keeper", status="success", summary="1 deviation",
+            deviations=[d],
+            coverage_gaps=["agents/contracts/plan_keeper.py"],
+            plans_needing_update=["vault/x.md"],
+            overall="drift_detected",
+            next_recommended="commit",
+        )
+        assert r.overall == "drift_detected"
+        assert len(r.deviations) == 1
+
+    def test_report_overall_literal(self):
+        from agents.contracts.plan_keeper import PlanAuditReport
+
+        for v in ("aligned", "drift_detected", "block"):
+            PlanAuditReport(
+                task_id="t", agent="plan-keeper", status="success", summary="s",
+                deviations=[], coverage_gaps=[], plans_needing_update=[],
+                overall=v,
+            )
+        with pytest.raises(ValidationError):
+            PlanAuditReport(
+                task_id="t", agent="plan-keeper", status="success", summary="s",
+                deviations=[], coverage_gaps=[], plans_needing_update=[],
+                overall="meh",
+            )
+
+    def test_report_next_recommended_literal_restricted(self):
+        from agents.contracts.plan_keeper import PlanAuditReport
+
+        for v in ("commit", "impl", "spec", "none"):
+            PlanAuditReport(
+                task_id="t", agent="plan-keeper", status="success", summary="s",
+                deviations=[], coverage_gaps=[], plans_needing_update=[],
+                overall="aligned", next_recommended=v,
+            )
+        with pytest.raises(ValidationError):
+            PlanAuditReport(
+                task_id="t", agent="plan-keeper", status="success", summary="s",
+                deviations=[], coverage_gaps=[], plans_needing_update=[],
+                overall="aligned", next_recommended="merge",  # not in plan-keeper allowed
+            )
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting : __init__ re-exports
 # ---------------------------------------------------------------------------
 
@@ -501,8 +627,12 @@ class TestPackageReExports:
             PentestBrief,
             PentestFinding,
             PentestReport,
+            PlanAuditBrief,
+            PlanAuditReport,
+            PlanDeviation,
         )
 
         assert AgentInputBase is not None
         assert GitOperationReport is not None
         assert PentestReport is not None
+        assert PlanAuditReport is not None

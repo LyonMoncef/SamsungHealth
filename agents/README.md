@@ -22,6 +22,7 @@ agents/
 │   ├── documenter.py
 │   ├── git_steward.py          ← Phase A — gestion git/gh + HISTORY
 │   ├── pentester.py            ← Phase A — vulnérabilités SAST/SCA/secrets/semantic/RGPD
+│   ├── plan_keeper.py          ← Phase A — détection déviations plans ↔ livraisons
 │   ├── migration_writer.py     ← Phase B
 │   ├── logq_analyst.py         ← Phase B
 │   └── ui_parity.py            ← Phase D
@@ -55,7 +56,7 @@ Chaque skill produit un brief.json sur disque, spawn le subagent correspondant v
 
 | Phase | Statut | Scope |
 |-------|--------|-------|
-| **A** — Foundation agents | en cours | contrats Pydantic + 7 subagents (spec-writer, test-writer, coder-backend, reviewer, documenter, **git-steward**, **pentester**) + hooks + settings + skills + budget enforcer + outils SAST/SCA/secrets |
+| **A** — Foundation agents | en cours | contrats Pydantic + 8 subagents (spec-writer, test-writer, coder-backend, reviewer, documenter, **git-steward**, **pentester**, **plan-keeper**) + hooks + settings + skills + budget enforcer + outils SAST/SCA/secrets |
 | B — Observabilité | bloquée par P0 master | Phoenix self-hosted, OTel, dashboard `/admin/harness/*`, alerts |
 | C — Agents CI | bloquée par P1 master | pr-review, codex-*, audit-security via Anthropic SDK |
 | D — Agents Android | bloquée par P3 master | coder-android, ui-parity-checker |
@@ -71,6 +72,7 @@ Chaque skill produit un brief.json sur disque, spawn le subagent correspondant v
 - `documenter` n'écrit que dans `HISTORY.md` + vault `codex/`
 - `git-steward` n'utilise que `git`/`gh` via Bash + Edit limité à `HISTORY.md`, `NOTES.md`, `.gitignore`
 - `pentester` est read-only sur le code source, n'écrit QUE dans `work/<task-id>/poc/` + `work/<task-id>/pentest-report.md`, n'exécute jamais de POC en Phase A
+- `plan-keeper` est read-only absolu, n'écrit QUE `work/<task-id>/plan-audit.md` + `result.json` ; propose des patches plans, n'applique jamais
 - Tout cela enforced par `.claude/hooks/enforce-path-scope.sh`
 
 ## `git-steward` — gardien des opérations git/gh
@@ -141,6 +143,28 @@ Agent adversarial qui ignore la spec et cherche **comment abuser du code**. Comp
 make security-install   # bandit, pip-audit, safety, semgrep
 # gitleaks: cf https://github.com/gitleaks/gitleaks#installing (brew/apt/binaire)
 ```
+
+## `plan-keeper` — gardien de la cohérence plans ↔ livraisons
+
+Agent qui détecte les déviations entre les plans approuvés (master + multi-agents + specs) et l'état réel du repo (agents, skills, branches, structure). Symétrique à `reviewer` : reviewer = local (spec ↔ code d'une livraison), plan-keeper = global (plans ↔ structure du projet).
+
+**Quand il tourne** :
+
+| Trigger | Comportement |
+|---------|--------------|
+| Hook `PreToolUse` sur `git-steward` (op_type=commit/checkpoint/pr) | Audit silencieux ; si déviation `severity >= medium` → bloque le commit et propose patches |
+| Auto post-livraison de `/spec`, `/tdd`, `/impl`, `/pentest` | Vérifie que la livraison est référencée par un plan ; sinon flag `file_orphan` |
+| Skill manuel `/align` | Audit complet on-demand |
+
+**Catégories de déviations** : `agent_added_not_in_plan`, `branch_naming_mismatch`, `phase_scope_drift`, `directory_structure_drift`, `skill_added_not_in_plan`, `file_orphan`, `duration_estimate_drift`, `other`.
+
+**Sortie** : `PlanAuditReport` avec liste de `PlanDeviation` (severity + location + plan_affected + proposed_patch). Read-only — propose seulement, n'applique jamais (les patches sont appliqués par `documenter` via `/commit`).
+
+**Skill associé** : `/align` — invocation manuelle, scope full ou diff selon args.
+
+**Linked-list** : `/align` → `/commit` (appliquer patches) ou `/impl`/`/spec` (refonte structurelle si block).
+
+**Pourquoi cet agent existe** : sans lui, chaque ajout d'agent/skill/branche hors plan crée une dette structurelle invisible jusqu'à la prochaine release. Le pattern industrie standard est "doc-as-code" — ce mécanisme l'automatise.
 
 ## Budget
 

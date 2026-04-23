@@ -10,6 +10,12 @@ from .pentester import (
     ScanMode,
     Severity,
 )
+from .plan_keeper import (
+    DeviationType,
+    PlanAuditBrief,
+    PlanAuditReport,
+    PlanDeviation,
+)
 from .reviewer import ReviewBrief, ReviewReport
 from .spec_writer import SpecArtifact, SpecBrief
 from .test_writer import TestArtifact, TestBrief
@@ -36,4 +42,8 @@ __all__ = [
     "ScanMode",
     "Severity",
     "FindingCategory",
+    "PlanAuditBrief",
+    "PlanAuditReport",
+    "PlanDeviation",
+    "DeviationType",
 ]
