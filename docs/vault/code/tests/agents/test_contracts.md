@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_contracts.py
 git_blob: d0e0a1da0a5bc30a4fff929c158c2ba9099c1af1
-last_synced: '2026-04-23T09:16:04Z'
+last_synced: '2026-04-23T09:31:47Z'
 loc: 1046
 annotations: []
 imports:

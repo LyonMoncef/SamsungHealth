@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/com/samsunghealth/data/PreferencesManager.kt
 git_blob: 75107c4129eec5e939ab6c27813432ae1c6b6f8d
-last_synced: '2026-04-23T08:44:33Z'
+last_synced: '2026-04-23T09:31:47Z'
 loc: 38
 annotations: []
 imports: []

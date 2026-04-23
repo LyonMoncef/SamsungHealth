@@ -1,6 +1,6 @@
 ---
 type: vault-index
-last_synced: 2026-04-23T08:44:33Z
+last_synced: 2026-04-23T09:31:47Z
 ---
 
 # Coverage — source files without annotation
@@ -18,6 +18,7 @@ last_synced: 2026-04-23T08:44:33Z
 - `agents/cartographer/orphan_detector.py`
 - `agents/cartographer/walker.py`
 - `agents/contracts/__init__.py`
+- `agents/contracts/annotation_suggester.py`
 - `agents/contracts/base.py`
 - `agents/contracts/cartographer.py`
 - `agents/contracts/coder.py`
@@ -54,3 +55,18 @@ last_synced: 2026-04-23T08:44:33Z
 - `static/dashboard.js`
 - `static/index.html`
 - `static/style.css`
+- `tests/agents/conftest.py`
+- `tests/agents/test_anchor_resolver.py`
+- `tests/agents/test_annotation_io.py`
+- `tests/agents/test_changelog_generator.py`
+- `tests/agents/test_cli.py`
+- `tests/agents/test_contracts.py`
+- `tests/agents/test_index_generator.py`
+- `tests/agents/test_marker_injector.py`
+- `tests/agents/test_markers.py`
+- `tests/agents/test_note_renderer.py`
+- `tests/agents/test_orphan_detector.py`
+- `tests/agents/test_walker.py`
+- `tests/conftest.py`
+- `tests/test_sleep.py`
+- `tests/test_sleep_api_shape.py`

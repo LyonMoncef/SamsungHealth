@@ -43,10 +43,12 @@ DEFAULT_SOURCE_GLOBS = [
     "server/**/*.py",
     "agents/**/*.py",
     "scripts/**/*.py",
+    "tests/**/*.py",
     "static/**/*.js",
     "static/**/*.html",
     "static/**/*.css",
     "android-app/**/*.kt",
+    "android-app/**/test/**/*.kt",
 ]
 
 

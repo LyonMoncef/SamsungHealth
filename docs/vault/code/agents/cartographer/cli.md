@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/cartographer/cli.py
-git_blob: 91a6576bd8331ce22999dfdd961d658df3169ee2
-last_synced: '2026-04-23T08:44:33Z'
-loc: 388
+git_blob: db542ad1a9d2aaf65697da6f4715658c4c7be44f
+last_synced: '2026-04-23T09:32:13Z'
+loc: 390
 annotations: []
 imports:
 - argparse
@@ -99,10 +99,12 @@ DEFAULT_SOURCE_GLOBS = [
     "server/**/*.py",
     "agents/**/*.py",
     "scripts/**/*.py",
+    "tests/**/*.py",
     "static/**/*.js",
     "static/**/*.html",
     "static/**/*.css",
     "android-app/**/*.kt",
+    "android-app/**/test/**/*.kt",
 ]
 
 
@@ -449,22 +451,22 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `run` (function) — lines 53-128
-- `iscover_sources(r` (function) — lines 135-143
-- `iscover_annotations(v` (function) — lines 146-155
+- `run` (function) — lines 55-130
+- `iscover_sources(r` (function) — lines 137-145
+- `iscover_annotations(v` (function) — lines 148-157
 - `ender_one(
-` (function) — lines 158-210
-- `uild_active(s` (function) — lines 213-228
-- `mpty_file_symbols(s` (function) — lines 231-233
-- `ll_markers(r` (function) — lines 236-251
+` (function) — lines 160-212
+- `uild_active(s` (function) — lines 215-230
+- `mpty_file_symbols(s` (function) — lines 233-235
+- `ll_markers(r` (function) — lines 238-253
 - `rite_indexes(
-` (function) — lines 254-280
-- `trip_ext(p` (function) — lines 283-284
-- `irror_vault(v` (function) — lines 287-308
-- `_root: str, r` (function) — lines 311-322
-- `o_root: str) -` (function) — lines 325-333
-- `list[str]) ` (function) — lines 340-353
-- `r] |` (function) — lines 356-384
+` (function) — lines 256-282
+- `trip_ext(p` (function) — lines 285-286
+- `irror_vault(v` (function) — lines 289-310
+- `_root: str, r` (function) — lines 313-324
+- `o_root: str) -` (function) — lines 327-335
+- `list[str]) ` (function) — lines 342-355
+- `r] |` (function) — lines 358-386
 
 ### Imports
 - `argparse`

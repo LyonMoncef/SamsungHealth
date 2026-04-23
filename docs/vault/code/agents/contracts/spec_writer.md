@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/spec_writer.py
 git_blob: 700e4b55cfaefa7107dc9a03a833773a78d1c7fb
-last_synced: '2026-04-23T08:44:33Z'
+last_synced: '2026-04-23T09:31:47Z'
 loc: 20
 annotations: []
 imports:
