@@ -53,6 +53,32 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `5108be3` → `6bbbdb2` (Phase A.7 — test↔code linking, 4 blocs)
+
+**Bloc 1** `5108be3` — `tests/**`, `android-app/**/test/**` ajoutés à `DEFAULT_SOURCE_GLOBS` du cartographer + re-bootstrap (49 → 65 notes vault, +15 tests/conftest)
+
+**Bloc 2** `0bcd477` — coverage manifest generator (115 symbols / 90 tests / 38 files)
+- Added `agents/cartographer/coverage_map.py` — `run_pytest_cov()` (subprocess pytest avec dynamic_context + show_contexts), `parse_coverage()` (normalise JSON coverage.py → manifest 3 vues : by_symbol/by_test/by_file), `tests_for_range()` (intersection lignes ↔ contexts), `write_manifest()`. CLI `python -m agents.cartographer.coverage_map`
+- Added `.claude/skills/sync-coverage/SKILL.md` — wrapper skill, next_default `/sync-vault --full`
+- Updated `.gitignore` — `docs/vault/_index/coverage-map.json`, `coverage.json`, `.coverage*`, `.coveragerc-cartographer`
+- Updated `requirements.txt` — `pytest-cov>=5.0`, `coverage>=7.0`
+- Tests : 153/153 GREEN (146 + 7 nouveaux : parse fixture + smoke pytest réel)
+
+**Bloc 3** `049b24f` — note_renderer intègre coverage + fix walker UTF-8 byte slicing
+- Updated `agents/cartographer/note_renderer.py` — `render_note()` accepte `coverage_manifest` + `coverage_raw`, frontmatter expose `coverage_pct`, appendix Symbols liste `Tested by (N): test_X, ...`, callout annotation reçoit sub-callout `> [!test]+ Tested by` (intersection range), test files reçoivent section `## Exercises` (inverse map)
+- Updated `agents/cartographer/cli.py` — `_load_coverage()` charge manifest + raw, propage à `_render_one`
+- Updated `agents/cartographer/index_generator.py` — `generate_coverage_map_index()` génère `_index/coverage-map.md` (table fichiers + section "Untested symbols")
+- **Fix walker** — `_node_text()` utilisait `source[node.start_byte:node.end_byte]` (slice CHAR avec offsets BYTES) → cassait sur multi-byte. Fix : `source.encode('utf-8')[start:end].decode()`. Symboles affichés correctement maintenant (avant : "erParseError(Val", après : "MarkerParseError")
+- Tests : 158/158 GREEN (153 + 4 TestCoverageIntegration + 1 TestGenerateCoverageMapIndex)
+
+**Bloc 4** `6bbbdb2` — CI workflow `.github/workflows/coverage.yml`
+- Run sur push/PR vers main+dev (paths-ignore vault+md+claude)
+- `python -m agents.cartographer.coverage_map` → manifest gitignored
+- Threshold gate opt-in via `vars.COVERAGE_MIN_PCT` (off par défaut)
+- Upload artifact `coverage-map` (manifest + raw, retention 14j)
+
+**État post-A.7** : 67 notes vault, 90 tests indexés, 115 symbols mappés, coverage par symbole + par range + par fichier visible dans Obsidian. Mirror Windows synchronisé.
+
 ### 2026-04-23 `a3f9c30`
 feat(phase-a.6): annotation-suggester subagent + contrat Pydantic + hook post-commit opt-in (CARTOGRAPHER_SUGGEST=1) (8 tests GREEN)
 - Added `agents/contracts/annotation_suggester.py` — `AnnotationSuggestionBrief` (triggered_by post_commit/manual/skill, max_suggestions=5, confidence_threshold), `SuggestedAnnotation` (slug regex + file/line ou begin_line/end_line + rationale + body_draft + confidence low/medium/high + triggers liste), `AnnotationSuggestionReport` (overall suggestions_pending/no_suggestion/failed, next_recommended annotate/commit/none)
