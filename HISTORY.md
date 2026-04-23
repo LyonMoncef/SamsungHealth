@@ -53,6 +53,16 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `4c5c8db`
+feat(vault): sortir SamsungHealth du PKM (le mirror EST le dossier 02_Projects/SamsungHealth/) + migrate codex/release + work template vers repo
+- **Cleanup PKM** : suppression `vault/02_Projects/SamsungHealth/` entier (codex/, work/, specs/ stubs, code-vault/) — structure remplacée par mirror direct
+- Migration `codex/release/nightfall-loom-v1.md` PKM → `docs/vault/codex/release/nightfall-loom-v1.md` (versionné dans le repo)
+- Migration `work/_template.md` PKM → `docs/vault/_template/work-session.md`
+- `CARTOGRAPHER_MIRROR_TO` mis à jour : `/mnt/c/.../PKM/vault/02_Projects/SamsungHealth/` (sans le sous-dossier `code-vault/`) — env var permanente dans `~/.zshrc`
+- `Makefile` target `vault-mirror` exemple de path mis à jour
+- `docs/vault/README.md` setup réécrit : "le mirror EST 02_Projects/SamsungHealth/", warning édition manuelle perdue
+- Bootstrap mirror : 78 notes vault dans le nouveau path. Structure PKM identique au repo : `annotations/`, `assets/`, `changelog/`, `code/`, `codex/`, `_index/`, `specs/`, `_template/`
+
 ### 2026-04-23 `ac24832` → `52c5fc9` (Phase A.8 — specs in vault, 5 blocs)
 
 Specs deviennent first-class dans le vault. Discipline spec-first adoptée : `plan` (méta-architecture) vs `spec` (unitaire < 1 semaine). Top-down `tested_by:` côté spec.
