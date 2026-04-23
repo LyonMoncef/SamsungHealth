@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/com/samsunghealth/ui/SyncScreen.kt
 git_blob: 5e5c7c6b4533493715cd539280c79326589b8fb4
-last_synced: '2026-04-23T09:43:48Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 75
 annotations: []
 imports: []

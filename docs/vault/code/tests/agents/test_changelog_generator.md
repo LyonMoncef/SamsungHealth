@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_changelog_generator.py
 git_blob: a1bd65d327729d2908e196f6460e029d27a4ce60
-last_synced: '2026-04-23T09:43:48Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 163
 annotations: []
 imports:

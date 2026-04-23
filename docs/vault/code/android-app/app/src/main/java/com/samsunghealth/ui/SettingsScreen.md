@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/com/samsunghealth/ui/SettingsScreen.kt
 git_blob: d9891aee487eec418d4b3d8294a6a443fb21e578
-last_synced: '2026-04-23T09:43:48Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 52
 annotations: []
 imports: []

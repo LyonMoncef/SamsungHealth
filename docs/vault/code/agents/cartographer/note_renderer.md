@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/note_renderer.py
 git_blob: 361590583063ab9afb8814182dfe1f335e01d7f2
-last_synced: '2026-04-23T09:44:51Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 352
 annotations: []
 imports:

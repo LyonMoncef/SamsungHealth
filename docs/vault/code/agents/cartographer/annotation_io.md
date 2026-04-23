@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/annotation_io.py
 git_blob: bf4d09a676d003f159e260f26588d897b857f31e
-last_synced: '2026-04-23T09:43:48Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 119
 annotations: []
 imports:

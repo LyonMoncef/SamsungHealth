@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_note_renderer.py
 git_blob: 1a1cbb397f7bca03222768022b4741a312c0bccc
-last_synced: '2026-04-23T09:44:51Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 286
 annotations: []
 imports:

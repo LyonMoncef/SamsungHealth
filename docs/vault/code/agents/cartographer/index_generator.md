@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/index_generator.py
 git_blob: 53fa60324ed5819decdc437b96004aebd0a271fb
-last_synced: '2026-04-23T09:44:51Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 148
 annotations: []
 imports:

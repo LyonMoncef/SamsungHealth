@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_index_generator.py
 git_blob: 2ca34b9dcdc8fec8993965a04e67f98bcb9a6579
-last_synced: '2026-04-23T09:44:51Z'
+last_synced: '2026-04-23T10:10:35Z'
 loc: 106
 annotations: []
 imports:
