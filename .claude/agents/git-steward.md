@@ -46,7 +46,7 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `GitOperationBrie
 5. NE PUSH PAS — propose `git push origin <tag>` dans `actions_proposed`
 
 ### `pr`
-1. Vérifie base correcte selon branche (`feat/* → dev`, `release/* → main`, `chore/v2-*` → `chore/v2-refactor`)
+1. Vérifie base correcte selon branche (`feat/* → dev`, `release/* → main`, `refactor/* → refactor/v2`)
 2. Vérifie pas de conflits (`gh pr view --json mergeable`)
 3. Génère titre + body conforme template projet (lien spec, tests, migrations, logging impact)
 4. Si la PR n'existe pas encore → `gh pr create --draft` (jamais en non-draft auto)

@@ -6,8 +6,8 @@ Système d'agents à responsabilité unique pour exécuter le master plan V2 (re
 
 - **Master plan** : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-refactor-master.md`
 - **Plan multi-agents** : `vault/02_Projects/SamsungHealth/specs/2026-04-23-plan-v2-multi-agents-architecture.md`
-- **Branche long-lived** : `chore/v2-refactor`
-- **Sous-branche méta-projet** : `chore/phase-a-foundation-agents`
+- **Branche long-lived** : `refactor/v2`
+- **Sous-branche méta-projet** : `refactor/phase-a-foundation-agents`
 
 ## Layout
 
@@ -127,7 +127,7 @@ Agent adversarial qui ignore la spec et cherche **comment abuser du code**. Comp
 | Invocation | Comportement |
 |------------|--------------|
 | `/pentest` | `scope_mode=full_repo`, tous modes statiques, severity_threshold=medium |
-| `/pentest --quick` ou `--lastdiffs` | `scope_mode=diff_only`, skip semgrep, scope = diff vs `chore/v2-refactor` |
+| `/pentest --quick` ou `--lastdiffs` | `scope_mode=diff_only`, skip semgrep, scope = diff vs `refactor/v2` |
 | `/pentest --files <a,b,c>` | `scope_mode=files_only` |
 | `/pentest --sandbox` (Phase B+) | spin up sandbox + run avec DAST + teardown |
 
