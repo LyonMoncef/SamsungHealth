@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: tests/agents/test_contracts.py
-git_blob: 151cfc5faa0070e333da76ea7c01e29d067b42ad
-last_synced: '2026-04-23T10:13:01Z'
+git_blob: 36a560ae6541d79016a71cae921b6c7d83e504b3
+last_synced: '2026-04-23T10:17:52Z'
 loc: 1097
 annotations: []
 imports:
@@ -1059,10 +1059,10 @@ class TestSpec:
     def test_status_literal(self):
         from agents.contracts.spec import SpecMeta
 
-        for s in ("draft", "ready", "in_progress", "delivered", "superseded"):
+        for s in ("draft", "ready", "approved", "in_progress", "delivered", "superseded"):
             SpecMeta(type="spec", status=s)
         with pytest.raises(ValidationError):
-            SpecMeta(type="spec", status="approved")  # not in literal
+            SpecMeta(type="spec", status="randomvalue")  # not in literal
 
     def test_implements_with_symbols_and_range(self):
         from agents.contracts.spec import SpecImplements, SpecMeta

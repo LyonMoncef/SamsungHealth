@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/cartographer/cli.py
-git_blob: e4f5539a22aabd4e465c6b08a059f56a7fa64c3c
-last_synced: '2026-04-23T10:10:35Z'
-loc: 445
+git_blob: 48714d232b32793c26b355337247239b46d5a452
+last_synced: '2026-04-23T10:17:52Z'
+loc: 517
 annotations: []
 imports:
 - argparse
@@ -32,6 +32,9 @@ exports:
 - _all_markers
 - _write_indexes
 - _strip_ext
+- _load_spec_index
+- _render_spec_notes
+- _render_spec_summary_note
 - _load_coverage
 - _mirror_vault
 - _git_blob_sha
@@ -76,6 +79,7 @@ from agents.cartographer.index_generator import (
     generate_coverage_index,
     generate_coverage_map_index,
     generate_orphans_index,
+    generate_specs_index,
     generate_tags_index,
 )
 from agents.cartographer.markers import (
@@ -118,6 +122,7 @@ def run(
     source_globs = source_globs or DEFAULT_SOURCE_GLOBS
 
     coverage_manifest, coverage_raw = _load_coverage(vault_root, repo_root)
+    spec_index = _load_spec_index(vault_root)
 
     if mode == "diff":
         source_files = [
@@ -141,11 +146,17 @@ def run(
                     repo_root, vault_root, rel, annotation_paths,
                     coverage_manifest=coverage_manifest,
                     coverage_raw=coverage_raw,
+                    spec_index=spec_index,
                 )
                 notes_generated += 1
             except Exception as exc:
                 parse_errors.append({"file": rel, "error": str(exc)})
                 notes_skipped += 1
+
+        # Specs are first-class vault notes — render them too (their own type)
+        if mode == "full":
+            spec_notes = _render_spec_notes(repo_root, vault_root, spec_index)
+            notes_generated += spec_notes
 
         # Indexes (best effort) — only in full mode (diff is incremental)
         if mode == "full":
@@ -225,6 +236,7 @@ def _render_one(
     annotation_paths: list[str],
     coverage_manifest: dict | None = None,
     coverage_raw: dict | None = None,
+    spec_index: object | None = None,
 ) -> None:
     src_abs = os.path.join(repo_root, rel)
     language = infer_language(rel)
@@ -272,6 +284,7 @@ def _render_one(
         orphans=orphans,
         coverage_manifest=coverage_manifest,
         coverage_raw=coverage_raw,
+        spec_index=spec_index,
     )
     with open(out_path, "w", encoding="utf-8") as fp:
         fp.write(note)
@@ -346,6 +359,13 @@ def _write_indexes(
         output_path=os.path.join(vault_root, "_index", "annotations-by-tag.md"),
     )
 
+    # Specs index — needs the spec_index built earlier in the run
+    spec_index = _load_spec_index(vault_root)
+    generate_specs_index(
+        spec_index=spec_index,
+        output_path=os.path.join(vault_root, "_index", "specs.md"),
+    )
+
     # Coverage map index (only if manifest exists)
     manifest_path = os.path.join(vault_root, "_index", "coverage-map.json")
     if os.path.isfile(manifest_path):
@@ -363,6 +383,61 @@ def _write_indexes(
 
 def _strip_ext(path: str) -> str:
     return os.path.splitext(path)[0]
+
+
+def _load_spec_index(vault_root: str):
+    from agents.cartographer.spec_indexer import build_index, discover_spec_paths
+    spec_paths = discover_spec_paths(vault_root)
+    return build_index(spec_paths)
+
+
+def _render_spec_notes(repo_root: str, vault_root: str, spec_index) -> int:
+    """Render the spec source files themselves into vault notes (`code/specs/...`).
+
+    Specs live in `docs/vault/specs/` (which is INSIDE the vault). We render a
+    light note that just embeds the original markdown + the auto-generated
+    Targets section (Implementation/Tests links).
+    """
+    from agents.cartographer.spec_indexer import discover_spec_paths
+
+    out_dir = os.path.join(vault_root, "code", "specs")
+    os.makedirs(out_dir, exist_ok=True)
+
+    rendered = 0
+    for spec_path in discover_spec_paths(vault_root):
+        slug = os.path.basename(spec_path).removesuffix(".md")
+        meta = spec_index.by_slug.get(slug)
+        if meta is None:
+            continue
+        target = os.path.join(out_dir, f"{slug}.md")
+        body = _render_spec_summary_note(slug, spec_path, meta, spec_index)
+        with open(target, "w", encoding="utf-8") as fp:
+            fp.write(body)
+        rendered += 1
+    return rendered
+
+
+def _render_spec_summary_note(slug, spec_path, meta, spec_index) -> str:
+    """Render a vault summary note for a spec — frontmatter + link to source + Targets."""
+    fm_lines = [
+        "---",
+        "type: spec-summary",
+        f"slug: {slug}",
+        f"original_type: {meta.type}",
+        f"status: {meta.status}",
+        f"source: ../../specs/{slug}",
+        "---",
+    ]
+    parts = ["\n".join(fm_lines), "", f"# Spec — {slug}", "",
+             f"Source : [[../../specs/{slug}]]", ""]
+
+    # Render the auto Targets section
+    from agents.cartographer.note_renderer import _render_spec_targets
+    rel = f"docs/vault/specs/{slug}.md"
+    target_section = _render_spec_targets(rel, spec_index)
+    if target_section:
+        parts.append(target_section)
+    return "\n".join(parts)
 
 
 def _load_coverage(vault_root: str, repo_root: str) -> tuple[dict | None, dict | None]:
@@ -504,21 +579,24 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `run` (function) — lines 56-137 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
-- `_discover_sources` (function) — lines 144-152 · **Tested by (7)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+2_
-- `_discover_annotations` (function) — lines 155-164 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
-- `_render_one` (function) — lines 167-223 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
-- `_build_active` (function) — lines 226-241 · ⚠️ no test
-- `_empty_file_symbols` (function) — lines 244-246 · ⚠️ no test
-- `_all_markers` (function) — lines 249-264 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
-- `_write_indexes` (function) — lines 267-307 · **Tested by (5)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files`
-- `_strip_ext` (function) — lines 310-311 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
-- `_load_coverage` (function) — lines 314-341
-- `_mirror_vault` (function) — lines 344-365 · **Tested by (2)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`
-- `_git_blob_sha` (function) — lines 368-379 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
-- `_git_short_sha` (function) — lines 382-390 · ⚠️ no test
-- `_parse_args` (function) — lines 397-410 · ⚠️ no test
-- `main` (function) — lines 413-441 · ⚠️ no test
+- `run` (function) — lines 57-145 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
+- `_discover_sources` (function) — lines 152-160 · **Tested by (7)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+2_
+- `_discover_annotations` (function) — lines 163-172 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
+- `_render_one` (function) — lines 175-233 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
+- `_build_active` (function) — lines 236-251 · ⚠️ no test
+- `_empty_file_symbols` (function) — lines 254-256 · ⚠️ no test
+- `_all_markers` (function) — lines 259-274 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
+- `_write_indexes` (function) — lines 277-324 · **Tested by (5)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files`
+- `_strip_ext` (function) — lines 327-328 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
+- `_load_spec_index` (function) — lines 331-334
+- `_render_spec_notes` (function) — lines 337-360
+- `_render_spec_summary_note` (function) — lines 363-383
+- `_load_coverage` (function) — lines 386-413
+- `_mirror_vault` (function) — lines 416-437 · **Tested by (2)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`
+- `_git_blob_sha` (function) — lines 440-451 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
+- `_git_short_sha` (function) — lines 454-462 · ⚠️ no test
+- `_parse_args` (function) — lines 469-482 · ⚠️ no test
+- `main` (function) — lines 485-513 · ⚠️ no test
 
 ### Imports
 - `argparse`
@@ -547,6 +625,9 @@ if __name__ == "__main__":
 - `_all_markers`
 - `_write_indexes`
 - `_strip_ext`
+- `_load_spec_index`
+- `_render_spec_notes`
+- `_render_spec_summary_note`
 - `_load_coverage`
 - `_mirror_vault`
 - `_git_blob_sha`

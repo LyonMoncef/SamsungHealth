@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: scripts/import_csv.py
 git_blob: 44be314f67acfd01e1bf2d059fcf39bfc01f7139
-last_synced: '2026-04-23T10:10:35Z'
+last_synced: '2026-04-23T10:17:20Z'
 loc: 82
 annotations: []
 imports:

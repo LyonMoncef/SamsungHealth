@@ -119,6 +119,46 @@ def generate_coverage_map_index(coverage_manifest: dict, output_path: str) -> No
     )
 
 
+def generate_specs_index(spec_index, output_path: str) -> None:
+    """Render `_index/specs.md` — table of all specs + their status + drift count."""
+    by_slug = getattr(spec_index, "by_slug", {})
+    if not by_slug:
+        body = "_No specs declared._"
+    else:
+        lines = [
+            "## Specs",
+            "",
+            "| Slug | Type | Status | Implements | Tested by |",
+            "|------|------|--------|------------|-----------|",
+        ]
+        for slug in sorted(by_slug):
+            meta = by_slug[slug]
+            n_impl = len(meta.implements)
+            n_test = len(meta.tested_by)
+            test_warning = "⚠️ 0" if n_test == 0 and meta.type == "spec" else str(n_test)
+            lines.append(
+                f"| [[../specs/{slug}]] | {meta.type} | {meta.status} | "
+                f"{n_impl} | {test_warning} |"
+            )
+
+        # Untested specs section
+        untested = [s for s, m in by_slug.items() if m.type == "spec" and not m.tested_by]
+        if untested:
+            lines.extend(["", "## ⚠️ Untested specs", ""])
+            for slug in sorted(untested):
+                lines.append(f"- [[../specs/{slug}]]")
+
+        body = "\n".join(lines)
+
+    _write(
+        output_path,
+        f"---\ntype: vault-index\nlast_synced: {_ts()}\n---\n\n"
+        f"# Specs index\n\n"
+        f"All specs in `docs/vault/specs/`. Updated at every `/sync-vault --full`.\n\n"
+        f"{body}\n",
+    )
+
+
 def generate_tags_index(annotation_paths: list[str], output_path: str) -> None:
     by_tag: dict[str, list[str]] = defaultdict(list)
     for path in annotation_paths:

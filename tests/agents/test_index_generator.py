@@ -78,6 +78,30 @@ class TestGenerateCoverageMapIndex:
         assert "agents/y.py::dead" in text
 
 
+class TestGenerateSpecsIndex:
+    def test_renders_table_and_untested_section(self, tmp_path: Path):
+        from agents.cartographer.index_generator import generate_specs_index
+        from agents.cartographer.spec_indexer import SpecIndex
+        from agents.contracts.spec import SpecMeta, SpecTestedBy
+
+        idx = SpecIndex()
+        idx.by_slug["spec-tested"] = SpecMeta(
+            type="spec", slug="spec-tested", status="ready",
+            tested_by=[SpecTestedBy(file="tests/x.py")],
+        )
+        idx.by_slug["spec-untested"] = SpecMeta(
+            type="spec", slug="spec-untested", status="draft",
+        )
+        out_path = tmp_path / "specs.md"
+        generate_specs_index(idx, str(out_path))
+        text = out_path.read_text()
+        assert "spec-tested" in text
+        assert "spec-untested" in text
+        assert "Untested specs" in text
+        # Untested mark in the table
+        assert "⚠️ 0" in text
+
+
 class TestGenerateTagsIndex:
     def test_groups_annotations_by_tag(self, tmp_path: Path):
         from agents.cartographer.index_generator import generate_tags_index

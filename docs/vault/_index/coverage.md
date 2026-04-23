@@ -1,6 +1,6 @@
 ---
 type: vault-index
-last_synced: 2026-04-23T10:10:36Z
+last_synced: 2026-04-23T10:17:20Z
 ---
 
 # Coverage — source files without annotation
@@ -17,6 +17,7 @@ last_synced: 2026-04-23T10:10:36Z
 - `agents/cartographer/markers.py`
 - `agents/cartographer/note_renderer.py`
 - `agents/cartographer/orphan_detector.py`
+- `agents/cartographer/spec_indexer.py`
 - `agents/cartographer/walker.py`
 - `agents/contracts/__init__.py`
 - `agents/contracts/annotation_suggester.py`
@@ -28,6 +29,7 @@ last_synced: 2026-04-23T10:10:36Z
 - `agents/contracts/pentester.py`
 - `agents/contracts/plan_keeper.py`
 - `agents/contracts/reviewer.py`
+- `agents/contracts/spec.py`
 - `agents/contracts/spec_writer.py`
 - `agents/contracts/test_writer.py`
 - `android-app/app/src/main/java/com/samsunghealth/MainActivity.kt`
@@ -68,6 +70,7 @@ last_synced: 2026-04-23T10:10:36Z
 - `tests/agents/test_markers.py`
 - `tests/agents/test_note_renderer.py`
 - `tests/agents/test_orphan_detector.py`
+- `tests/agents/test_spec_indexer.py`
 - `tests/agents/test_walker.py`
 - `tests/conftest.py`
 - `tests/test_sleep.py`

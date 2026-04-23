@@ -1020,10 +1020,10 @@ class TestSpec:
     def test_status_literal(self):
         from agents.contracts.spec import SpecMeta
 
-        for s in ("draft", "ready", "in_progress", "delivered", "superseded"):
+        for s in ("draft", "ready", "approved", "in_progress", "delivered", "superseded"):
             SpecMeta(type="spec", status=s)
         with pytest.raises(ValidationError):
-            SpecMeta(type="spec", status="approved")  # not in literal
+            SpecMeta(type="spec", status="randomvalue")  # not in literal
 
     def test_implements_with_symbols_and_range(self):
         from agents.contracts.spec import SpecImplements, SpecMeta

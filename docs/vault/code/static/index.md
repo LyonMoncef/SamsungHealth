@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/index.html
 git_blob: e9801f41d2d542193165bbf8e7e4e0eebd7f2447
-last_synced: '2026-04-23T10:10:35Z'
+last_synced: '2026-04-23T10:17:20Z'
 loc: 18
 annotations: []
 imports: []
@@ -44,3 +44,6 @@ tags:
 ---
 
 ## Appendix — symbols & navigation *(auto)*
+
+### Implements specs
+- [[../../specs/2026-04-21-spec-nightfall-sleep-dashboard]]

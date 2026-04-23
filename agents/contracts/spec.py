@@ -11,13 +11,17 @@ consumed by the `note_renderer` to surface bidirectional links between
 specs ↔ code ↔ tests.
 """
 
+from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 SpecType = Literal["spec", "plan", "us", "feature", "stub"]
-SpecStatus = Literal["draft", "ready", "in_progress", "delivered", "superseded"]
+SpecStatus = Literal[
+    "draft", "ready", "approved", "in_progress",
+    "delivered", "superseded", "reference",
+]
 
 
 class SpecImplements(BaseModel):
@@ -34,12 +38,15 @@ class SpecTestedBy(BaseModel):
 
 class SpecMeta(BaseModel):
     """Validates the frontmatter of a spec file."""
+
+    model_config = ConfigDict(extra="ignore")  # tolerate extra YAML keys
+
     type: SpecType
     title: str | None = None
     slug: str | None = None  # derived from filename if absent
     status: SpecStatus = "draft"
-    created: str | None = None
-    delivered: str | None = None
+    created: str | date | None = None
+    delivered: str | date | None = None
     tags: list[str] = Field(default_factory=list)
     related_plans: list[str] = Field(default_factory=list)
     implements: list[SpecImplements] = Field(default_factory=list)

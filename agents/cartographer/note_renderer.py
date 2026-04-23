@@ -48,6 +48,7 @@ def render_note(
     orphans: list[OrphanAnnotation],
     coverage_manifest: dict | None = None,
     coverage_raw: dict | None = None,
+    spec_index: object | None = None,
 ) -> str:
     with open(source_path, encoding="utf-8") as fp:
         source = fp.read()
@@ -94,9 +95,9 @@ def render_note(
         coverage_raw_for_file=file_raw,
     ))
 
-    # 6. Appendix (symbols + tests-per-symbol if coverage present)
+    # 6. Appendix (symbols + tests-per-symbol if coverage present + specs links)
     parts.append(_render_appendix(
-        file_symbols, relative_path, coverage_manifest,
+        file_symbols, relative_path, coverage_manifest, spec_index,
     ))
 
     # 7. Exercises section (only for test files)
@@ -104,6 +105,18 @@ def render_note(
         ex = _render_exercises_section(relative_path, coverage_manifest)
         if ex:
             parts.append(ex)
+
+    # 8. Validates section (test file → specs validated)
+    if spec_index and _is_test_file(relative_path):
+        vs = _render_validates_section(relative_path, spec_index)
+        if vs:
+            parts.append(vs)
+
+    # 9. Spec note: auto-rendered Implementation + Tests sections
+    if spec_index and relative_path.startswith("docs/vault/specs/"):
+        spec_section = _render_spec_targets(relative_path, spec_index)
+        if spec_section:
+            parts.append(spec_section)
 
     return "\n".join(parts)
 
@@ -270,13 +283,30 @@ def _render_appendix(
     fs: FileSymbols,
     relative_path: str = "",
     coverage_manifest: dict | None = None,
+    spec_index: object | None = None,
 ) -> str:
     parts = ["---", "", "## Appendix — symbols & navigation *(auto)*", ""]
 
     by_symbol = (coverage_manifest or {}).get("by_symbol", {})
+    by_file_to_specs = getattr(spec_index, "by_file_to_specs", {}) if spec_index else {}
+    file_specs = by_file_to_specs.get(relative_path, [])
+
+    if file_specs:
+        parts.append("### Implements specs")
+        for entry in file_specs:
+            sym_part = (
+                f" — symbols: " + ", ".join(f"`{s}`" for s in entry["symbols"])
+                if entry.get("symbols") else ""
+            )
+            parts.append(f"- [[../../specs/{entry['slug']}]]{sym_part}")
+        parts.append("")
 
     if fs.symbols:
         parts.append("### Symbols")
+        symbol_to_specs: dict[str, list[str]] = {}
+        for entry in file_specs:
+            for sym in entry.get("symbols", []) or []:
+                symbol_to_specs.setdefault(sym, []).append(entry["slug"])
         for s in fs.symbols:
             line = (
                 f"- `{s.name}` ({s.kind}) — lines {s.begin_line}-{s.end_line}"
@@ -292,6 +322,10 @@ def _render_appendix(
                         line += f" _+{len(tests) - 5}_"
                 else:
                     line += " · ⚠️ no test"
+            if s.name in symbol_to_specs:
+                line += " · **Specs**: " + ", ".join(
+                    f"[[../../specs/{slug}|{slug}]]" for slug in symbol_to_specs[s.name]
+                )
             parts.append(line)
         parts.append("")
 
@@ -317,6 +351,63 @@ def _render_appendix(
 def _is_test_file(relative_path: str) -> bool:
     base = relative_path.rsplit("/", 1)[-1]
     return base.startswith("test_") or base.endswith("_test.py")
+
+
+def _render_validates_section(relative_path: str, spec_index: object) -> str:
+    by_test_to_specs = getattr(spec_index, "by_test_to_specs", {})
+    matches = by_test_to_specs.get(relative_path, [])
+    if not matches:
+        return ""
+    parts = ["", "## Validates specs *(auto — declared by spec)*", ""]
+    for entry in matches:
+        details = []
+        if entry.get("classes"):
+            details.append("classes: " + ", ".join(f"`{c}`" for c in entry["classes"]))
+        if entry.get("methods"):
+            details.append("methods: " + ", ".join(f"`{m}`" for m in entry["methods"]))
+        suffix = f" — {' · '.join(details)}" if details else ""
+        parts.append(f"- [[../../specs/{entry['slug']}]]{suffix}")
+    return "\n".join(parts) + "\n"
+
+
+def _render_spec_targets(relative_path: str, spec_index: object) -> str:
+    """For a spec note, render its declared `implements` + `tested_by`."""
+    slug = relative_path.removesuffix(".md").rsplit("/", 1)[-1]
+    by_slug = getattr(spec_index, "by_slug", {})
+    meta = by_slug.get(slug)
+    if meta is None:
+        return ""
+    parts = ["", "## Targets *(auto — from frontmatter)*", ""]
+
+    if meta.implements:
+        parts.append("### Implementation")
+        for impl in meta.implements:
+            sym_part = (
+                f" — symbols: " + ", ".join(f"`{s}`" for s in impl.symbols)
+                if impl.symbols else ""
+            )
+            range_part = (
+                f" (lines {impl.line_range[0]}-{impl.line_range[1]})"
+                if impl.line_range else ""
+            )
+            file_link = f"[[../code/{impl.file.removesuffix('.py').removesuffix('.js').removesuffix('.kt')}|{impl.file}]]"
+            parts.append(f"- {file_link}{sym_part}{range_part}")
+        parts.append("")
+
+    if meta.tested_by:
+        parts.append("### Tests")
+        for tb in meta.tested_by:
+            details = []
+            if tb.classes:
+                details.append("classes: " + ", ".join(f"`{c}`" for c in tb.classes))
+            if tb.methods:
+                details.append("methods: " + ", ".join(f"`{m}`" for m in tb.methods))
+            suffix = f" — {' · '.join(details)}" if details else ""
+            file_link = f"[[../code/{tb.file.removesuffix('.py').removesuffix('.js').removesuffix('.kt')}|{tb.file}]]"
+            parts.append(f"- {file_link}{suffix}")
+        parts.append("")
+
+    return "\n".join(parts)
 
 
 def _render_exercises_section(

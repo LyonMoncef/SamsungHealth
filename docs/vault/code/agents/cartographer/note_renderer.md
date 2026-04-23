@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/cartographer/note_renderer.py
-git_blob: 361590583063ab9afb8814182dfe1f335e01d7f2
-last_synced: '2026-04-23T10:10:35Z'
-loc: 352
+git_blob: 7b37c0c30bdc338f60ca3f6dec91ccf4452e1e60
+last_synced: '2026-04-23T10:17:52Z'
+loc: 443
 annotations: []
 imports:
 - dataclasses
@@ -21,6 +21,8 @@ exports:
 - _render_callout
 - _render_appendix
 - _is_test_file
+- _render_validates_section
+- _render_spec_targets
 - _render_exercises_section
 tags:
 - code
@@ -86,6 +88,7 @@ def render_note(
     orphans: list[OrphanAnnotation],
     coverage_manifest: dict | None = None,
     coverage_raw: dict | None = None,
+    spec_index: object | None = None,
 ) -> str:
     with open(source_path, encoding="utf-8") as fp:
         source = fp.read()
@@ -132,9 +135,9 @@ def render_note(
         coverage_raw_for_file=file_raw,
     ))
 
-    # 6. Appendix (symbols + tests-per-symbol if coverage present)
+    # 6. Appendix (symbols + tests-per-symbol if coverage present + specs links)
     parts.append(_render_appendix(
-        file_symbols, relative_path, coverage_manifest,
+        file_symbols, relative_path, coverage_manifest, spec_index,
     ))
 
     # 7. Exercises section (only for test files)
@@ -142,6 +145,18 @@ def render_note(
         ex = _render_exercises_section(relative_path, coverage_manifest)
         if ex:
             parts.append(ex)
+
+    # 8. Validates section (test file → specs validated)
+    if spec_index and _is_test_file(relative_path):
+        vs = _render_validates_section(relative_path, spec_index)
+        if vs:
+            parts.append(vs)
+
+    # 9. Spec note: auto-rendered Implementation + Tests sections
+    if spec_index and relative_path.startswith("docs/vault/specs/"):
+        spec_section = _render_spec_targets(relative_path, spec_index)
+        if spec_section:
+            parts.append(spec_section)
 
     return "\n".join(parts)
 
@@ -308,13 +323,30 @@ def _render_appendix(
     fs: FileSymbols,
     relative_path: str = "",
     coverage_manifest: dict | None = None,
+    spec_index: object | None = None,
 ) -> str:
     parts = ["---", "", "## Appendix — symbols & navigation *(auto)*", ""]
 
     by_symbol = (coverage_manifest or {}).get("by_symbol", {})
+    by_file_to_specs = getattr(spec_index, "by_file_to_specs", {}) if spec_index else {}
+    file_specs = by_file_to_specs.get(relative_path, [])
+
+    if file_specs:
+        parts.append("### Implements specs")
+        for entry in file_specs:
+            sym_part = (
+                f" — symbols: " + ", ".join(f"`{s}`" for s in entry["symbols"])
+                if entry.get("symbols") else ""
+            )
+            parts.append(f"- [[../../specs/{entry['slug']}]]{sym_part}")
+        parts.append("")
 
     if fs.symbols:
         parts.append("### Symbols")
+        symbol_to_specs: dict[str, list[str]] = {}
+        for entry in file_specs:
+            for sym in entry.get("symbols", []) or []:
+                symbol_to_specs.setdefault(sym, []).append(entry["slug"])
         for s in fs.symbols:
             line = (
                 f"- `{s.name}` ({s.kind}) — lines {s.begin_line}-{s.end_line}"
@@ -330,6 +362,10 @@ def _render_appendix(
                         line += f" _+{len(tests) - 5}_"
                 else:
                     line += " · ⚠️ no test"
+            if s.name in symbol_to_specs:
+                line += " · **Specs**: " + ", ".join(
+                    f"[[../../specs/{slug}|{slug}]]" for slug in symbol_to_specs[s.name]
+                )
             parts.append(line)
         parts.append("")
 
@@ -355,6 +391,63 @@ def _render_appendix(
 def _is_test_file(relative_path: str) -> bool:
     base = relative_path.rsplit("/", 1)[-1]
     return base.startswith("test_") or base.endswith("_test.py")
+
+
+def _render_validates_section(relative_path: str, spec_index: object) -> str:
+    by_test_to_specs = getattr(spec_index, "by_test_to_specs", {})
+    matches = by_test_to_specs.get(relative_path, [])
+    if not matches:
+        return ""
+    parts = ["", "## Validates specs *(auto — declared by spec)*", ""]
+    for entry in matches:
+        details = []
+        if entry.get("classes"):
+            details.append("classes: " + ", ".join(f"`{c}`" for c in entry["classes"]))
+        if entry.get("methods"):
+            details.append("methods: " + ", ".join(f"`{m}`" for m in entry["methods"]))
+        suffix = f" — {' · '.join(details)}" if details else ""
+        parts.append(f"- [[../../specs/{entry['slug']}]]{suffix}")
+    return "\n".join(parts) + "\n"
+
+
+def _render_spec_targets(relative_path: str, spec_index: object) -> str:
+    """For a spec note, render its declared `implements` + `tested_by`."""
+    slug = relative_path.removesuffix(".md").rsplit("/", 1)[-1]
+    by_slug = getattr(spec_index, "by_slug", {})
+    meta = by_slug.get(slug)
+    if meta is None:
+        return ""
+    parts = ["", "## Targets *(auto — from frontmatter)*", ""]
+
+    if meta.implements:
+        parts.append("### Implementation")
+        for impl in meta.implements:
+            sym_part = (
+                f" — symbols: " + ", ".join(f"`{s}`" for s in impl.symbols)
+                if impl.symbols else ""
+            )
+            range_part = (
+                f" (lines {impl.line_range[0]}-{impl.line_range[1]})"
+                if impl.line_range else ""
+            )
+            file_link = f"[[../code/{impl.file.removesuffix('.py').removesuffix('.js').removesuffix('.kt')}|{impl.file}]]"
+            parts.append(f"- {file_link}{sym_part}{range_part}")
+        parts.append("")
+
+    if meta.tested_by:
+        parts.append("### Tests")
+        for tb in meta.tested_by:
+            details = []
+            if tb.classes:
+                details.append("classes: " + ", ".join(f"`{c}`" for c in tb.classes))
+            if tb.methods:
+                details.append("methods: " + ", ".join(f"`{m}`" for m in tb.methods))
+            suffix = f" — {' · '.join(details)}" if details else ""
+            file_link = f"[[../code/{tb.file.removesuffix('.py').removesuffix('.js').removesuffix('.kt')}|{tb.file}]]"
+            parts.append(f"- {file_link}{suffix}")
+        parts.append("")
+
+    return "\n".join(parts)
 
 
 def _render_exercises_section(
@@ -395,15 +488,17 @@ def _render_exercises_section(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `render_note` (function) — lines 42-108 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
-- `_render_frontmatter` (function) — lines 115-143 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
-- `_render_orphan_warning` (function) — lines 150-162 · **Tested by (1)**: `test_note_renderer.TestRenderNoteBasic.test_orphan_warning_at_top`
-- `_render_code_with_callouts` (function) — lines 169-207 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
-- `_wrap_code_block` (function) — lines 210-211 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
-- `_render_callout` (function) — lines 214-262 · **Tested by (2)**: `test_note_renderer.TestRenderNoteBasic.test_callout_inserted_at_single_line_marker`, `test_note_renderer.TestRenderNoteBasic.test_range_callout_after_range`
-- `_render_appendix` (function) — lines 269-310 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
-- `_is_test_file` (function) — lines 317-319
-- `_render_exercises_section` (function) — lines 322-352
+- `render_note` (function) — lines 42-121 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_frontmatter` (function) — lines 128-156 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_orphan_warning` (function) — lines 163-175 · **Tested by (1)**: `test_note_renderer.TestRenderNoteBasic.test_orphan_warning_at_top`
+- `_render_code_with_callouts` (function) — lines 182-220 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_wrap_code_block` (function) — lines 223-224 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_callout` (function) — lines 227-275 · **Tested by (2)**: `test_note_renderer.TestRenderNoteBasic.test_callout_inserted_at_single_line_marker`, `test_note_renderer.TestRenderNoteBasic.test_range_callout_after_range`
+- `_render_appendix` (function) — lines 282-344 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_is_test_file` (function) — lines 351-353
+- `_render_validates_section` (function) — lines 356-370
+- `_render_spec_targets` (function) — lines 373-410
+- `_render_exercises_section` (function) — lines 413-443
 
 ### Imports
 - `dataclasses`
@@ -421,4 +516,6 @@ def _render_exercises_section(
 - `_render_callout`
 - `_render_appendix`
 - `_is_test_file`
+- `_render_validates_section`
+- `_render_spec_targets`
 - `_render_exercises_section`

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/agents/test_note_renderer.py
-git_blob: 1a1cbb397f7bca03222768022b4741a312c0bccc
-last_synced: '2026-04-23T10:10:35Z'
-loc: 286
+git_blob: 673c0b21b80481515dbf0253dfc13aef9d15739a
+last_synced: '2026-04-23T10:17:52Z'
+loc: 377
 annotations: []
 imports:
 - pathlib
@@ -275,6 +275,97 @@ class TestCoverageIntegration:
         assert "Exercises" not in out
         assert "coverage_pct" not in out
 
+    def test_appendix_lists_implementing_specs(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.spec_indexer import SpecIndex
+        from agents.cartographer.walker import FileSymbols, Symbol
+        from agents.contracts.spec import SpecImplements, SpecMeta
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("def foo(): pass\n")
+        fs = FileSymbols(
+            file=str(src_path), language="python", loc=1,
+            symbols=[Symbol(name="foo", kind="function", begin_line=1, end_line=1)],
+        )
+        idx = SpecIndex()
+        idx.by_slug["spec-x"] = SpecMeta(
+            type="spec", slug="spec-x",
+            implements=[SpecImplements(file="agents/x.py", symbols=["foo"])],
+        )
+        idx.by_file_to_specs["agents/x.py"] = [{
+            "slug": "spec-x", "symbols": ["foo"], "line_range": None,
+        }]
+
+        out = render_note(
+            source_path=str(src_path), relative_path="agents/x.py",
+            file_symbols=fs, git_blob="abc",
+            active_annotations=[], orphans=[],
+            spec_index=idx,
+        )
+        assert "Implements specs" in out
+        assert "spec-x" in out
+        assert "Specs" in out  # per-symbol
+
+    def test_test_file_validates_section(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.spec_indexer import SpecIndex
+        from agents.cartographer.walker import FileSymbols
+        from agents.contracts.spec import SpecMeta, SpecTestedBy
+
+        src_path = tmp_path / "test_x.py"
+        src_path.write_text("def test_foo(): pass\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=1)
+
+        idx = SpecIndex()
+        idx.by_slug["spec-x"] = SpecMeta(
+            type="spec", slug="spec-x",
+            tested_by=[SpecTestedBy(file="tests/test_x.py", classes=["TestX"])],
+        )
+        idx.by_test_to_specs["tests/test_x.py"] = [{
+            "slug": "spec-x", "classes": ["TestX"], "methods": [],
+        }]
+
+        out = render_note(
+            source_path=str(src_path), relative_path="tests/test_x.py",
+            file_symbols=fs, git_blob="abc",
+            active_annotations=[], orphans=[],
+            coverage_manifest={"by_symbol": {}, "by_test": {}, "by_file": {}},
+            spec_index=idx,
+        )
+        assert "Validates specs" in out
+        assert "spec-x" in out
+        assert "TestX" in out
+
+    def test_spec_note_targets_section(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.spec_indexer import SpecIndex
+        from agents.cartographer.walker import FileSymbols
+        from agents.contracts.spec import SpecImplements, SpecMeta, SpecTestedBy
+
+        src_path = tmp_path / "spec-x.md"
+        src_path.write_text("# Spec\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=1)
+
+        idx = SpecIndex()
+        idx.by_slug["spec-x"] = SpecMeta(
+            type="spec", slug="spec-x",
+            implements=[SpecImplements(file="agents/x.py", symbols=["foo"])],
+            tested_by=[SpecTestedBy(file="tests/test_x.py", classes=["TestX"])],
+        )
+
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="docs/vault/specs/spec-x.md",
+            file_symbols=fs, git_blob="abc",
+            active_annotations=[], orphans=[],
+            spec_index=idx,
+        )
+        assert "Targets" in out
+        assert "Implementation" in out
+        assert "agents/x.py" in out
+        assert "Tests" in out
+        assert "test_x.py" in out
+
     def test_annotation_callout_includes_tests_for_range(self, tmp_path: Path):
         from agents.cartographer.note_renderer import (
             ActiveAnnotation,
@@ -319,7 +410,7 @@ class TestCoverageIntegration:
 
 ### Symbols
 - `TestRenderNoteBasic` (class) — lines 17-157
-- `TestCoverageIntegration` (class) — lines 160-286
+- `TestCoverageIntegration` (class) — lines 160-377
 
 ### Imports
 - `pathlib`

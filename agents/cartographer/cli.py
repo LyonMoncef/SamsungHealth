@@ -22,6 +22,7 @@ from agents.cartographer.index_generator import (
     generate_coverage_index,
     generate_coverage_map_index,
     generate_orphans_index,
+    generate_specs_index,
     generate_tags_index,
 )
 from agents.cartographer.markers import (
@@ -64,6 +65,7 @@ def run(
     source_globs = source_globs or DEFAULT_SOURCE_GLOBS
 
     coverage_manifest, coverage_raw = _load_coverage(vault_root, repo_root)
+    spec_index = _load_spec_index(vault_root)
 
     if mode == "diff":
         source_files = [
@@ -87,11 +89,17 @@ def run(
                     repo_root, vault_root, rel, annotation_paths,
                     coverage_manifest=coverage_manifest,
                     coverage_raw=coverage_raw,
+                    spec_index=spec_index,
                 )
                 notes_generated += 1
             except Exception as exc:
                 parse_errors.append({"file": rel, "error": str(exc)})
                 notes_skipped += 1
+
+        # Specs are first-class vault notes — render them too (their own type)
+        if mode == "full":
+            spec_notes = _render_spec_notes(repo_root, vault_root, spec_index)
+            notes_generated += spec_notes
 
         # Indexes (best effort) — only in full mode (diff is incremental)
         if mode == "full":
@@ -171,6 +179,7 @@ def _render_one(
     annotation_paths: list[str],
     coverage_manifest: dict | None = None,
     coverage_raw: dict | None = None,
+    spec_index: object | None = None,
 ) -> None:
     src_abs = os.path.join(repo_root, rel)
     language = infer_language(rel)
@@ -218,6 +227,7 @@ def _render_one(
         orphans=orphans,
         coverage_manifest=coverage_manifest,
         coverage_raw=coverage_raw,
+        spec_index=spec_index,
     )
     with open(out_path, "w", encoding="utf-8") as fp:
         fp.write(note)
@@ -292,6 +302,13 @@ def _write_indexes(
         output_path=os.path.join(vault_root, "_index", "annotations-by-tag.md"),
     )
 
+    # Specs index — needs the spec_index built earlier in the run
+    spec_index = _load_spec_index(vault_root)
+    generate_specs_index(
+        spec_index=spec_index,
+        output_path=os.path.join(vault_root, "_index", "specs.md"),
+    )
+
     # Coverage map index (only if manifest exists)
     manifest_path = os.path.join(vault_root, "_index", "coverage-map.json")
     if os.path.isfile(manifest_path):
@@ -309,6 +326,61 @@ def _write_indexes(
 
 def _strip_ext(path: str) -> str:
     return os.path.splitext(path)[0]
+
+
+def _load_spec_index(vault_root: str):
+    from agents.cartographer.spec_indexer import build_index, discover_spec_paths
+    spec_paths = discover_spec_paths(vault_root)
+    return build_index(spec_paths)
+
+
+def _render_spec_notes(repo_root: str, vault_root: str, spec_index) -> int:
+    """Render the spec source files themselves into vault notes (`code/specs/...`).
+
+    Specs live in `docs/vault/specs/` (which is INSIDE the vault). We render a
+    light note that just embeds the original markdown + the auto-generated
+    Targets section (Implementation/Tests links).
+    """
+    from agents.cartographer.spec_indexer import discover_spec_paths
+
+    out_dir = os.path.join(vault_root, "code", "specs")
+    os.makedirs(out_dir, exist_ok=True)
+
+    rendered = 0
+    for spec_path in discover_spec_paths(vault_root):
+        slug = os.path.basename(spec_path).removesuffix(".md")
+        meta = spec_index.by_slug.get(slug)
+        if meta is None:
+            continue
+        target = os.path.join(out_dir, f"{slug}.md")
+        body = _render_spec_summary_note(slug, spec_path, meta, spec_index)
+        with open(target, "w", encoding="utf-8") as fp:
+            fp.write(body)
+        rendered += 1
+    return rendered
+
+
+def _render_spec_summary_note(slug, spec_path, meta, spec_index) -> str:
+    """Render a vault summary note for a spec — frontmatter + link to source + Targets."""
+    fm_lines = [
+        "---",
+        "type: spec-summary",
+        f"slug: {slug}",
+        f"original_type: {meta.type}",
+        f"status: {meta.status}",
+        f"source: ../../specs/{slug}",
+        "---",
+    ]
+    parts = ["\n".join(fm_lines), "", f"# Spec — {slug}", "",
+             f"Source : [[../../specs/{slug}]]", ""]
+
+    # Render the auto Targets section
+    from agents.cartographer.note_renderer import _render_spec_targets
+    rel = f"docs/vault/specs/{slug}.md"
+    target_section = _render_spec_targets(rel, spec_index)
+    if target_section:
+        parts.append(target_section)
+    return "\n".join(parts)
 
 
 def _load_coverage(vault_root: str, repo_root: str) -> tuple[dict | None, dict | None]:

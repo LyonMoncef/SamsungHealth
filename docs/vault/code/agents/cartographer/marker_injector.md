@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/marker_injector.py
 git_blob: 4173ce569ac366b83b4f6a402ed6c98470900d2e
-last_synced: '2026-04-23T10:10:35Z'
+last_synced: '2026-04-23T10:17:20Z'
 loc: 122
 annotations: []
 imports:

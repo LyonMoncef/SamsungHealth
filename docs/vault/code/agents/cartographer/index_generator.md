@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/cartographer/index_generator.py
-git_blob: 53fa60324ed5819decdc437b96004aebd0a271fb
-last_synced: '2026-04-23T10:10:35Z'
-loc: 148
+git_blob: 8b007f0bc1b535dc239093ac4a9b1bb4aa0e2cf3
+last_synced: '2026-04-23T10:17:52Z'
+loc: 188
 annotations: []
 imports:
 - os
@@ -17,6 +17,7 @@ exports:
 - generate_orphans_index
 - generate_coverage_index
 - generate_coverage_map_index
+- generate_specs_index
 - generate_tags_index
 tags:
 - code
@@ -153,6 +154,46 @@ def generate_coverage_map_index(coverage_manifest: dict, output_path: str) -> No
     )
 
 
+def generate_specs_index(spec_index, output_path: str) -> None:
+    """Render `_index/specs.md` — table of all specs + their status + drift count."""
+    by_slug = getattr(spec_index, "by_slug", {})
+    if not by_slug:
+        body = "_No specs declared._"
+    else:
+        lines = [
+            "## Specs",
+            "",
+            "| Slug | Type | Status | Implements | Tested by |",
+            "|------|------|--------|------------|-----------|",
+        ]
+        for slug in sorted(by_slug):
+            meta = by_slug[slug]
+            n_impl = len(meta.implements)
+            n_test = len(meta.tested_by)
+            test_warning = "⚠️ 0" if n_test == 0 and meta.type == "spec" else str(n_test)
+            lines.append(
+                f"| [[../specs/{slug}]] | {meta.type} | {meta.status} | "
+                f"{n_impl} | {test_warning} |"
+            )
+
+        # Untested specs section
+        untested = [s for s, m in by_slug.items() if m.type == "spec" and not m.tested_by]
+        if untested:
+            lines.extend(["", "## ⚠️ Untested specs", ""])
+            for slug in sorted(untested):
+                lines.append(f"- [[../specs/{slug}]]")
+
+        body = "\n".join(lines)
+
+    _write(
+        output_path,
+        f"---\ntype: vault-index\nlast_synced: {_ts()}\n---\n\n"
+        f"# Specs index\n\n"
+        f"All specs in `docs/vault/specs/`. Updated at every `/sync-vault --full`.\n\n"
+        f"{body}\n",
+    )
+
+
 def generate_tags_index(annotation_paths: list[str], output_path: str) -> None:
     by_tag: dict[str, list[str]] = defaultdict(list)
     for path in annotation_paths:
@@ -192,7 +233,8 @@ def generate_tags_index(annotation_paths: list[str], output_path: str) -> None:
 - `generate_orphans_index` (function) — lines 31-64 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
 - `generate_coverage_index` (function) — lines 67-83 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
 - `generate_coverage_map_index` (function) — lines 86-119
-- `generate_tags_index` (function) — lines 122-148 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
+- `generate_specs_index` (function) — lines 122-159
+- `generate_tags_index` (function) — lines 162-188 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
 
 ### Imports
 - `os`
@@ -206,4 +248,5 @@ def generate_tags_index(annotation_paths: list[str], output_path: str) -> None:
 - `generate_orphans_index`
 - `generate_coverage_index`
 - `generate_coverage_map_index`
+- `generate_specs_index`
 - `generate_tags_index`
