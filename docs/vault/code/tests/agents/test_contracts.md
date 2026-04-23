@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/agents/test_contracts.py
-git_blob: 36a560ae6541d79016a71cae921b6c7d83e504b3
-last_synced: '2026-04-23T10:17:52Z'
-loc: 1097
+git_blob: 499d2620f0f19cce7ed7808d1509d1ae6e6825f8
+last_synced: '2026-04-23T10:18:41Z'
+loc: 1099
 annotations: []
 imports:
 - pytest
@@ -581,6 +581,8 @@ class TestPlanKeeper:
             "vault_orphan_annotation",
             "vault_missing_note",
             "vault_outdated",
+            "spec_implements_drift",
+            "untested_spec",
             "other",
         ):
             PlanDeviation(
@@ -1150,11 +1152,11 @@ class TestPackageReExports:
 - `TestDocumenter` (class) — lines 244-262
 - `TestGitSteward` (class) — lines 269-324
 - `TestPentester` (class) — lines 331-477
-- `TestPlanKeeper` (class) — lines 484-606
-- `TestCartographer` (class) — lines 613-892
-- `TestAnnotationSuggester` (class) — lines 899-996
-- `TestSpec` (class) — lines 1003-1042
-- `TestPackageReExports` (class) — lines 1049-1097
+- `TestPlanKeeper` (class) — lines 484-608
+- `TestCartographer` (class) — lines 615-894
+- `TestAnnotationSuggester` (class) — lines 901-998
+- `TestSpec` (class) — lines 1005-1044
+- `TestPackageReExports` (class) — lines 1051-1099
 
 ### Imports
 - `pytest`

@@ -50,6 +50,8 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `PlanAuditBrief` 
    | `vault_orphan_annotation` | Annotation dans `docs/vault/annotations/_orphans/` non résolue depuis ≥ 3 commits — l'humain l'a oubliée. Severity `low` (1-2 commits) → `medium` (3-7) → `high` (8+) |
    | `vault_missing_note` | Fichier source matchant la convention de globs cartographer (`server/**/*.py`, etc.) sans note vault correspondante dans `docs/vault/code/` — bug du sync ou hook désactivé. Severity `medium` |
    | `vault_outdated` | Note vault dont frontmatter `git_blob` ne matche pas le SHA actuel du fichier source (`git ls-files -s <path>` extract column 2). Indique sync raté. Severity `medium` |
+   | `spec_implements_drift` | Spec `docs/vault/specs/<slug>.md` déclare `implements: <file>` ou `<file>::<symbol>` qui n'existe plus dans le code (file supprimé/renommé OU symbole renommé). Détecté via `agents.cartographer.spec_indexer.detect_implements_drift()`. Severity `medium` |
+   | `untested_spec` | Spec `type: spec` sans aucun `tested_by:` dans son frontmatter. Détecté via `agents.cartographer.spec_indexer.untested_specs()`. Severity `low` (spec récente <7j) → `medium` (≥ 7j) |
    | `other` | Tout le reste (scope text mismatch, decision documentée mais non appliquée, etc.) |
 
    ### Détections vault — détail technique
@@ -68,6 +70,20 @@ Lis `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json` — contrat `PlanAuditBrief` 
    Pour `vault_missing_note` : croise les `Glob` `server/**/*.py` (etc.) avec l'existence des `.md` correspondants dans `docs/vault/code/`. Mismatch = déviation.
 
    Pour `vault_outdated` : pour chaque note vault dans `docs/vault/code/`, lire le frontmatter `git_blob` + `file_path`, puis comparer à `git ls-files -s <file_path>` colonne 2 (sha actuel). Différent = déviation.
+
+   Pour `spec_implements_drift` + `untested_spec` (Phase A.8) : exécuter
+   ```bash
+   python3 -c "
+   from agents.cartographer.spec_indexer import build_index, discover_spec_paths, detect_implements_drift, untested_specs
+   idx = build_index(discover_spec_paths('docs/vault'))
+   for slug, meta in idx.by_slug.items():
+       for d in detect_implements_drift(slug, meta, '.'):
+           print('DRIFT:', d)
+   for slug in untested_specs(idx):
+       print('UNTESTED:', slug)
+   "
+   ```
+   Chaque ligne `DRIFT:` génère un `spec_implements_drift` avec `proposed_patch` = "Update `implements:` dans `docs/vault/specs/<slug>.md` : retirer ou renommer la cible cassée". Chaque `UNTESTED:` génère un `untested_spec`.
 
 4. **Pour chaque déviation détectée** : produire `PlanDeviation` avec
    - `severity` (info < low < medium < high < critical) — sévérité = impact sur la cohérence à long terme :

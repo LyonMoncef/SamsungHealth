@@ -17,6 +17,8 @@ DeviationType = Literal[
     "vault_orphan_annotation",
     "vault_missing_note",
     "vault_outdated",
+    "spec_implements_drift",
+    "untested_spec",
     "other",
 ]
 
