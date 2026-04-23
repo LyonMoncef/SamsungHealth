@@ -32,6 +32,13 @@ from .plan_keeper import (
     PlanDeviation,
 )
 from .reviewer import ReviewBrief, ReviewReport
+from .spec import (
+    SpecImplements,
+    SpecMeta,
+    SpecStatus,
+    SpecTestedBy,
+    SpecType,
+)
 from .spec_writer import SpecArtifact, SpecBrief
 from .test_writer import TestArtifact, TestBrief
 
@@ -72,4 +79,9 @@ __all__ = [
     "AnnotationSuggestionReport",
     "SuggestedAnnotation",
     "SuggestionConfidence",
+    "SpecMeta",
+    "SpecImplements",
+    "SpecTestedBy",
+    "SpecType",
+    "SpecStatus",
 ]

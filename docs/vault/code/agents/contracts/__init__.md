@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/contracts/__init__.py
-git_blob: 312f6d1384d517b4125ed7867e40197161872d1c
-last_synced: '2026-04-23T10:10:35Z'
-loc: 75
+git_blob: ef3a05f66aba3dc17e8da5cdf00092dbfc9bce02
+last_synced: '2026-04-23T10:13:01Z'
+loc: 87
 annotations: []
 imports:
 - .annotation_suggester
@@ -16,6 +16,7 @@ imports:
 - .pentester
 - .plan_keeper
 - .reviewer
+- .spec
 - .spec_writer
 - .test_writer
 exports: []
@@ -67,6 +68,13 @@ from .plan_keeper import (
     PlanDeviation,
 )
 from .reviewer import ReviewBrief, ReviewReport
+from .spec import (
+    SpecImplements,
+    SpecMeta,
+    SpecStatus,
+    SpecTestedBy,
+    SpecType,
+)
 from .spec_writer import SpecArtifact, SpecBrief
 from .test_writer import TestArtifact, TestBrief
 
@@ -107,6 +115,11 @@ __all__ = [
     "AnnotationSuggestionReport",
     "SuggestedAnnotation",
     "SuggestionConfidence",
+    "SpecMeta",
+    "SpecImplements",
+    "SpecTestedBy",
+    "SpecType",
+    "SpecStatus",
 ]
 ```
 
@@ -124,5 +137,6 @@ __all__ = [
 - `.pentester`
 - `.plan_keeper`
 - `.reviewer`
+- `.spec`
 - `.spec_writer`
 - `.test_writer`

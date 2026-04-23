@@ -997,6 +997,52 @@ class TestAnnotationSuggester:
 
 
 # ---------------------------------------------------------------------------
+# spec (Phase A.8) — frontmatter typed
+# ---------------------------------------------------------------------------
+
+class TestSpec:
+    def test_meta_minimal_valid(self):
+        from agents.contracts.spec import SpecMeta
+
+        m = SpecMeta(type="spec")
+        assert m.status == "draft"
+        assert m.implements == []
+        assert m.tested_by == []
+
+    def test_type_literal(self):
+        from agents.contracts.spec import SpecMeta
+
+        for t in ("spec", "plan", "us", "feature", "stub"):
+            SpecMeta(type=t)
+        with pytest.raises(ValidationError):
+            SpecMeta(type="random")
+
+    def test_status_literal(self):
+        from agents.contracts.spec import SpecMeta
+
+        for s in ("draft", "ready", "in_progress", "delivered", "superseded"):
+            SpecMeta(type="spec", status=s)
+        with pytest.raises(ValidationError):
+            SpecMeta(type="spec", status="approved")  # not in literal
+
+    def test_implements_with_symbols_and_range(self):
+        from agents.contracts.spec import SpecImplements, SpecMeta
+
+        m = SpecMeta(type="spec", implements=[
+            SpecImplements(file="x.py", symbols=["foo"], line_range=(10, 50)),
+        ])
+        assert m.implements[0].line_range == (10, 50)
+
+    def test_tested_by_classes_and_methods(self):
+        from agents.contracts.spec import SpecMeta, SpecTestedBy
+
+        m = SpecMeta(type="spec", tested_by=[
+            SpecTestedBy(file="t.py", classes=["TestX"], methods=["test_y"]),
+        ])
+        assert m.tested_by[0].classes == ["TestX"]
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting : __init__ re-exports
 # ---------------------------------------------------------------------------
 
@@ -1034,6 +1080,11 @@ class TestPackageReExports:
             AnnotationSuggestionReport,
             SuggestedAnnotation,
             SuggestionConfidence,
+            SpecMeta,
+            SpecImplements,
+            SpecTestedBy,
+            SpecType,
+            SpecStatus,
         )
 
         assert AgentInputBase is not None
