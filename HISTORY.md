@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `46f85e4`
+feat(phase-a.5): CLI code-cartographer (full/diff/check) + bootstrap initial 47 notes vault + 3 indexes (5 tests GREEN)
+- Added `agents/cartographer/cli.py` — `run(mode, repo_root, vault_root, ...)` orchestrateur + `main()` argv (`--full`, `--diff <files>`, `--check`). Découvre sources via globs, parse markers, walk AST, résout anchors, render notes vault, écrit `_index/` (mode full uniquement), retourne `CartographyReport`. `--check` = dry-run, exit 1 si new orphans
+- Added `tests/agents/test_cli.py` — 5 tests (full crée notes + indexes, diff filtre, check pass/fail)
+- **Bootstrap initial exécuté** : `python -m agents.cartographer.cli --full` → 47 notes vault dans `docs/vault/code/` (modules : agents/, scripts/, server/, static/, android-app/) + 3 indexes (`orphans.md`, `coverage.md`, `annotations-by-tag.md`)
+- Removed `docs/vault/.gitkeep-structure` placeholder (vault maintenant peuplé)
+- Tests : 129/129 GREEN (124 + 5 CLI)
+- Phase A.5 task #7 ✓ ; reste #8 subagent+skills, #9 hook pre-commit, #10 changelog gen, #11 plan-keeper extension
+
 ### 2026-04-23 `f803fd8`
 feat(phase-a.5): modules render cartographer (anchor_resolver + note_renderer + orphan_detector + index_generator) + 14 tests GREEN
 - Added `agents/cartographer/anchor_resolver.py` — `resolve_anchors_for_file()` retourne `ResolveResult` (3 buckets : `active` avec lignes refreshed, `orphans` avec last_seen, `unmatched` slugs en code sans annotation file)
