@@ -53,6 +53,19 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `bcde863`
+docs(plans/agents): patch tous les paths vault/02_Projects/SamsungHealth/ → docs/vault/ suite vault Obsidian dédié
+- `.claude/agents/spec-writer.md` — `vault/02_Projects/.../specs/` → `docs/vault/specs/` (×2 occurrences)
+- `.claude/agents/documenter.md` — `vault/02_Projects/.../codex/` → `docs/vault/codex/` (×3 occurrences)
+- `.claude/agents/plan-keeper.md` — discovery glob `vault/02_Projects/.../specs/` → `docs/vault/specs/` (×2 occurrences)
+- `agents/README.md` — Master plan + Plan multi-agents pointers (×2)
+- `docs/vault/README.md` — top-level link plan code-as-vault → `specs/` interne
+- `docs/vault/specs/2026-04-23-plan-v2-multi-agents-architecture.md` — header + section codex CI (×2)
+- `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md` — header note ajoutée (specs versionnées + vault dédié)
+- Skills `.claude/skills/**/*.md` audités → 0 référence à patcher (skills déjà cohérents)
+- Re-bootstrap mirror : 78 notes vault, structure inchangée, paths internes propres
+- 175/175 tests GREEN
+
 ### 2026-04-23 `48e5876`
 feat(vault): vault Obsidian dédié pour SamsungHealth (séparé du PKM perso)
 - **Path final** : `C:\Users\idsmf\Documents\Obsidian\SamsungHealth\` = `/mnt/c/Users/idsmf/Documents/Obsidian/SamsungHealth/`
