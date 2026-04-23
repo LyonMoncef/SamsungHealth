@@ -3,61 +3,51 @@ type: code-source
 language: python
 file_path: scripts/import_samsung_csv.py
 git_blob: 038f9c4235e77939e91c817f7b788b78353b595f
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 690
 annotations: []
 imports:
-- 'v
-
-  i'
-- 's
-
-  f'
-- llections i
-- tetime i
-- thlib i
-- rver.database i
+- csv
+- sys
+- collections
+- datetime
+- pathlib
+- server.database
 exports:
-- f matche
-- ")\n    if"
-- .g
-- fmt in (
-- " try:\n    "
-- 'one
-
-
-
-  de'
-- 'None
-
-
-  '
-- ──────
-- UUID namespa
-- "p_sessions\")\n    }\n"
-- '"com.samsung.health'
-- IGNORE INTO steps_
-- ' to_float(fv(row, f"{pfx'
-- type  = fv(row,
-- "xecute(\n     "
-- "e\"))\n      "
-- '       cur = conn.execu'
-- "\n         "
-- '       cur = conn.execu'
-- '          (st'
-- ime, height_c
-- "cur = conn.execute(\n "
-- 'mood_type, '
-- er_intake (start_ti
-- '   cur = conn.execute'
-- "e\"))\n        if not d"
-- RE INTO floors_dail
-- O activity_level (sta
-- "\"\"\"\n      "
-- rt_s
+- find_csv
+- read_csv
+- fv
+- parse_dt
+- ms_to_date
+- to_float
+- to_int
+- report
+- import_sleep
+- import_sleep_stages
+- import_steps_hourly
+- import_steps_daily
+- import_heart_rate_hourly
+- import_exercise
+- import_stress
+- import_spo2
+- import_respiratory_rate
+- import_hrv
+- import_skin_temperature
+- import_weight
+- import_height
+- import_blood_pressure
+- import_mood
+- import_water_intake
+- import_activity_daily
+- import_vitality_score
+- import_floors_daily
+- import_activity_level
+- import_ecg
+- main
 tags:
 - code
 - python
+coverage_pct: 0.0
 ---
 
 # scripts/import_samsung_csv.py
@@ -765,105 +755,73 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `f matche` (function) — lines 28-30
-- `)
-    if` (function) — lines 33-43
-- `.g` (function) — lines 46-52
-- `fmt in (` (function) — lines 55-64
-- ` try:
-    ` (function) — lines 67-75
-- `one
-
-
-de` (function) — lines 78-82
-- `None
-
-` (function) — lines 85-89
-- `──────` (function) — lines 92-93
-- `UUID namespa` (function) — lines 98-144
-- `p_sessions")
-    }
-` (function) — lines 147-181
-- `"com.samsung.health` (function) — lines 184-204
-- `IGNORE INTO steps_` (function) — lines 207-231
-- ` to_float(fv(row, f"{pfx` (function) — lines 234-255
-- `type  = fv(row,` (function) — lines 258-295
-- `xecute(
-     ` (function) — lines 298-314
-- `e"))
-      ` (function) — lines 317-341
-- `       cur = conn.execu` (function) — lines 344-360
-- `
-         ` (function) — lines 363-379
-- `       cur = conn.execu` (function) — lines 382-398
-- `          (st` (function) — lines 401-427
-- `ime, height_c` (function) — lines 430-445
-- `cur = conn.execute(
- ` (function) — lines 448-470
-- `mood_type, ` (function) — lines 473-496
-- `er_intake (start_ti` (function) — lines 499-514
-- `   cur = conn.execute` (function) — lines 517-544
-- `e"))
-        if not d` (function) — lines 547-582
-- `RE INTO floors_dail` (function) — lines 585-600
-- `O activity_level (sta` (function) — lines 603-618
-- `"""
-      ` (function) — lines 621-643
-- `rt_s` (function) — lines 648-686
+- `find_csv` (function) — lines 28-30 · ⚠️ no test
+- `read_csv` (function) — lines 33-43 · ⚠️ no test
+- `fv` (function) — lines 46-52 · ⚠️ no test
+- `parse_dt` (function) — lines 55-64 · ⚠️ no test
+- `ms_to_date` (function) — lines 67-75 · ⚠️ no test
+- `to_float` (function) — lines 78-82 · ⚠️ no test
+- `to_int` (function) — lines 85-89 · ⚠️ no test
+- `report` (function) — lines 92-93 · ⚠️ no test
+- `import_sleep` (function) — lines 98-144 · ⚠️ no test
+- `import_sleep_stages` (function) — lines 147-181 · ⚠️ no test
+- `import_steps_hourly` (function) — lines 184-204 · ⚠️ no test
+- `import_steps_daily` (function) — lines 207-231 · ⚠️ no test
+- `import_heart_rate_hourly` (function) — lines 234-255 · ⚠️ no test
+- `import_exercise` (function) — lines 258-295 · ⚠️ no test
+- `import_stress` (function) — lines 298-314 · ⚠️ no test
+- `import_spo2` (function) — lines 317-341 · ⚠️ no test
+- `import_respiratory_rate` (function) — lines 344-360 · ⚠️ no test
+- `import_hrv` (function) — lines 363-379 · ⚠️ no test
+- `import_skin_temperature` (function) — lines 382-398 · ⚠️ no test
+- `import_weight` (function) — lines 401-427 · ⚠️ no test
+- `import_height` (function) — lines 430-445 · ⚠️ no test
+- `import_blood_pressure` (function) — lines 448-470 · ⚠️ no test
+- `import_mood` (function) — lines 473-496 · ⚠️ no test
+- `import_water_intake` (function) — lines 499-514 · ⚠️ no test
+- `import_activity_daily` (function) — lines 517-544 · ⚠️ no test
+- `import_vitality_score` (function) — lines 547-582 · ⚠️ no test
+- `import_floors_daily` (function) — lines 585-600 · ⚠️ no test
+- `import_activity_level` (function) — lines 603-618 · ⚠️ no test
+- `import_ecg` (function) — lines 621-643 · ⚠️ no test
+- `main` (function) — lines 648-686 · ⚠️ no test
 
 ### Imports
-- `v
-i`
-- `s
-f`
-- `llections i`
-- `tetime i`
-- `thlib i`
-- `rver.database i`
+- `csv`
+- `sys`
+- `collections`
+- `datetime`
+- `pathlib`
+- `server.database`
 
 ### Exports
-- `f matche`
-- `)
-    if`
-- `.g`
-- `fmt in (`
-- ` try:
-    `
-- `one
-
-
-de`
-- `None
-
-`
-- `──────`
-- `UUID namespa`
-- `p_sessions")
-    }
-`
-- `"com.samsung.health`
-- `IGNORE INTO steps_`
-- ` to_float(fv(row, f"{pfx`
-- `type  = fv(row,`
-- `xecute(
-     `
-- `e"))
-      `
-- `       cur = conn.execu`
-- `
-         `
-- `       cur = conn.execu`
-- `          (st`
-- `ime, height_c`
-- `cur = conn.execute(
- `
-- `mood_type, `
-- `er_intake (start_ti`
-- `   cur = conn.execute`
-- `e"))
-        if not d`
-- `RE INTO floors_dail`
-- `O activity_level (sta`
-- `"""
-      `
-- `rt_s`
+- `find_csv`
+- `read_csv`
+- `fv`
+- `parse_dt`
+- `ms_to_date`
+- `to_float`
+- `to_int`
+- `report`
+- `import_sleep`
+- `import_sleep_stages`
+- `import_steps_hourly`
+- `import_steps_daily`
+- `import_heart_rate_hourly`
+- `import_exercise`
+- `import_stress`
+- `import_spo2`
+- `import_respiratory_rate`
+- `import_hrv`
+- `import_skin_temperature`
+- `import_weight`
+- `import_height`
+- `import_blood_pressure`
+- `import_mood`
+- `import_water_intake`
+- `import_activity_daily`
+- `import_vitality_score`
+- `import_floors_daily`
+- `import_activity_level`
+- `import_ecg`
+- `main`

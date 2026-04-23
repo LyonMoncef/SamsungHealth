@@ -3,22 +3,18 @@ type: code-source
 language: python
 file_path: tests/agents/test_marker_injector.py
 git_blob: ac1dafe4d918b3ed815dc3c73816fa0a0024d787
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 124
 annotations: []
 imports:
-- b impor
-- '
-
-
-
-  cla'
+- pathlib
+- pytest
 exports:
-- "jectSinglePython:\n    "
-- "jectSingleJavaScript:\n    "
-- "jectSingleHTML:\n    "
-- "jectRangePython:\n    "
-- "moveMarker:\n    "
+- TestInjectSinglePython
+- TestInjectSingleJavaScript
+- TestInjectSingleHTML
+- TestInjectRangePython
+- TestRemoveMarker
 tags:
 - code
 - python
@@ -163,32 +159,80 @@ class TestRemoveMarker:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `jectSinglePython:
-    ` (class) — lines 16-36
-- `jectSingleJavaScript:
-    ` (class) — lines 39-46
-- `jectSingleHTML:
-    ` (class) — lines 49-56
-- `jectRangePython:
-    ` (class) — lines 59-84
-- `moveMarker:
-    ` (class) — lines 87-124
+- `TestInjectSinglePython` (class) — lines 16-36
+- `TestInjectSingleJavaScript` (class) — lines 39-46
+- `TestInjectSingleHTML` (class) — lines 49-56
+- `TestInjectRangePython` (class) — lines 59-84
+- `TestRemoveMarker` (class) — lines 87-124
 
 ### Imports
-- `b impor`
-- `
-
-
-cla`
+- `pathlib`
+- `pytest`
 
 ### Exports
-- `jectSinglePython:
-    `
-- `jectSingleJavaScript:
-    `
-- `jectSingleHTML:
-    `
-- `jectRangePython:
-    `
-- `moveMarker:
-    `
+- `TestInjectSinglePython`
+- `TestInjectSingleJavaScript`
+- `TestInjectSingleHTML`
+- `TestInjectRangePython`
+- `TestRemoveMarker`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_marker_injector.TestInjectRangePython.test_begin_end_added_around_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_comment`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `inject_range`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_leading_whitespace`
+
+### `test_marker_injector.TestInjectRangePython.test_range_indent_matches_line`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_comment`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `inject_range`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_leading_whitespace`
+
+### `test_marker_injector.TestInjectSingleHTML.test_eol_comment_html`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_comment`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `inject_single`
+
+### `test_marker_injector.TestInjectSingleJavaScript.test_eol_comment_js`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_comment`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `inject_single`
+
+### `test_marker_injector.TestInjectSinglePython.test_eol_comment_added`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_comment`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `inject_single`
+
+### `test_marker_injector.TestInjectSinglePython.test_idempotent`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_comment`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `inject_single`
+
+### `test_marker_injector.TestRemoveMarker.test_idempotent_when_slug_absent`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `remove_marker`
+
+### `test_marker_injector.TestRemoveMarker.test_remove_does_not_touch_other_slugs`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `remove_marker`
+
+### `test_marker_injector.TestRemoveMarker.test_remove_range`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `remove_marker`
+
+### `test_marker_injector.TestRemoveMarker.test_remove_single`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_read_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `_write_lines`
+- [[../../code/agents/cartographer/marker_injector|agents/cartographer/marker_injector.py]] · `remove_marker`

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/reviewer.py
 git_blob: a3577143f12069bfa675a1500ab613a679888a5d
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 30
 annotations: []
 imports:
@@ -11,11 +11,12 @@ imports:
 - pydantic
 - .base
 exports:
-- viewBrief(A
-- viewReport(A
+- ReviewBrief
+- ReviewReport
 tags:
 - code
 - python
+coverage_pct: 100.0
 ---
 
 # agents/contracts/reviewer.py
@@ -63,8 +64,8 @@ class ReviewReport(AgentOutputBase):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `viewBrief(A` (class) — lines 18-22
-- `viewReport(A` (class) — lines 25-30
+- `ReviewBrief` (class) — lines 18-22
+- `ReviewReport` (class) — lines 25-30
 
 ### Imports
 - `typing`
@@ -72,5 +73,5 @@ class ReviewReport(AgentOutputBase):
 - `.base`
 
 ### Exports
-- `viewBrief(A`
-- `viewReport(A`
+- `ReviewBrief`
+- `ReviewReport`

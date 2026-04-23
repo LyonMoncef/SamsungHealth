@@ -20,6 +20,7 @@ from agents.cartographer.anchor_resolver import resolve_anchors_for_file
 from agents.cartographer.annotation_io import read_annotation
 from agents.cartographer.index_generator import (
     generate_coverage_index,
+    generate_coverage_map_index,
     generate_orphans_index,
     generate_tags_index,
 )
@@ -62,6 +63,8 @@ def run(
 ) -> CartographyReport:
     source_globs = source_globs or DEFAULT_SOURCE_GLOBS
 
+    coverage_manifest, coverage_raw = _load_coverage(vault_root, repo_root)
+
     if mode == "diff":
         source_files = [
             os.path.relpath(f, repo_root) if os.path.isabs(f) else f
@@ -80,7 +83,11 @@ def run(
     if mode in ("full", "diff"):
         for rel in source_files:
             try:
-                _render_one(repo_root, vault_root, rel, annotation_paths)
+                _render_one(
+                    repo_root, vault_root, rel, annotation_paths,
+                    coverage_manifest=coverage_manifest,
+                    coverage_raw=coverage_raw,
+                )
                 notes_generated += 1
             except Exception as exc:
                 parse_errors.append({"file": rel, "error": str(exc)})
@@ -162,6 +169,8 @@ def _render_one(
     vault_root: str,
     rel: str,
     annotation_paths: list[str],
+    coverage_manifest: dict | None = None,
+    coverage_raw: dict | None = None,
 ) -> None:
     src_abs = os.path.join(repo_root, rel)
     language = infer_language(rel)
@@ -207,6 +216,8 @@ def _render_one(
         git_blob=_git_blob_sha(repo_root, rel) or "",
         active_annotations=actives,
         orphans=orphans,
+        coverage_manifest=coverage_manifest,
+        coverage_raw=coverage_raw,
     )
     with open(out_path, "w", encoding="utf-8") as fp:
         fp.write(note)
@@ -281,9 +292,53 @@ def _write_indexes(
         output_path=os.path.join(vault_root, "_index", "annotations-by-tag.md"),
     )
 
+    # Coverage map index (only if manifest exists)
+    manifest_path = os.path.join(vault_root, "_index", "coverage-map.json")
+    if os.path.isfile(manifest_path):
+        try:
+            import json
+            with open(manifest_path, encoding="utf-8") as fp:
+                manifest = json.load(fp)
+            generate_coverage_map_index(
+                coverage_manifest=manifest,
+                output_path=os.path.join(vault_root, "_index", "coverage-map.md"),
+            )
+        except Exception:
+            pass
+
 
 def _strip_ext(path: str) -> str:
     return os.path.splitext(path)[0]
+
+
+def _load_coverage(vault_root: str, repo_root: str) -> tuple[dict | None, dict | None]:
+    """Load `coverage-map.json` (manifest) + raw `coverage.json` if present.
+
+    Both are gitignored. Renderer degrades gracefully when absent.
+    The raw file holds per-line `contexts` used for annotation range sub-callouts.
+    """
+    import json
+
+    manifest = None
+    manifest_path = os.path.join(vault_root, "_index", "coverage-map.json")
+    if os.path.isfile(manifest_path):
+        try:
+            with open(manifest_path, encoding="utf-8") as fp:
+                manifest = json.load(fp)
+        except Exception:
+            manifest = None
+
+    raw = None
+    raw_path = os.path.join(repo_root, "coverage.json")
+    if os.path.isfile(raw_path):
+        try:
+            with open(raw_path, encoding="utf-8") as fp:
+                raw_full = json.load(fp)
+            raw = raw_full.get("files", {})
+        except Exception:
+            raw = None
+
+    return manifest, raw
 
 
 def _mirror_vault(vault_root: str, mirror_to: str) -> None:

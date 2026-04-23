@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/test_sleep.py
 git_blob: 01b6423b7be698284bc474debdf5e9de3e6080b1
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 38
 annotations: []
 imports: []
@@ -83,3 +83,62 @@ def test_get_sleep_not_found(client):
 - `test_get_sleep_sessions`
 - `test_post_sleep_with_stages`
 - `test_get_sleep_not_found`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_sleep.test_get_sleep_not_found`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep.test_get_sleep_sessions`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep.test_post_sleep_dedup`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+
+### `test_sleep.test_post_sleep_session`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+
+### `test_sleep.test_post_sleep_with_stages`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_date_range_filter`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_empty_db_returns_list`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_iso_strings_parseable`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_ordered_by_start`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_response_fields`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_stages_empty_without_flag`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_stages_fields`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`

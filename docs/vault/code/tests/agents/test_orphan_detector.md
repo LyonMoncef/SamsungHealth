@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_orphan_detector.py
 git_blob: 938f741d8b206195febc9d30e7e27cdb070c7747
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 73
 annotations: []
 imports:
@@ -112,3 +112,18 @@ class TestDetectOrphansAcrossRepo:
 
 ### Exports
 - `TestDetectOrphansAcrossRepo`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_orphan_detector.TestDetectOrphansAcrossRepo.test_active_annotation_with_marker_unchanged`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+
+### `test_orphan_detector.TestDetectOrphansAcrossRepo.test_annotation_with_no_matching_marker_is_new_orphan`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+
+### `test_orphan_detector.TestDetectOrphansAcrossRepo.test_orphan_with_marker_back_is_resolved`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`

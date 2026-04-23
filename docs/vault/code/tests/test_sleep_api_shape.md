@@ -3,18 +3,18 @@ type: code-source
 language: python
 file_path: tests/test_sleep_api_shape.py
 git_blob: 1582c0dca1a6b21a8e5f205ce76f492f6877451a
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 94
 annotations: []
 imports: []
 exports:
-- st_sleep_response_fields(c
-- st_sleep_stages_fields(c
-- st_sleep_stages_empty_without_flag(c
-- st_sleep_iso_strings_parseable(c
-- t_sleep_ordered_by_start(cl
-- t_sleep_date_range_filter(cl
-- sleep_empty_db_returns_list(clie
+- test_sleep_response_fields
+- test_sleep_stages_fields
+- test_sleep_stages_empty_without_flag
+- test_sleep_iso_strings_parseable
+- test_sleep_ordered_by_start
+- test_sleep_date_range_filter
+- test_sleep_empty_db_returns_list
 tags:
 - code
 - python
@@ -129,19 +129,56 @@ def test_sleep_empty_db_returns_list(client):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `st_sleep_response_fields(c` (function) — lines 32-43
-- `st_sleep_stages_fields(c` (function) — lines 46-53
-- `st_sleep_stages_empty_without_flag(c` (function) — lines 56-60
-- `st_sleep_iso_strings_parseable(c` (function) — lines 63-73
-- `t_sleep_ordered_by_start(cl` (function) — lines 76-81
-- `t_sleep_date_range_filter(cl` (function) — lines 84-88
-- `sleep_empty_db_returns_list(clie` (function) — lines 91-94
+- `test_sleep_response_fields` (function) — lines 32-43
+- `test_sleep_stages_fields` (function) — lines 46-53
+- `test_sleep_stages_empty_without_flag` (function) — lines 56-60
+- `test_sleep_iso_strings_parseable` (function) — lines 63-73
+- `test_sleep_ordered_by_start` (function) — lines 76-81
+- `test_sleep_date_range_filter` (function) — lines 84-88
+- `test_sleep_empty_db_returns_list` (function) — lines 91-94
 
 ### Exports
-- `st_sleep_response_fields(c`
-- `st_sleep_stages_fields(c`
-- `st_sleep_stages_empty_without_flag(c`
-- `st_sleep_iso_strings_parseable(c`
-- `t_sleep_ordered_by_start(cl`
-- `t_sleep_date_range_filter(cl`
-- `sleep_empty_db_returns_list(clie`
+- `test_sleep_response_fields`
+- `test_sleep_stages_fields`
+- `test_sleep_stages_empty_without_flag`
+- `test_sleep_iso_strings_parseable`
+- `test_sleep_ordered_by_start`
+- `test_sleep_date_range_filter`
+- `test_sleep_empty_db_returns_list`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_sleep_api_shape.test_sleep_date_range_filter`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_empty_db_returns_list`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_iso_strings_parseable`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_ordered_by_start`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_response_fields`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_stages_empty_without_flag`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+### `test_sleep_api_shape.test_sleep_stages_fields`
+- [[../../code/server/database|server/database.py]] · `get_connection`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
+- [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`

@@ -3,20 +3,15 @@ type: code-source
 language: python
 file_path: tests/agents/test_walker.py
 git_blob: 55b459455a9bd8ddf7dcfaec473e79db60ea2ec1
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 101
 annotations: []
 imports:
-- 'test
-
-
-  '
+- pytest
 exports:
-- 'stWalkPython:
-
-  '
-- "WalkJavaScript:\n  "
-- "WalkKotlin:\n  "
+- TestWalkPython
+- TestWalkJavaScript
+- TestWalkKotlin
 tags:
 - code
 - python
@@ -138,22 +133,56 @@ class TestWalkKotlin:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `stWalkPython:
-` (class) — lines 14-70
-- `WalkJavaScript:
-  ` (class) — lines 73-84
-- `WalkKotlin:
-  ` (class) — lines 87-101
+- `TestWalkPython` (class) — lines 14-70
+- `TestWalkJavaScript` (class) — lines 73-84
+- `TestWalkKotlin` (class) — lines 87-101
 
 ### Imports
-- `test
-
-`
+- `pytest`
 
 ### Exports
-- `stWalkPython:
-`
-- `WalkJavaScript:
-  `
-- `WalkKotlin:
-  `
+- `TestWalkPython`
+- `TestWalkJavaScript`
+- `TestWalkKotlin`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_walker.TestWalkJavaScript.test_extracts_function_decl`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_javascript`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_ts_field_text`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_node_text`
+
+### `test_walker.TestWalkKotlin.test_does_not_raise_on_minimal_kotlin`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_kotlin`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_kotlin.visit`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_ts_field_text`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_node_text`
+
+### `test_walker.TestWalkPython.test_extracts_class`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_ts_field_text`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_node_text`
+
+### `test_walker.TestWalkPython.test_extracts_top_level_function`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_ts_field_text`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_node_text`
+
+### `test_walker.TestWalkPython.test_lines_are_set`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_ts_field_text`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_node_text`
+
+### `test_walker.TestWalkPython.test_loc`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+
+### `test_walker.TestWalkPython.test_syntax_error_returns_partial_not_raise`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/cartographer/walker.py
-git_blob: 002780f058d0329d13c558a1d8f3e2a8b5801466
-last_synced: '2026-04-23T09:31:47Z'
-loc: 190
+git_blob: e624d754e6623065eb2080b20b04d6c95d3fc656
+last_synced: '2026-04-23T09:44:51Z'
+loc: 193
 annotations: []
 imports:
 - dataclasses
@@ -13,12 +13,13 @@ exports:
 - walk_file
 - _walk_python
 - _walk_javascript
-- alk_kotlin(s
-- s_field_text(n
-- ode_text(n
+- _walk_kotlin
+- _ts_field_text
+- _node_text
 tags:
 - code
 - python
+coverage_pct: 91.2621359223301
 ---
 
 # agents/cartographer/walker.py
@@ -218,7 +219,10 @@ def _ts_field_text(node, field_name: str, source: str) -> str | None:
 
 
 def _node_text(node, source: str) -> str:
-    return source[node.start_byte : node.end_byte]
+    # tree-sitter's start_byte/end_byte are offsets into the UTF-8 encoded
+    # source. Slice via bytes to be safe even when source has multi-byte chars.
+    src_bytes = source.encode("utf-8") if isinstance(source, str) else source
+    return src_bytes[node.start_byte : node.end_byte].decode("utf-8", errors="replace")
 ```
 
 ---
@@ -226,12 +230,12 @@ def _node_text(node, source: str) -> str:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `walk_file` (function) — lines 38-56
-- `_walk_python` (function) — lines 63-101
-- `_walk_javascript` (function) — lines 108-142
-- `alk_kotlin(s` (function) — lines 149-175
-- `s_field_text(n` (function) — lines 182-186
-- `ode_text(n` (function) — lines 189-190
+- `walk_file` (function) — lines 38-56 · **Tested by (13)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+8_
+- `_walk_python` (function) — lines 63-101 · **Tested by (11)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+6_
+- `_walk_javascript` (function) — lines 108-142 · **Tested by (2)**: `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_walker.TestWalkJavaScript.test_extracts_function_decl`
+- `_walk_kotlin` (function) — lines 149-175 · **Tested by (1)**: `test_walker.TestWalkKotlin.test_does_not_raise_on_minimal_kotlin`
+- `_ts_field_text` (function) — lines 182-186 · **Tested by (6)**: `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_walker.TestWalkJavaScript.test_extracts_function_decl`, `test_walker.TestWalkKotlin.test_does_not_raise_on_minimal_kotlin`, `test_walker.TestWalkPython.test_extracts_class`, `test_walker.TestWalkPython.test_extracts_top_level_function` _+1_
+- `_node_text` (function) — lines 189-193 · **Tested by (6)**: `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_walker.TestWalkJavaScript.test_extracts_function_decl`, `test_walker.TestWalkKotlin.test_does_not_raise_on_minimal_kotlin`, `test_walker.TestWalkPython.test_extracts_class`, `test_walker.TestWalkPython.test_extracts_top_level_function` _+1_
 
 ### Imports
 - `dataclasses`
@@ -241,6 +245,6 @@ def _node_text(node, source: str) -> str:
 - `walk_file`
 - `_walk_python`
 - `_walk_javascript`
-- `alk_kotlin(s`
-- `s_field_text(n`
-- `ode_text(n`
+- `_walk_kotlin`
+- `_ts_field_text`
+- `_node_text`

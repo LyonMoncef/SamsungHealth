@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/orphan_detector.py
 git_blob: e35f0b6a39c0845f7b1a32d9f0b7dfa106c2328e
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 51
 annotations: []
 imports:
@@ -15,6 +15,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 96.0
 ---
 
 # agents/cartographer/orphan_detector.py
@@ -83,7 +84,7 @@ def detect_orphans(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `detect_orphans` (function) — lines 27-51
+- `detect_orphans` (function) — lines 27-51 · **Tested by (11)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+6_
 
 ### Imports
 - `dataclasses`

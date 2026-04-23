@@ -187,4 +187,7 @@ def _ts_field_text(node, field_name: str, source: str) -> str | None:
 
 
 def _node_text(node, source: str) -> str:
-    return source[node.start_byte : node.end_byte]
+    # tree-sitter's start_byte/end_byte are offsets into the UTF-8 encoded
+    # source. Slice via bytes to be safe even when source has multi-byte chars.
+    src_bytes = source.encode("utf-8") if isinstance(source, str) else source
+    return src_bytes[node.start_byte : node.end_byte].decode("utf-8", errors="replace")

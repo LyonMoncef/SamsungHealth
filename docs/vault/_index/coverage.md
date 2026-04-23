@@ -1,6 +1,6 @@
 ---
 type: vault-index
-last_synced: 2026-04-23T09:31:47Z
+last_synced: 2026-04-23T09:43:48Z
 ---
 
 # Coverage — source files without annotation
@@ -11,6 +11,7 @@ last_synced: 2026-04-23T09:31:47Z
 - `agents/cartographer/annotation_io.py`
 - `agents/cartographer/changelog_generator.py`
 - `agents/cartographer/cli.py`
+- `agents/cartographer/coverage_map.py`
 - `agents/cartographer/index_generator.py`
 - `agents/cartographer/marker_injector.py`
 - `agents/cartographer/markers.py`
@@ -61,6 +62,7 @@ last_synced: 2026-04-23T09:31:47Z
 - `tests/agents/test_changelog_generator.py`
 - `tests/agents/test_cli.py`
 - `tests/agents/test_contracts.py`
+- `tests/agents/test_coverage_map.py`
 - `tests/agents/test_index_generator.py`
 - `tests/agents/test_marker_injector.py`
 - `tests/agents/test_markers.py`

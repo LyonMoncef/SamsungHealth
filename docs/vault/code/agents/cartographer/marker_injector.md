@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/marker_injector.py
 git_blob: 4173ce569ac366b83b4f6a402ed6c98470900d2e
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 122
 annotations: []
 imports:
@@ -20,6 +20,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 98.0
 ---
 
 # agents/cartographer/marker_injector.py
@@ -159,13 +160,13 @@ def _leading_whitespace(s: str) -> str:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_comment` (function) — lines 25-27
-- `_read_lines` (function) — lines 30-37
-- `_write_lines` (function) — lines 40-42
-- `inject_single` (function) — lines 45-61
-- `inject_range` (function) — lines 64-87
-- `remove_marker` (function) — lines 90-115
-- `_leading_whitespace` (function) — lines 118-122
+- `_comment` (function) — lines 25-27 · **Tested by (6)**: `test_marker_injector.TestInjectRangePython.test_begin_end_added_around_lines`, `test_marker_injector.TestInjectRangePython.test_range_indent_matches_line`, `test_marker_injector.TestInjectSingleHTML.test_eol_comment_html`, `test_marker_injector.TestInjectSingleJavaScript.test_eol_comment_js`, `test_marker_injector.TestInjectSinglePython.test_eol_comment_added` _+1_
+- `_read_lines` (function) — lines 30-37 · **Tested by (10)**: `test_marker_injector.TestInjectRangePython.test_begin_end_added_around_lines`, `test_marker_injector.TestInjectRangePython.test_range_indent_matches_line`, `test_marker_injector.TestInjectSingleHTML.test_eol_comment_html`, `test_marker_injector.TestInjectSingleJavaScript.test_eol_comment_js`, `test_marker_injector.TestInjectSinglePython.test_eol_comment_added` _+5_
+- `_write_lines` (function) — lines 40-42 · **Tested by (10)**: `test_marker_injector.TestInjectRangePython.test_begin_end_added_around_lines`, `test_marker_injector.TestInjectRangePython.test_range_indent_matches_line`, `test_marker_injector.TestInjectSingleHTML.test_eol_comment_html`, `test_marker_injector.TestInjectSingleJavaScript.test_eol_comment_js`, `test_marker_injector.TestInjectSinglePython.test_eol_comment_added` _+5_
+- `inject_single` (function) — lines 45-61 · **Tested by (4)**: `test_marker_injector.TestInjectSingleHTML.test_eol_comment_html`, `test_marker_injector.TestInjectSingleJavaScript.test_eol_comment_js`, `test_marker_injector.TestInjectSinglePython.test_eol_comment_added`, `test_marker_injector.TestInjectSinglePython.test_idempotent`
+- `inject_range` (function) — lines 64-87 · **Tested by (2)**: `test_marker_injector.TestInjectRangePython.test_begin_end_added_around_lines`, `test_marker_injector.TestInjectRangePython.test_range_indent_matches_line`
+- `remove_marker` (function) — lines 90-115 · **Tested by (4)**: `test_marker_injector.TestRemoveMarker.test_idempotent_when_slug_absent`, `test_marker_injector.TestRemoveMarker.test_remove_does_not_touch_other_slugs`, `test_marker_injector.TestRemoveMarker.test_remove_range`, `test_marker_injector.TestRemoveMarker.test_remove_single`
+- `_leading_whitespace` (function) — lines 118-122 · **Tested by (2)**: `test_marker_injector.TestInjectRangePython.test_begin_end_added_around_lines`, `test_marker_injector.TestInjectRangePython.test_range_indent_matches_line`
 
 ### Imports
 - `re`

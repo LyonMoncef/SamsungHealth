@@ -55,6 +55,29 @@ class TestGenerateCoverageIndex:
         assert "a.py" not in text
 
 
+class TestGenerateCoverageMapIndex:
+    def test_renders_files_table_and_untested(self, tmp_path: Path):
+        from agents.cartographer.index_generator import generate_coverage_map_index
+
+        manifest = {
+            "by_file": {
+                "agents/x.py": {"pct": 100.0, "tests": ["t1", "t2"]},
+                "agents/y.py": {"pct": 0.0, "tests": []},
+            },
+            "by_symbol": {
+                "agents/x.py::add": {"tests": ["t1"], "pct": 100.0},
+                "agents/y.py::dead": {"tests": [], "pct": 0.0},
+            },
+        }
+        out_path = tmp_path / "coverage-map.md"
+        generate_coverage_map_index(manifest, str(out_path))
+        text = out_path.read_text()
+        assert "agents/x.py" in text
+        assert "100%" in text
+        assert "Untested symbols" in text
+        assert "agents/y.py::dead" in text
+
+
 class TestGenerateTagsIndex:
     def test_groups_annotations_by_tag(self, tmp_path: Path):
         from agents.cartographer.index_generator import generate_tags_index

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/models.py
 git_blob: 5706f27c34bd6e78819147bc5227fa99fdc383b2
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 90
 annotations: []
 imports:
@@ -27,6 +27,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 100.0
 ---
 
 # server/models.py

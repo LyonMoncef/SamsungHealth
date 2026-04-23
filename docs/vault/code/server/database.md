@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/database.py
 git_blob: ee741d78f2a40ce2816bd100f4a410a73eaadb48
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 298
 annotations: []
 imports:
@@ -16,6 +16,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 100.0
 ---
 
 # server/database.py
@@ -331,9 +332,9 @@ def init_db():
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `get_connection` (function) — lines 7-11
-- `_add_col` (function) — lines 14-17
-- `init_db` (function) — lines 20-298
+- `get_connection` (function) — lines 7-11 · **Tested by (12)**: `test_sleep.test_get_sleep_not_found`, `test_sleep.test_get_sleep_sessions`, `test_sleep.test_post_sleep_dedup`, `test_sleep.test_post_sleep_session`, `test_sleep.test_post_sleep_with_stages` _+7_
+- `_add_col` (function) — lines 14-17 · ⚠️ no test
+- `init_db` (function) — lines 20-298 · ⚠️ no test
 
 ### Imports
 - `sqlite3`

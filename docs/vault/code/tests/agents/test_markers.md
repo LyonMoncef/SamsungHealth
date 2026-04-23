@@ -3,23 +3,18 @@ type: code-source
 language: python
 file_path: tests/agents/test_markers.py
 git_blob: e2c3346176b0e47d76de4b37b9b68e1b9c44f55d
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 206
 annotations: []
 imports:
-- 'test
-
-
-  '
+- pytest
 exports:
-- 'stParseMarkersPython:
-
-  '
-- "ParseMarkersJavaScript:\n  "
-- "ParseMarkersKotlin:\n  "
-- "ParseMarkersHTML:\n  "
-- "ParseMarkersCSS:\n  "
-- "InferLanguage:\n  "
+- TestParseMarkersPython
+- TestParseMarkersJavaScript
+- TestParseMarkersKotlin
+- TestParseMarkersHTML
+- TestParseMarkersCSS
+- TestInferLanguage
 tags:
 - code
 - python
@@ -246,34 +241,74 @@ class TestInferLanguage:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `stParseMarkersPython:
-` (class) — lines 25-111
-- `ParseMarkersJavaScript:
-  ` (class) — lines 114-134
-- `ParseMarkersKotlin:
-  ` (class) — lines 137-155
-- `ParseMarkersHTML:
-  ` (class) — lines 158-176
-- `ParseMarkersCSS:
-  ` (class) — lines 179-186
-- `InferLanguage:
-  ` (class) — lines 193-206
+- `TestParseMarkersPython` (class) — lines 25-111
+- `TestParseMarkersJavaScript` (class) — lines 114-134
+- `TestParseMarkersKotlin` (class) — lines 137-155
+- `TestParseMarkersHTML` (class) — lines 158-176
+- `TestParseMarkersCSS` (class) — lines 179-186
+- `TestInferLanguage` (class) — lines 193-206
 
 ### Imports
-- `test
-
-`
+- `pytest`
 
 ### Exports
-- `stParseMarkersPython:
-`
-- `ParseMarkersJavaScript:
-  `
-- `ParseMarkersKotlin:
-  `
-- `ParseMarkersHTML:
-  `
-- `ParseMarkersCSS:
-  `
-- `InferLanguage:
-  `
+- `TestParseMarkersPython`
+- `TestParseMarkersJavaScript`
+- `TestParseMarkersKotlin`
+- `TestParseMarkersHTML`
+- `TestParseMarkersCSS`
+- `TestInferLanguage`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_markers.TestInferLanguage.test_from_extension`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+
+### `test_markers.TestInferLanguage.test_unknown_extension_returns_none`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+
+### `test_markers.TestParseMarkersCSS.test_single_line`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersHTML.test_range_begin_end`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersHTML.test_single_line`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersJavaScript.test_range_begin_end`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersJavaScript.test_single_line_eol`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersKotlin.test_range_begin_end`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersKotlin.test_single_line`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_end_without_begin_is_error`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_invalid_slug_is_skipped_or_errors`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_mismatched_begin_without_end_is_error`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_no_markers_returns_empty_list`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_range_begin_end`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_range_non_contigu_same_slug`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_single_line_eol`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+
+### `test_markers.TestParseMarkersPython.test_single_line_own_line`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`

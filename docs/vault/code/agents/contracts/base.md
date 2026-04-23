@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/base.py
 git_blob: 6897748e5e959a1073c46f3657d7e0ab271760cb
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 41
 annotations: []
 imports:
@@ -11,10 +11,11 @@ imports:
 - pydantic
 exports:
 - AgentInputBase
-- entOutputBase(B
+- AgentOutputBase
 tags:
 - code
 - python
+coverage_pct: 100.0
 ---
 
 # agents/contracts/base.py
@@ -74,7 +75,7 @@ class AgentOutputBase(BaseModel):
 
 ### Symbols
 - `AgentInputBase` (class) — lines 24-28
-- `entOutputBase(B` (class) — lines 31-41
+- `AgentOutputBase` (class) — lines 31-41
 
 ### Imports
 - `typing`
@@ -82,4 +83,4 @@ class AgentOutputBase(BaseModel):
 
 ### Exports
 - `AgentInputBase`
-- `entOutputBase(B`
+- `AgentOutputBase`

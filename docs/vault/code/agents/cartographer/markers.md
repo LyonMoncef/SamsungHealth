@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/markers.py
 git_blob: 7a9ec31fc129c575d3229f078402ffd2ce21669e
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 125
 annotations: []
 imports:
@@ -11,12 +11,13 @@ imports:
 - dataclasses
 - typing
 exports:
-- erParseError(Val
-- r_language(fil
-- e_markers(sou
+- MarkerParseError
+- infer_language
+- parse_markers
 tags:
 - code
 - python
+coverage_pct: 100.0
 ---
 
 # agents/cartographer/markers.py
@@ -159,9 +160,9 @@ def parse_markers(source: str, language: str, file_path: str) -> list[Marker]:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `erParseError(Val` (class) — lines 48-49
-- `r_language(fil` (function) — lines 62-67
-- `e_markers(sou` (function) — lines 70-125
+- `MarkerParseError` (class) — lines 48-49
+- `infer_language` (function) — lines 62-67 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+5_
+- `parse_markers` (function) — lines 70-125 · **Tested by (23)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+18_
 
 ### Imports
 - `re`
@@ -169,6 +170,6 @@ def parse_markers(source: str, language: str, file_path: str) -> list[Marker]:
 - `typing`
 
 ### Exports
-- `erParseError(Val`
-- `r_language(fil`
-- `e_markers(sou`
+- `MarkerParseError`
+- `infer_language`
+- `parse_markers`

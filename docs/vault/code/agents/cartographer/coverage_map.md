@@ -3,32 +3,25 @@ type: code-source
 language: python
 file_path: agents/cartographer/coverage_map.py
 git_blob: 0806443a75fa81684b276329eaa9f07b97f643f3
-last_synced: '2026-04-23T09:38:40Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 200
 annotations: []
 imports:
-- 'on
-
-  i'
-- '
-
-  i'
-- 'bprocess
-
-  f'
-- tetime i
-- ping i
+- json
+- os
+- subprocess
+- datetime
+- typing
 exports:
-- 'n_pytest_cov(
-
-  '
-- e_coverage(cov
-- for_range(file_
-- manifest(manif
-- 'rgv:'
+- run_pytest_cov
+- parse_coverage
+- tests_for_range
+- write_manifest
+- main
 tags:
 - code
 - python
+coverage_pct: 73.95833333333333
 ---
 
 # agents/cartographer/coverage_map.py
@@ -246,27 +239,22 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `n_pytest_cov(
-` (function) — lines 36-63
-- `e_coverage(cov` (function) — lines 66-128
-- `for_range(file_` (function) — lines 131-144
-- `manifest(manif` (function) — lines 147-150
-- `rgv:` (function) — lines 162-195
+- `run_pytest_cov` (function) — lines 36-63 · **Tested by (1)**: `test_coverage_map.TestRunPytestCov.test_runs_and_produces_coverage_json`
+- `parse_coverage` (function) — lines 66-128 · **Tested by (4)**: `test_coverage_map.TestParseCoverage.test_by_file_aggregates`, `test_coverage_map.TestParseCoverage.test_by_symbol_links_function_to_tests`, `test_coverage_map.TestParseCoverage.test_by_test_inverse_mapping`, `test_coverage_map.TestParseCoverage.test_untested_symbol_has_empty_tests`
+- `tests_for_range` (function) — lines 131-144 · **Tested by (1)**: `test_coverage_map.TestLinesInRange.test_intersect_test_set_for_range`
+- `write_manifest` (function) — lines 147-150 · **Tested by (1)**: `test_coverage_map.TestWriteManifest.test_writes_json_to_target`
+- `main` (function) — lines 162-195 · ⚠️ no test
 
 ### Imports
-- `on
-i`
-- `
-i`
-- `bprocess
-f`
-- `tetime i`
-- `ping i`
+- `json`
+- `os`
+- `subprocess`
+- `datetime`
+- `typing`
 
 ### Exports
-- `n_pytest_cov(
-`
-- `e_coverage(cov`
-- `for_range(file_`
-- `manifest(manif`
-- `rgv:`
+- `run_pytest_cov`
+- `parse_coverage`
+- `tests_for_range`
+- `write_manifest`
+- `main`

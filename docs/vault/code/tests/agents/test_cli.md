@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_cli.py
 git_blob: b4c0dc6f1ffd6cfbffca18e62fd74b5194e71f1a
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 173
 annotations: []
 imports:
@@ -221,3 +221,179 @@ class TestMirror:
 - `TestRunDiff`
 - `TestRunCheck`
 - `TestMirror`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_cli.TestMirror.test_mirror_copies_vault_to_target`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_render_one`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_write_indexes`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_strip_ext`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_mirror_vault`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_git_blob_sha`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_write`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_ts`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_orphans_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_coverage_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_tags_index`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+
+### `test_cli.TestMirror.test_mirror_overwrites_existing`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_render_one`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_write_indexes`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_strip_ext`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_mirror_vault`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_git_blob_sha`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_write`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_ts`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_orphans_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_coverage_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_tags_index`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+
+### `test_cli.TestMirror.test_mirror_skipped_when_none`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_render_one`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_write_indexes`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_strip_ext`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_git_blob_sha`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_write`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_ts`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_orphans_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_coverage_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_tags_index`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+
+### `test_cli.TestRunCheck.test_check_passes_when_clean`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+
+### `test_cli.TestRunCheck.test_check_returns_failed_on_orphan`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+
+### `test_cli.TestRunDiff.test_diff_only_renders_listed_files`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_render_one`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_strip_ext`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_git_blob_sha`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+
+### `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_render_one`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_write_indexes`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_strip_ext`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_git_blob_sha`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_write`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_ts`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_orphans_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_coverage_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_tags_index`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_javascript`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_ts_field_text`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_node_text`
+
+### `test_cli.TestRunFull.test_full_generates_index_files`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `run`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_sources`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_discover_annotations`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_render_one`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_all_markers`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_write_indexes`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_strip_ext`
+- [[../../code/agents/cartographer/cli|agents/cartographer/cli.py]] · `_git_blob_sha`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_write`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_ts`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_orphans_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_coverage_index`
+- [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_tags_index`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `infer_language`
+- [[../../code/agents/cartographer/markers|agents/cartographer/markers.py]] · `parse_markers`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+- [[../../code/agents/cartographer/orphan_detector|agents/cartographer/orphan_detector.py]] · `detect_orphans`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `walk_file`
+- [[../../code/agents/cartographer/walker|agents/cartographer/walker.py]] · `_walk_python`

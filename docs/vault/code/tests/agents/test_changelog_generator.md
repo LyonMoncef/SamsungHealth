@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_changelog_generator.py
 git_blob: a1bd65d327729d2908e196f6460e029d27a4ce60
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 163
 annotations: []
 imports:
@@ -208,3 +208,29 @@ class TestGenerateChangelog:
 - `TestParseGitLog`
 - `TestRenderChangelogNote`
 - `TestGenerateChangelog`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_changelog_generator.TestGenerateChangelog.test_creates_one_file_per_commit`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `render_changelog_note`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `generate_changelog`
+
+### `test_changelog_generator.TestGenerateChangelog.test_idempotent_skips_existing`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `generate_changelog`
+
+### `test_changelog_generator.TestGenerateChangelog.test_regenerate_overwrites`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `render_changelog_note`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `generate_changelog`
+
+### `test_changelog_generator.TestParseGitLog.test_handles_subject_without_scope`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `parse_git_log_records`
+
+### `test_changelog_generator.TestParseGitLog.test_parses_oneline_commit_records`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `parse_git_log_records`
+
+### `test_changelog_generator.TestParseGitLog.test_subject_without_conventional_format`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `parse_git_log_records`
+
+### `test_changelog_generator.TestRenderChangelogNote.test_frontmatter_and_body`
+- [[../../code/agents/cartographer/changelog_generator|agents/cartographer/changelog_generator.py]] · `render_changelog_note`

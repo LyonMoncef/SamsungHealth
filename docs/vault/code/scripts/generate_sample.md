@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: scripts/generate_sample.py
 git_blob: 385bede655d13c372e0273f47ac92ffe8924ba84
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 228
 annotations: []
 imports:
@@ -21,6 +21,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 0.0
 ---
 
 # scripts/generate_sample.py
@@ -266,11 +267,11 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `generate_stages` (function) — lines 19-76
-- `generate_steps` (function) — lines 79-102
-- `generate_heart_rate` (function) — lines 105-132
-- `generate_exercise` (function) — lines 135-150
-- `generate` (function) — lines 153-224
+- `generate_stages` (function) — lines 19-76 · ⚠️ no test
+- `generate_steps` (function) — lines 79-102 · ⚠️ no test
+- `generate_heart_rate` (function) — lines 105-132 · ⚠️ no test
+- `generate_exercise` (function) — lines 135-150 · ⚠️ no test
+- `generate` (function) — lines 153-224 · ⚠️ no test
 
 ### Imports
 - `sys`

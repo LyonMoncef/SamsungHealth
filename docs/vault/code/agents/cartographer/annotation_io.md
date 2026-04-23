@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/annotation_io.py
 git_blob: bf4d09a676d003f159e260f26588d897b857f31e
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 119
 annotations: []
 imports:
@@ -14,13 +14,14 @@ imports:
 - agents.contracts.cartographer
 exports:
 - resolve_annotation_path
-- 'nnotation(path:'
-- "annotation(\n    "
-- '_status(path:'
-- 'r_to_dict(a: An'
+- read_annotation
+- write_annotation
+- update_status
+- _anchor_to_dict
 tags:
 - code
 - python
+coverage_pct: 92.15686274509804
 ---
 
 # agents/cartographer/annotation_io.py
@@ -157,12 +158,11 @@ def _anchor_to_dict(a: AnchorLocation) -> dict:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `resolve_annotation_path` (function) — lines 22-45
-- `nnotation(path:` (function) — lines 48-63
-- `annotation(
-    ` (function) — lines 66-99
-- `_status(path:` (function) — lines 102-108
-- `r_to_dict(a: An` (function) — lines 111-119
+- `resolve_annotation_path` (function) — lines 22-45 · **Tested by (3)**: `test_annotation_io.TestResolveAnnotationPath.test_cross_file_anchor`, `test_annotation_io.TestResolveAnnotationPath.test_orphan_path`, `test_annotation_io.TestResolveAnnotationPath.test_single_file_anchor`
+- `read_annotation` (function) — lines 48-63 · **Tested by (13)**: `test_anchor_resolver.TestResolveAnchorsForFile.test_active_annotation_with_marker_present`, `test_anchor_resolver.TestResolveAnchorsForFile.test_orphan_when_marker_missing`, `test_anchor_resolver.TestResolveAnchorsForFile.test_range_marker_updates_begin_end_lines`, `test_annotation_io.TestReadAnnotation.test_missing_file_raises`, `test_annotation_io.TestReadAnnotation.test_read_full_annotation` _+8_
+- `write_annotation` (function) — lines 66-99 · **Tested by (3)**: `test_annotation_io.TestUpdateStatus.test_set_orphan_updates_frontmatter`, `test_annotation_io.TestWriteAnnotation.test_write_creates_file_with_frontmatter`, `test_annotation_io.TestWriteAnnotation.test_write_preserves_body_after_round_trip`
+- `update_status` (function) — lines 102-108 · **Tested by (1)**: `test_annotation_io.TestUpdateStatus.test_set_orphan_updates_frontmatter`
+- `_anchor_to_dict` (function) — lines 111-119 · **Tested by (3)**: `test_annotation_io.TestUpdateStatus.test_set_orphan_updates_frontmatter`, `test_annotation_io.TestWriteAnnotation.test_write_creates_file_with_frontmatter`, `test_annotation_io.TestWriteAnnotation.test_write_preserves_body_after_round_trip`
 
 ### Imports
 - `os`
@@ -173,8 +173,7 @@ def _anchor_to_dict(a: AnchorLocation) -> dict:
 
 ### Exports
 - `resolve_annotation_path`
-- `nnotation(path:`
-- `annotation(
-    `
-- `_status(path:`
-- `r_to_dict(a: An`
+- `read_annotation`
+- `write_annotation`
+- `update_status`
+- `_anchor_to_dict`

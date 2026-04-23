@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/steps.py
 git_blob: 47b3f072e8535c9f9735ed2a9d70ec2efeb33a80
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 49
 annotations: []
 imports:
@@ -14,6 +14,7 @@ exports: []
 tags:
 - code
 - python
+coverage_pct: 22.857142857142858
 ---
 
 # server/routers/steps.py

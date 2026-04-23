@@ -3,24 +3,18 @@ type: code-source
 language: python
 file_path: tests/agents/test_coverage_map.py
 git_blob: 93842c9f71662e875645d5b2f646996d7b08dffb
-last_synced: '2026-04-23T09:38:40Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 180
 annotations: []
 imports:
-- '
-
-  fro'
-- lib imp
-- 'st
-
-
-
-  #'
+- json
+- pathlib
+- pytest
 exports:
-- "ParseCoverage:\n  "
-- "LinesInRange:\n  "
-- "eManifest:\n    de"
-- "ytestCov:\n    \"\""
+- TestParseCoverage
+- TestLinesInRange
+- TestWriteManifest
+- TestRunPytestCov
 tags:
 - code
 - python
@@ -221,30 +215,42 @@ class TestRunPytestCov:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ParseCoverage:
-  ` (class) — lines 74-122
-- `LinesInRange:
-  ` (class) — lines 125-142
-- `eManifest:
-    de` (class) — lines 145-154
-- `ytestCov:
-    ""` (class) — lines 157-180
+- `TestParseCoverage` (class) — lines 74-122
+- `TestLinesInRange` (class) — lines 125-142
+- `TestWriteManifest` (class) — lines 145-154
+- `TestRunPytestCov` (class) — lines 157-180
 
 ### Imports
-- `
-fro`
-- `lib imp`
-- `st
-
-
-#`
+- `json`
+- `pathlib`
+- `pytest`
 
 ### Exports
-- `ParseCoverage:
-  `
-- `LinesInRange:
-  `
-- `eManifest:
-    de`
-- `ytestCov:
-    ""`
+- `TestParseCoverage`
+- `TestLinesInRange`
+- `TestWriteManifest`
+- `TestRunPytestCov`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_coverage_map.TestLinesInRange.test_intersect_test_set_for_range`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `tests_for_range`
+
+### `test_coverage_map.TestParseCoverage.test_by_file_aggregates`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `parse_coverage`
+
+### `test_coverage_map.TestParseCoverage.test_by_symbol_links_function_to_tests`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `parse_coverage`
+
+### `test_coverage_map.TestParseCoverage.test_by_test_inverse_mapping`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `parse_coverage`
+
+### `test_coverage_map.TestParseCoverage.test_untested_symbol_has_empty_tests`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `parse_coverage`
+
+### `test_coverage_map.TestRunPytestCov.test_runs_and_produces_coverage_json`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `run_pytest_cov`
+
+### `test_coverage_map.TestWriteManifest.test_writes_json_to_target`
+- [[../../code/agents/cartographer/coverage_map|agents/cartographer/coverage_map.py]] · `write_manifest`

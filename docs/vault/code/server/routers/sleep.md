@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/sleep.py
 git_blob: c4c1cfb7d9924afd71904c7758ae5f4cdfdd11d4
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 70
 annotations: []
 imports:
@@ -14,6 +14,7 @@ exports: []
 tags:
 - code
 - python
+coverage_pct: 87.5
 ---
 
 # server/routers/sleep.py

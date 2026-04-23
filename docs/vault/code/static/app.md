@@ -3,7 +3,7 @@ type: code-source
 language: javascript
 file_path: static/app.js
 git_blob: e8ea3125c0b34638868fd51e342cfa1d78b7ee28
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 424
 annotations: []
 imports: []
@@ -13,16 +13,16 @@ exports:
 - parseLocalDate
 - updateMonthLabel
 - getMonthRange
-- p(sessions) {
-- "e(stages) {\n "
-- "soStr) {\n "
-- "wn(stages) {\n "
-- ") {\n    con"
-- container =
-- r = document.ge
-- tElementById("
-- trends-grid"
-- '"sleep": render'
+- buildSleepMap
+- dominantStage
+- formatTime
+- stageBreakdown
+- renderSleep
+- renderSteps
+- renderHeartRate
+- renderExercise
+- renderTrends
+- renderActiveTab
 tags:
 - code
 - javascript
@@ -472,20 +472,16 @@ renderActiveTab();
 - `parseLocalDate` (function) — lines 33-35
 - `updateMonthLabel` (function) — lines 37-41
 - `getMonthRange` (function) — lines 43-50
-- `p(sessions) {` (function) — lines 54-86
-- `e(stages) {
- ` (function) — lines 88-100
-- `soStr) {
- ` (function) — lines 102-108
-- `wn(stages) {
- ` (function) — lines 110-120
-- `) {
-    con` (function) — lines 122-178
-- `container =` (function) — lines 182-214
-- `r = document.ge` (function) — lines 218-273
-- `tElementById("` (function) — lines 277-328
-- `trends-grid"` (function) — lines 332-397
-- `"sleep": render` (function) — lines 401-410
+- `buildSleepMap` (function) — lines 54-86
+- `dominantStage` (function) — lines 88-100
+- `formatTime` (function) — lines 102-108
+- `stageBreakdown` (function) — lines 110-120
+- `renderSleep` (function) — lines 122-178
+- `renderSteps` (function) — lines 182-214
+- `renderHeartRate` (function) — lines 218-273
+- `renderExercise` (function) — lines 277-328
+- `renderTrends` (function) — lines 332-397
+- `renderActiveTab` (function) — lines 401-410
 
 ### Exports
 - `daysInMonth`
@@ -493,17 +489,13 @@ renderActiveTab();
 - `parseLocalDate`
 - `updateMonthLabel`
 - `getMonthRange`
-- `p(sessions) {`
-- `e(stages) {
- `
-- `soStr) {
- `
-- `wn(stages) {
- `
-- `) {
-    con`
-- `container =`
-- `r = document.ge`
-- `tElementById("`
-- `trends-grid"`
-- `"sleep": render`
+- `buildSleepMap`
+- `dominantStage`
+- `formatTime`
+- `stageBreakdown`
+- `renderSleep`
+- `renderSteps`
+- `renderHeartRate`
+- `renderExercise`
+- `renderTrends`
+- `renderActiveTab`

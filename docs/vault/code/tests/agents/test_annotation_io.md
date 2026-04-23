@@ -3,21 +3,17 @@ type: code-source
 language: python
 file_path: tests/agents/test_annotation_io.py
 git_blob: 81ae225a845d3ea383700ecc71cf9fd46fdcf933
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 175
 annotations: []
 imports:
-- lib imp
-- 'st
-
-
-
-  #'
+- pathlib
+- pytest
 exports:
-- "ResolveAnnotationPath:\n  "
-- "ReadAnnotation:\n  "
-- "WriteAnnotation:\n  "
-- "UpdateStatus:\n  "
+- TestResolveAnnotationPath
+- TestReadAnnotation
+- TestWriteAnnotation
+- TestUpdateStatus
 tags:
 - code
 - python
@@ -213,28 +209,50 @@ class TestUpdateStatus:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ResolveAnnotationPath:
-  ` (class) — lines 20-56
-- `ReadAnnotation:
-  ` (class) — lines 63-99
-- `WriteAnnotation:
-  ` (class) — lines 106-148
-- `UpdateStatus:
-  ` (class) — lines 155-175
+- `TestResolveAnnotationPath` (class) — lines 20-56
+- `TestReadAnnotation` (class) — lines 63-99
+- `TestWriteAnnotation` (class) — lines 106-148
+- `TestUpdateStatus` (class) — lines 155-175
 
 ### Imports
-- `lib imp`
-- `st
-
-
-#`
+- `pathlib`
+- `pytest`
 
 ### Exports
-- `ResolveAnnotationPath:
-  `
-- `ReadAnnotation:
-  `
-- `WriteAnnotation:
-  `
-- `UpdateStatus:
-  `
+- `TestResolveAnnotationPath`
+- `TestReadAnnotation`
+- `TestWriteAnnotation`
+- `TestUpdateStatus`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_annotation_io.TestReadAnnotation.test_missing_file_raises`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+
+### `test_annotation_io.TestReadAnnotation.test_read_full_annotation`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+
+### `test_annotation_io.TestResolveAnnotationPath.test_cross_file_anchor`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `resolve_annotation_path`
+
+### `test_annotation_io.TestResolveAnnotationPath.test_orphan_path`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `resolve_annotation_path`
+
+### `test_annotation_io.TestResolveAnnotationPath.test_single_file_anchor`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `resolve_annotation_path`
+
+### `test_annotation_io.TestUpdateStatus.test_set_orphan_updates_frontmatter`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `write_annotation`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `update_status`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `_anchor_to_dict`
+
+### `test_annotation_io.TestWriteAnnotation.test_write_creates_file_with_frontmatter`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `write_annotation`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `_anchor_to_dict`
+
+### `test_annotation_io.TestWriteAnnotation.test_write_preserves_body_after_round_trip`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `write_annotation`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `_anchor_to_dict`

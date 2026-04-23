@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_anchor_resolver.py
 git_blob: 1cb172fe1abdc63146cc23e37090e612b60b916a
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 86
 annotations: []
 imports:
@@ -125,3 +125,21 @@ class TestResolveAnchorsForFile:
 
 ### Exports
 - `TestResolveAnchorsForFile`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_anchor_resolver.TestResolveAnchorsForFile.test_active_annotation_with_marker_present`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+
+### `test_anchor_resolver.TestResolveAnchorsForFile.test_orphan_when_marker_missing`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+
+### `test_anchor_resolver.TestResolveAnchorsForFile.test_range_marker_updates_begin_end_lines`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`
+- [[../../code/agents/cartographer/annotation_io|agents/cartographer/annotation_io.py]] · `read_annotation`
+
+### `test_anchor_resolver.TestResolveAnchorsForFile.test_unmatched_when_marker_without_annotation`
+- [[../../code/agents/cartographer/anchor_resolver|agents/cartographer/anchor_resolver.py]] · `resolve_anchors_for_file`

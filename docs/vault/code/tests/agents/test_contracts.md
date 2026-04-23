@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_contracts.py
 git_blob: d0e0a1da0a5bc30a4fff929c158c2ba9099c1af1
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 1046
 annotations: []
 imports:
@@ -16,21 +16,13 @@ exports:
 - TestTestWriter
 - TestCoder
 - TestReviewer
-- 'stDocumenter:
-
-  '
-- 'stGitSteward:
-
-  '
-- 'stPentester:
-
-  '
-- 'stPlanKeeper:
-
-  '
-- "tographer:\n    #"
-- "otationSuggester:\n    d"
-- "kageReExports:\n    d"
+- TestDocumenter
+- TestGitSteward
+- TestPentester
+- TestPlanKeeper
+- TestCartographer
+- TestAnnotationSuggester
+- TestPackageReExports
 tags:
 - code
 - python
@@ -1103,20 +1095,13 @@ class TestPackageReExports:
 - `TestTestWriter` (class) — lines 148-171
 - `TestCoder` (class) — lines 178-207
 - `TestReviewer` (class) — lines 214-237
-- `stDocumenter:
-` (class) — lines 244-262
-- `stGitSteward:
-` (class) — lines 269-324
-- `stPentester:
-` (class) — lines 331-477
-- `stPlanKeeper:
-` (class) — lines 484-606
-- `tographer:
-    #` (class) — lines 613-892
-- `otationSuggester:
-    d` (class) — lines 899-996
-- `kageReExports:
-    d` (class) — lines 1003-1046
+- `TestDocumenter` (class) — lines 244-262
+- `TestGitSteward` (class) — lines 269-324
+- `TestPentester` (class) — lines 331-477
+- `TestPlanKeeper` (class) — lines 484-606
+- `TestCartographer` (class) — lines 613-892
+- `TestAnnotationSuggester` (class) — lines 899-996
+- `TestPackageReExports` (class) — lines 1003-1046
 
 ### Imports
 - `pytest`
@@ -1129,17 +1114,10 @@ class TestPackageReExports:
 - `TestTestWriter`
 - `TestCoder`
 - `TestReviewer`
-- `stDocumenter:
-`
-- `stGitSteward:
-`
-- `stPentester:
-`
-- `stPlanKeeper:
-`
-- `tographer:
-    #`
-- `otationSuggester:
-    d`
-- `kageReExports:
-    d`
+- `TestDocumenter`
+- `TestGitSteward`
+- `TestPentester`
+- `TestPlanKeeper`
+- `TestCartographer`
+- `TestAnnotationSuggester`
+- `TestPackageReExports`

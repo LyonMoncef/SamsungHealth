@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/test_writer.py
 git_blob: b2c03eb4cc885e2a8b74e9172bf0e9496e39d5a9
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 12
 annotations: []
 imports:
@@ -14,6 +14,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 100.0
 ---
 
 # agents/contracts/test_writer.py

@@ -46,12 +46,17 @@ def render_note(
     git_blob: str,
     active_annotations: list[ActiveAnnotation],
     orphans: list[OrphanAnnotation],
+    coverage_manifest: dict | None = None,
+    coverage_raw: dict | None = None,
 ) -> str:
     with open(source_path, encoding="utf-8") as fp:
         source = fp.read()
     code_lines = source.splitlines()
 
     parts: list[str] = []
+
+    file_coverage = (coverage_manifest or {}).get("by_file", {}).get(relative_path)
+    file_raw = (coverage_raw or {}).get(relative_path)
 
     # 1. Frontmatter
     parts.append(_render_frontmatter(
@@ -62,6 +67,7 @@ def render_note(
         annotations=[a.slug for a in active_annotations],
         imports=file_symbols.imports,
         exports=file_symbols.exports,
+        coverage_pct=file_coverage["pct"] if file_coverage else None,
     ))
 
     # 2. Header
@@ -80,15 +86,24 @@ def render_note(
     if orphans:
         parts.append(_render_orphan_warning(orphans))
 
-    # 5. Code + interleaved callouts
+    # 5. Code + interleaved callouts (annotations + test sub-callouts)
     parts.append(_render_code_with_callouts(
         code_lines=code_lines,
         language=file_symbols.language,
         annotations=active_annotations,
+        coverage_raw_for_file=file_raw,
     ))
 
-    # 6. Appendix
-    parts.append(_render_appendix(file_symbols))
+    # 6. Appendix (symbols + tests-per-symbol if coverage present)
+    parts.append(_render_appendix(
+        file_symbols, relative_path, coverage_manifest,
+    ))
+
+    # 7. Exercises section (only for test files)
+    if coverage_manifest and _is_test_file(relative_path):
+        ex = _render_exercises_section(relative_path, coverage_manifest)
+        if ex:
+            parts.append(ex)
 
     return "\n".join(parts)
 
@@ -105,6 +120,7 @@ def _render_frontmatter(
     annotations: list[str],
     imports: list[str],
     exports: list[str],
+    coverage_pct: float | None = None,
 ) -> str:
     meta = {
         "type": "code-source",
@@ -121,6 +137,8 @@ def _render_frontmatter(
         "exports": exports,
         "tags": ["code", language],
     }
+    if coverage_pct is not None:
+        meta["coverage_pct"] = coverage_pct
     body = yaml.safe_dump(meta, sort_keys=False, allow_unicode=True).rstrip()
     return f"---\n{body}\n---\n"
 
@@ -152,6 +170,7 @@ def _render_code_with_callouts(
     code_lines: list[str],
     language: str,
     annotations: list[ActiveAnnotation],
+    coverage_raw_for_file: dict | None = None,
 ) -> str:
     # Map insertion-line → list of callouts that fire AFTER that line
     # - single  → after the marker line
@@ -159,9 +178,13 @@ def _render_code_with_callouts(
     insertions: dict[int, list[str]] = {}
     for ann in annotations:
         if ann.kind == "single" and ann.line is not None:
-            insertions.setdefault(ann.line, []).append(_render_callout(ann))
+            insertions.setdefault(ann.line, []).append(
+                _render_callout(ann, coverage_raw_for_file)
+            )
         elif ann.kind == "range" and ann.end_line is not None:
-            insertions.setdefault(ann.end_line, []).append(_render_callout(ann))
+            insertions.setdefault(ann.end_line, []).append(
+                _render_callout(ann, coverage_raw_for_file)
+            )
 
     if not insertions:
         return _wrap_code_block(code_lines, language)
@@ -188,7 +211,7 @@ def _wrap_code_block(lines: list[str], language: str) -> str:
     return f"```{language}\n" + "\n".join(lines) + "\n```\n"
 
 
-def _render_callout(ann: ActiveAnnotation) -> str:
+def _render_callout(ann: ActiveAnnotation, coverage_raw_for_file: dict | None = None) -> str:
     # Build pretty location label
     if ann.kind == "single":
         loc = f"line {ann.line}"
@@ -218,6 +241,24 @@ def _render_callout(ann: ActiveAnnotation) -> str:
     if refs_line:
         parts.append(f"> {refs_line}")
     parts.append(f"> *Source : {wikilink}*")
+
+    # Sub-callout: tests covering the annotated range/line
+    if coverage_raw_for_file:
+        from agents.cartographer.coverage_map import tests_for_range
+        if ann.kind == "single" and ann.line is not None:
+            tests = tests_for_range(coverage_raw_for_file, ann.line, ann.line)
+        elif ann.kind == "range" and ann.begin_line is not None and ann.end_line is not None:
+            tests = tests_for_range(coverage_raw_for_file, ann.begin_line, ann.end_line)
+        else:
+            tests = []
+        if tests:
+            parts.append("> ")
+            parts.append(f"> > [!test]+ Tested by ({len(tests)})")
+            for t in tests[:10]:
+                parts.append(f"> > - `{t}`")
+            if len(tests) > 10:
+                parts.append(f"> > _… +{len(tests) - 10} more_")
+
     return "\n".join(parts) + "\n"
 
 
@@ -225,15 +266,33 @@ def _render_callout(ann: ActiveAnnotation) -> str:
 # appendix
 # ---------------------------------------------------------------------------
 
-def _render_appendix(fs: FileSymbols) -> str:
+def _render_appendix(
+    fs: FileSymbols,
+    relative_path: str = "",
+    coverage_manifest: dict | None = None,
+) -> str:
     parts = ["---", "", "## Appendix — symbols & navigation *(auto)*", ""]
+
+    by_symbol = (coverage_manifest or {}).get("by_symbol", {})
 
     if fs.symbols:
         parts.append("### Symbols")
         for s in fs.symbols:
-            parts.append(
+            line = (
                 f"- `{s.name}` ({s.kind}) — lines {s.begin_line}-{s.end_line}"
             )
+            sym_cov = by_symbol.get(f"{relative_path}::{s.name}")
+            if sym_cov:
+                tests = sym_cov.get("tests", [])
+                if tests:
+                    line += f" · **Tested by ({len(tests)})**: " + ", ".join(
+                        f"`{t}`" for t in tests[:5]
+                    )
+                    if len(tests) > 5:
+                        line += f" _+{len(tests) - 5}_"
+                else:
+                    line += " · ⚠️ no test"
+            parts.append(line)
         parts.append("")
 
     if fs.imports:
@@ -248,4 +307,46 @@ def _render_appendix(fs: FileSymbols) -> str:
             parts.append(f"- `{exp}`")
         parts.append("")
 
+    return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Test files: "Exercises" section (inverse map: this test → covered symbols)
+# ---------------------------------------------------------------------------
+
+def _is_test_file(relative_path: str) -> bool:
+    base = relative_path.rsplit("/", 1)[-1]
+    return base.startswith("test_") or base.endswith("_test.py")
+
+
+def _render_exercises_section(
+    relative_path: str, coverage_manifest: dict
+) -> str:
+    by_test = coverage_manifest.get("by_test", {}) or {}
+    # Test ID format from coverage.py: "<dotted_module>.<func>"
+    # → match by stripped path (strip extension, replace / with .)
+    stem = relative_path.removesuffix(".py").replace("/", ".")
+    # Tolerant prefix match: a test_id starts with the file's dotted path
+    matches: dict[str, list[dict[str, str]]] = {}
+    for test_id, hits in by_test.items():
+        # Normalise: drop leading "tests." if present (pytest's collected name varies)
+        norm = test_id
+        if norm.startswith("tests."):
+            norm_short = norm[len("tests."):]
+        else:
+            norm_short = norm
+        # Match by basename (last component): test_id contains the file basename
+        file_base = stem.rsplit(".", 1)[-1]
+        if file_base in norm or file_base in norm_short:
+            matches[test_id] = hits
+
+    if not matches:
+        return ""
+
+    parts = ["", "## Exercises *(auto — this test file touches)*", ""]
+    for test_id in sorted(matches):
+        parts.append(f"### `{test_id}`")
+        for hit in matches[test_id]:
+            parts.append(f"- [[../../code/{hit['file'].removesuffix('.py')}|{hit['file']}]] · `{hit['symbol']}`")
+        parts.append("")
     return "\n".join(parts)

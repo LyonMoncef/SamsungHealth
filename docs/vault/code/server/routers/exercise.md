@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/exercise.py
 git_blob: bb9ac3a96d96b4aa0eca2ad925af30ddbb5e8057
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 49
 annotations: []
 imports:
@@ -14,6 +14,7 @@ exports: []
 tags:
 - code
 - python
+coverage_pct: 22.857142857142858
 ---
 
 # server/routers/exercise.py

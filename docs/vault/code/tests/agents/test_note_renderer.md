@@ -2,15 +2,16 @@
 type: code-source
 language: python
 file_path: tests/agents/test_note_renderer.py
-git_blob: 1762439279ff7d2f7d3bc978e3219e39c47504a5
-last_synced: '2026-04-23T09:31:47Z'
-loc: 157
+git_blob: 1a1cbb397f7bca03222768022b4741a312c0bccc
+last_synced: '2026-04-23T09:44:51Z'
+loc: 286
 annotations: []
 imports:
 - pathlib
 - pytest
 exports:
 - TestRenderNoteBasic
+- TestCoverageIntegration
 tags:
 - code
 - python
@@ -181,6 +182,135 @@ class TestRenderNoteBasic:
         assert "block" in out
         # callout sits after the end marker line
         assert out.find("@vault:block end") < out.find("> [!note]+")
+
+
+class TestCoverageIntegration:
+    def test_appendix_lists_tests_per_symbol(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.walker import FileSymbols, Symbol
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("def add(a, b): return a + b\n")
+        fs = FileSymbols(
+            file=str(src_path), language="python", loc=1,
+            symbols=[Symbol(name="add", kind="function", begin_line=1, end_line=1)],
+            exports=["add"],
+        )
+
+        coverage_manifest = {
+            "by_symbol": {
+                "agents/x.py::add": {
+                    "tests": ["tests.test_x.test_add"],
+                    "covered_lines": 1, "total_lines": 1, "pct": 100.0,
+                },
+            },
+            "by_test": {},
+            "by_file": {"agents/x.py": {"pct": 100.0, "tests": ["tests.test_x.test_add"]}},
+        }
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="agents/x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[],
+            orphans=[],
+            coverage_manifest=coverage_manifest,
+            coverage_raw=None,
+        )
+        assert "Tested by" in out
+        assert "test_add" in out
+        # Frontmatter exposes coverage_pct
+        assert "coverage_pct: 100.0" in out
+
+    def test_test_file_gets_exercises_section(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.walker import FileSymbols
+
+        src_path = tmp_path / "test_x.py"
+        src_path.write_text("def test_add(): pass\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=1)
+
+        coverage_manifest = {
+            "by_symbol": {},
+            "by_test": {
+                "tests.test_x.test_add": [
+                    {"file": "agents/x.py", "symbol": "add"},
+                    {"file": "agents/x.py", "symbol": "add_helper"},
+                ],
+            },
+            "by_file": {},
+        }
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="tests/test_x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[],
+            orphans=[],
+            coverage_manifest=coverage_manifest,
+            coverage_raw=None,
+        )
+        assert "Exercises" in out
+        assert "agents/x.py" in out
+        assert "add" in out
+
+    def test_no_coverage_manifest_skips_sections(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.walker import FileSymbols
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("x = 1\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=1)
+
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[],
+            orphans=[],
+            coverage_manifest=None,
+        )
+        assert "Tested by" not in out
+        assert "Exercises" not in out
+        assert "coverage_pct" not in out
+
+    def test_annotation_callout_includes_tests_for_range(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import (
+            ActiveAnnotation,
+            render_note,
+        )
+        from agents.cartographer.walker import FileSymbols
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("# @vault:block begin\n" + "y = 1\n" * 5 + "# @vault:block end\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=7)
+
+        ann = ActiveAnnotation(
+            slug="block", kind="range", begin_line=1, end_line=7,
+            body="# Block", anchor_file="x.md", references={},
+        )
+        coverage_raw = {
+            "agents/x.py": {
+                "contexts": {
+                    "2": ["tests.test_x.test_range"],
+                    "5": ["tests.test_x.test_range"],
+                },
+            },
+        }
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="agents/x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[ann],
+            orphans=[],
+            coverage_manifest={"by_symbol": {}, "by_test": {}, "by_file": {}},
+            coverage_raw=coverage_raw,
+        )
+        # Sub-callout test inside annotation
+        assert "[!test]" in out
+        assert "test_range" in out
 ```
 
 ---
@@ -189,6 +319,7 @@ class TestRenderNoteBasic:
 
 ### Symbols
 - `TestRenderNoteBasic` (class) — lines 17-157
+- `TestCoverageIntegration` (class) — lines 160-286
 
 ### Imports
 - `pathlib`
@@ -196,3 +327,38 @@ class TestRenderNoteBasic:
 
 ### Exports
 - `TestRenderNoteBasic`
+- `TestCoverageIntegration`
+
+
+## Exercises *(auto — this test file touches)*
+
+### `test_note_renderer.TestRenderNoteBasic.test_callout_inserted_at_single_line_marker`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_callout`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+
+### `test_note_renderer.TestRenderNoteBasic.test_minimal_python_no_annotations`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+
+### `test_note_renderer.TestRenderNoteBasic.test_orphan_warning_at_top`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_orphan_warning`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+
+### `test_note_renderer.TestRenderNoteBasic.test_range_callout_after_range`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `render_note`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_frontmatter`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_code_with_callouts`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_callout`
+- [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`

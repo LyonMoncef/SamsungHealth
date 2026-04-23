@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: scripts/import_csv.py
 git_blob: 44be314f67acfd01e1bf2d059fcf39bfc01f7139
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 82
 annotations: []
 imports:
@@ -19,6 +19,7 @@ exports:
 tags:
 - code
 - python
+coverage_pct: 0.0
 ---
 
 # scripts/import_csv.py
@@ -118,9 +119,9 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `parse_dt` (function) — lines 29-35
-- `find_col` (function) — lines 38-42
-- `import_csv` (function) — lines 45-75
+- `parse_dt` (function) — lines 29-35 · ⚠️ no test
+- `find_col` (function) — lines 38-42 · ⚠️ no test
+- `import_csv` (function) — lines 45-75 · ⚠️ no test
 
 ### Imports
 - `csv`

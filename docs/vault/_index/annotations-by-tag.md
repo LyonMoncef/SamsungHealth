@@ -1,6 +1,6 @@
 ---
 type: vault-index
-last_synced: 2026-04-23T09:31:47Z
+last_synced: 2026-04-23T09:43:48Z
 ---
 
 # Annotations by tag

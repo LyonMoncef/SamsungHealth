@@ -155,3 +155,132 @@ class TestRenderNoteBasic:
         assert "block" in out
         # callout sits after the end marker line
         assert out.find("@vault:block end") < out.find("> [!note]+")
+
+
+class TestCoverageIntegration:
+    def test_appendix_lists_tests_per_symbol(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.walker import FileSymbols, Symbol
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("def add(a, b): return a + b\n")
+        fs = FileSymbols(
+            file=str(src_path), language="python", loc=1,
+            symbols=[Symbol(name="add", kind="function", begin_line=1, end_line=1)],
+            exports=["add"],
+        )
+
+        coverage_manifest = {
+            "by_symbol": {
+                "agents/x.py::add": {
+                    "tests": ["tests.test_x.test_add"],
+                    "covered_lines": 1, "total_lines": 1, "pct": 100.0,
+                },
+            },
+            "by_test": {},
+            "by_file": {"agents/x.py": {"pct": 100.0, "tests": ["tests.test_x.test_add"]}},
+        }
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="agents/x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[],
+            orphans=[],
+            coverage_manifest=coverage_manifest,
+            coverage_raw=None,
+        )
+        assert "Tested by" in out
+        assert "test_add" in out
+        # Frontmatter exposes coverage_pct
+        assert "coverage_pct: 100.0" in out
+
+    def test_test_file_gets_exercises_section(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.walker import FileSymbols
+
+        src_path = tmp_path / "test_x.py"
+        src_path.write_text("def test_add(): pass\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=1)
+
+        coverage_manifest = {
+            "by_symbol": {},
+            "by_test": {
+                "tests.test_x.test_add": [
+                    {"file": "agents/x.py", "symbol": "add"},
+                    {"file": "agents/x.py", "symbol": "add_helper"},
+                ],
+            },
+            "by_file": {},
+        }
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="tests/test_x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[],
+            orphans=[],
+            coverage_manifest=coverage_manifest,
+            coverage_raw=None,
+        )
+        assert "Exercises" in out
+        assert "agents/x.py" in out
+        assert "add" in out
+
+    def test_no_coverage_manifest_skips_sections(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import render_note
+        from agents.cartographer.walker import FileSymbols
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("x = 1\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=1)
+
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[],
+            orphans=[],
+            coverage_manifest=None,
+        )
+        assert "Tested by" not in out
+        assert "Exercises" not in out
+        assert "coverage_pct" not in out
+
+    def test_annotation_callout_includes_tests_for_range(self, tmp_path: Path):
+        from agents.cartographer.note_renderer import (
+            ActiveAnnotation,
+            render_note,
+        )
+        from agents.cartographer.walker import FileSymbols
+
+        src_path = tmp_path / "x.py"
+        src_path.write_text("# @vault:block begin\n" + "y = 1\n" * 5 + "# @vault:block end\n")
+        fs = FileSymbols(file=str(src_path), language="python", loc=7)
+
+        ann = ActiveAnnotation(
+            slug="block", kind="range", begin_line=1, end_line=7,
+            body="# Block", anchor_file="x.md", references={},
+        )
+        coverage_raw = {
+            "agents/x.py": {
+                "contexts": {
+                    "2": ["tests.test_x.test_range"],
+                    "5": ["tests.test_x.test_range"],
+                },
+            },
+        }
+        out = render_note(
+            source_path=str(src_path),
+            relative_path="agents/x.py",
+            file_symbols=fs,
+            git_blob="abc",
+            active_annotations=[ann],
+            orphans=[],
+            coverage_manifest={"by_symbol": {}, "by_test": {}, "by_file": {}},
+            coverage_raw=coverage_raw,
+        )
+        # Sub-callout test inside annotation
+        assert "[!test]" in out
+        assert "test_range" in out

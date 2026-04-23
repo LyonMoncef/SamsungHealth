@@ -3,20 +3,19 @@ type: code-source
 language: python
 file_path: agents/cartographer/anchor_resolver.py
 git_blob: 8ca261ec0ed4d7d43f38f8fe5678ec0fa22c5644
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 88
 annotations: []
 imports:
-- taclasses i
-- ents.cartographer.annotation_io i
-- ents.cartographer.markers i
+- dataclasses
+- agents.cartographer.annotation_io
+- agents.cartographer.markers
 exports:
-- 'solve_anchors_for_file(
-
-  '
+- resolve_anchors_for_file
 tags:
 - code
 - python
+coverage_pct: 95.45454545454545
 ---
 
 # agents/cartographer/anchor_resolver.py
@@ -122,14 +121,12 @@ def resolve_anchors_for_file(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `solve_anchors_for_file(
-` (function) — lines 44-88
+- `resolve_anchors_for_file` (function) — lines 44-88 · **Tested by (10)**: `test_anchor_resolver.TestResolveAnchorsForFile.test_active_annotation_with_marker_present`, `test_anchor_resolver.TestResolveAnchorsForFile.test_orphan_when_marker_missing`, `test_anchor_resolver.TestResolveAnchorsForFile.test_range_marker_updates_begin_end_lines`, `test_anchor_resolver.TestResolveAnchorsForFile.test_unmatched_when_marker_without_annotation`, `test_cli.TestMirror.test_mirror_copies_vault_to_target` _+5_
 
 ### Imports
-- `taclasses i`
-- `ents.cartographer.annotation_io i`
-- `ents.cartographer.markers i`
+- `dataclasses`
+- `agents.cartographer.annotation_io`
+- `agents.cartographer.markers`
 
 ### Exports
-- `solve_anchors_for_file(
-`
+- `resolve_anchors_for_file`

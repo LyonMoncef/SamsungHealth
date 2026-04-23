@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: agents/cartographer/note_renderer.py
-git_blob: 11fd2a5cf925a610d1cb777186c8a3ac523aa52b
-last_synced: '2026-04-23T09:31:47Z'
-loc: 251
+git_blob: 361590583063ab9afb8814182dfe1f335e01d7f2
+last_synced: '2026-04-23T09:44:51Z'
+loc: 352
 annotations: []
 imports:
 - dataclasses
@@ -14,15 +14,18 @@ imports:
 - agents.cartographer.walker
 exports:
 - render_note
-- "ontmatter(\n    lang"
-- 'phan_warning(orphans: '
-- "h_callouts(\n    code_lines"
-- ': list[str], lan'
-- ctiveAnnotation
-- eSymbols) -> str
+- _render_frontmatter
+- _render_orphan_warning
+- _render_code_with_callouts
+- _wrap_code_block
+- _render_callout
+- _render_appendix
+- _is_test_file
+- _render_exercises_section
 tags:
 - code
 - python
+coverage_pct: 96.46017699115045
 ---
 
 # agents/cartographer/note_renderer.py
@@ -81,12 +84,17 @@ def render_note(
     git_blob: str,
     active_annotations: list[ActiveAnnotation],
     orphans: list[OrphanAnnotation],
+    coverage_manifest: dict | None = None,
+    coverage_raw: dict | None = None,
 ) -> str:
     with open(source_path, encoding="utf-8") as fp:
         source = fp.read()
     code_lines = source.splitlines()
 
     parts: list[str] = []
+
+    file_coverage = (coverage_manifest or {}).get("by_file", {}).get(relative_path)
+    file_raw = (coverage_raw or {}).get(relative_path)
 
     # 1. Frontmatter
     parts.append(_render_frontmatter(
@@ -97,6 +105,7 @@ def render_note(
         annotations=[a.slug for a in active_annotations],
         imports=file_symbols.imports,
         exports=file_symbols.exports,
+        coverage_pct=file_coverage["pct"] if file_coverage else None,
     ))
 
     # 2. Header
@@ -115,15 +124,24 @@ def render_note(
     if orphans:
         parts.append(_render_orphan_warning(orphans))
 
-    # 5. Code + interleaved callouts
+    # 5. Code + interleaved callouts (annotations + test sub-callouts)
     parts.append(_render_code_with_callouts(
         code_lines=code_lines,
         language=file_symbols.language,
         annotations=active_annotations,
+        coverage_raw_for_file=file_raw,
     ))
 
-    # 6. Appendix
-    parts.append(_render_appendix(file_symbols))
+    # 6. Appendix (symbols + tests-per-symbol if coverage present)
+    parts.append(_render_appendix(
+        file_symbols, relative_path, coverage_manifest,
+    ))
+
+    # 7. Exercises section (only for test files)
+    if coverage_manifest and _is_test_file(relative_path):
+        ex = _render_exercises_section(relative_path, coverage_manifest)
+        if ex:
+            parts.append(ex)
 
     return "\n".join(parts)
 
@@ -140,6 +158,7 @@ def _render_frontmatter(
     annotations: list[str],
     imports: list[str],
     exports: list[str],
+    coverage_pct: float | None = None,
 ) -> str:
     meta = {
         "type": "code-source",
@@ -156,6 +175,8 @@ def _render_frontmatter(
         "exports": exports,
         "tags": ["code", language],
     }
+    if coverage_pct is not None:
+        meta["coverage_pct"] = coverage_pct
     body = yaml.safe_dump(meta, sort_keys=False, allow_unicode=True).rstrip()
     return f"---\n{body}\n---\n"
 
@@ -187,6 +208,7 @@ def _render_code_with_callouts(
     code_lines: list[str],
     language: str,
     annotations: list[ActiveAnnotation],
+    coverage_raw_for_file: dict | None = None,
 ) -> str:
     # Map insertion-line → list of callouts that fire AFTER that line
     # - single  → after the marker line
@@ -194,9 +216,13 @@ def _render_code_with_callouts(
     insertions: dict[int, list[str]] = {}
     for ann in annotations:
         if ann.kind == "single" and ann.line is not None:
-            insertions.setdefault(ann.line, []).append(_render_callout(ann))
+            insertions.setdefault(ann.line, []).append(
+                _render_callout(ann, coverage_raw_for_file)
+            )
         elif ann.kind == "range" and ann.end_line is not None:
-            insertions.setdefault(ann.end_line, []).append(_render_callout(ann))
+            insertions.setdefault(ann.end_line, []).append(
+                _render_callout(ann, coverage_raw_for_file)
+            )
 
     if not insertions:
         return _wrap_code_block(code_lines, language)
@@ -223,7 +249,7 @@ def _wrap_code_block(lines: list[str], language: str) -> str:
     return f"```{language}\n" + "\n".join(lines) + "\n```\n"
 
 
-def _render_callout(ann: ActiveAnnotation) -> str:
+def _render_callout(ann: ActiveAnnotation, coverage_raw_for_file: dict | None = None) -> str:
     # Build pretty location label
     if ann.kind == "single":
         loc = f"line {ann.line}"
@@ -253,6 +279,24 @@ def _render_callout(ann: ActiveAnnotation) -> str:
     if refs_line:
         parts.append(f"> {refs_line}")
     parts.append(f"> *Source : {wikilink}*")
+
+    # Sub-callout: tests covering the annotated range/line
+    if coverage_raw_for_file:
+        from agents.cartographer.coverage_map import tests_for_range
+        if ann.kind == "single" and ann.line is not None:
+            tests = tests_for_range(coverage_raw_for_file, ann.line, ann.line)
+        elif ann.kind == "range" and ann.begin_line is not None and ann.end_line is not None:
+            tests = tests_for_range(coverage_raw_for_file, ann.begin_line, ann.end_line)
+        else:
+            tests = []
+        if tests:
+            parts.append("> ")
+            parts.append(f"> > [!test]+ Tested by ({len(tests)})")
+            for t in tests[:10]:
+                parts.append(f"> > - `{t}`")
+            if len(tests) > 10:
+                parts.append(f"> > _… +{len(tests) - 10} more_")
+
     return "\n".join(parts) + "\n"
 
 
@@ -260,15 +304,33 @@ def _render_callout(ann: ActiveAnnotation) -> str:
 # appendix
 # ---------------------------------------------------------------------------
 
-def _render_appendix(fs: FileSymbols) -> str:
+def _render_appendix(
+    fs: FileSymbols,
+    relative_path: str = "",
+    coverage_manifest: dict | None = None,
+) -> str:
     parts = ["---", "", "## Appendix — symbols & navigation *(auto)*", ""]
+
+    by_symbol = (coverage_manifest or {}).get("by_symbol", {})
 
     if fs.symbols:
         parts.append("### Symbols")
         for s in fs.symbols:
-            parts.append(
+            line = (
                 f"- `{s.name}` ({s.kind}) — lines {s.begin_line}-{s.end_line}"
             )
+            sym_cov = by_symbol.get(f"{relative_path}::{s.name}")
+            if sym_cov:
+                tests = sym_cov.get("tests", [])
+                if tests:
+                    line += f" · **Tested by ({len(tests)})**: " + ", ".join(
+                        f"`{t}`" for t in tests[:5]
+                    )
+                    if len(tests) > 5:
+                        line += f" _+{len(tests) - 5}_"
+                else:
+                    line += " · ⚠️ no test"
+            parts.append(line)
         parts.append("")
 
     if fs.imports:
@@ -284,6 +346,48 @@ def _render_appendix(fs: FileSymbols) -> str:
         parts.append("")
 
     return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Test files: "Exercises" section (inverse map: this test → covered symbols)
+# ---------------------------------------------------------------------------
+
+def _is_test_file(relative_path: str) -> bool:
+    base = relative_path.rsplit("/", 1)[-1]
+    return base.startswith("test_") or base.endswith("_test.py")
+
+
+def _render_exercises_section(
+    relative_path: str, coverage_manifest: dict
+) -> str:
+    by_test = coverage_manifest.get("by_test", {}) or {}
+    # Test ID format from coverage.py: "<dotted_module>.<func>"
+    # → match by stripped path (strip extension, replace / with .)
+    stem = relative_path.removesuffix(".py").replace("/", ".")
+    # Tolerant prefix match: a test_id starts with the file's dotted path
+    matches: dict[str, list[dict[str, str]]] = {}
+    for test_id, hits in by_test.items():
+        # Normalise: drop leading "tests." if present (pytest's collected name varies)
+        norm = test_id
+        if norm.startswith("tests."):
+            norm_short = norm[len("tests."):]
+        else:
+            norm_short = norm
+        # Match by basename (last component): test_id contains the file basename
+        file_base = stem.rsplit(".", 1)[-1]
+        if file_base in norm or file_base in norm_short:
+            matches[test_id] = hits
+
+    if not matches:
+        return ""
+
+    parts = ["", "## Exercises *(auto — this test file touches)*", ""]
+    for test_id in sorted(matches):
+        parts.append(f"### `{test_id}`")
+        for hit in matches[test_id]:
+            parts.append(f"- [[../../code/{hit['file'].removesuffix('.py')}|{hit['file']}]] · `{hit['symbol']}`")
+        parts.append("")
+    return "\n".join(parts)
 ```
 
 ---
@@ -291,15 +395,15 @@ def _render_appendix(fs: FileSymbols) -> str:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `render_note` (function) — lines 42-93
-- `ontmatter(
-    lang` (function) — lines 100-125
-- `phan_warning(orphans: ` (function) — lines 132-144
-- `h_callouts(
-    code_lines` (function) — lines 151-184
-- `: list[str], lan` (function) — lines 187-188
-- `ctiveAnnotation` (function) — lines 191-221
-- `eSymbols) -> str` (function) — lines 228-251
+- `render_note` (function) — lines 42-108 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_frontmatter` (function) — lines 115-143 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_orphan_warning` (function) — lines 150-162 · **Tested by (1)**: `test_note_renderer.TestRenderNoteBasic.test_orphan_warning_at_top`
+- `_render_code_with_callouts` (function) — lines 169-207 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_wrap_code_block` (function) — lines 210-211 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_callout` (function) — lines 214-262 · **Tested by (2)**: `test_note_renderer.TestRenderNoteBasic.test_callout_inserted_at_single_line_marker`, `test_note_renderer.TestRenderNoteBasic.test_range_callout_after_range`
+- `_render_appendix` (function) — lines 269-310 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_is_test_file` (function) — lines 317-319
+- `_render_exercises_section` (function) — lines 322-352
 
 ### Imports
 - `dataclasses`
@@ -310,11 +414,11 @@ def _render_appendix(fs: FileSymbols) -> str:
 
 ### Exports
 - `render_note`
-- `ontmatter(
-    lang`
-- `phan_warning(orphans: `
-- `h_callouts(
-    code_lines`
-- `: list[str], lan`
-- `ctiveAnnotation`
-- `eSymbols) -> str`
+- `_render_frontmatter`
+- `_render_orphan_warning`
+- `_render_code_with_callouts`
+- `_wrap_code_block`
+- `_render_callout`
+- `_render_appendix`
+- `_is_test_file`
+- `_render_exercises_section`

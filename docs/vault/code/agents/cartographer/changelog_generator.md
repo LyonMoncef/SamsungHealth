@@ -3,33 +3,25 @@ type: code-source
 language: python
 file_path: agents/cartographer/changelog_generator.py
 git_blob: a1a0e1e6c226c8a774b0fd108602ccc7e3f3d1b6
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 170
 annotations: []
 imports:
-- '
-
-  i'
-- '
-
-  i'
-- 'bprocess
-
-  f'
-- taclasses i
-- 'ml
-
-
-  '
+- os
+- re
+- subprocess
+- dataclasses
+- yaml
 exports:
-- rse_git_log_records(r
-- ad_recent_commits(r
-- er_changelog_note(rec
-- "e_changelog(\n    r"
-- 'gv: '
+- parse_git_log_records
+- load_recent_commits
+- render_changelog_note
+- generate_changelog
+- main
 tags:
 - code
 - python
+coverage_pct: 72.72727272727273
 ---
 
 # agents/cartographer/changelog_generator.py
@@ -217,29 +209,22 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `rse_git_log_records(r` (function) — lines 36-69
-- `ad_recent_commits(r` (function) — lines 72-94
-- `er_changelog_note(rec` (function) — lines 97-119
-- `e_changelog(
-    r` (function) — lines 122-140
-- `gv: ` (function) — lines 147-165
+- `parse_git_log_records` (function) — lines 36-69 · **Tested by (3)**: `test_changelog_generator.TestParseGitLog.test_handles_subject_without_scope`, `test_changelog_generator.TestParseGitLog.test_parses_oneline_commit_records`, `test_changelog_generator.TestParseGitLog.test_subject_without_conventional_format`
+- `load_recent_commits` (function) — lines 72-94 · ⚠️ no test
+- `render_changelog_note` (function) — lines 97-119 · **Tested by (3)**: `test_changelog_generator.TestGenerateChangelog.test_creates_one_file_per_commit`, `test_changelog_generator.TestGenerateChangelog.test_regenerate_overwrites`, `test_changelog_generator.TestRenderChangelogNote.test_frontmatter_and_body`
+- `generate_changelog` (function) — lines 122-140 · **Tested by (3)**: `test_changelog_generator.TestGenerateChangelog.test_creates_one_file_per_commit`, `test_changelog_generator.TestGenerateChangelog.test_idempotent_skips_existing`, `test_changelog_generator.TestGenerateChangelog.test_regenerate_overwrites`
+- `main` (function) — lines 147-165 · ⚠️ no test
 
 ### Imports
-- `
-i`
-- `
-i`
-- `bprocess
-f`
-- `taclasses i`
-- `ml
-
-`
+- `os`
+- `re`
+- `subprocess`
+- `dataclasses`
+- `yaml`
 
 ### Exports
-- `rse_git_log_records(r`
-- `ad_recent_commits(r`
-- `er_changelog_note(rec`
-- `e_changelog(
-    r`
-- `gv: `
+- `parse_git_log_records`
+- `load_recent_commits`
+- `render_changelog_note`
+- `generate_changelog`
+- `main`

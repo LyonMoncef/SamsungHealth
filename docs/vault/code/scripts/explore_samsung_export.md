@@ -3,27 +3,24 @@ type: code-source
 language: python
 file_path: scripts/explore_samsung_export.py
 git_blob: afe815b1a285cc799fa5d6c62d7a35b7ea538137
-last_synced: '2026-04-23T09:31:47Z'
+last_synced: '2026-04-23T09:43:48Z'
 loc: 108
 annotations: []
 imports:
-- 'v
-
-  i'
-- 's
-
-  f'
-- tetime i
-- thlib i
+- csv
+- sys
+- datetime
+- pathlib
 exports:
-- fer_type(v
-- sk_row(r
-- plore_csv(p
-- int_file_report(p
-- in()
+- infer_type
+- mask_row
+- explore_csv
+- print_file_report
+- main
 tags:
 - code
 - python
+coverage_pct: 0.0
 ---
 
 # scripts/explore_samsung_export.py
@@ -149,23 +146,21 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `fer_type(v` (function) — lines 21-42
-- `sk_row(r` (function) — lines 45-47
-- `plore_csv(p` (function) — lines 50-68
-- `int_file_report(p` (function) — lines 71-86
-- `in()` (function) — lines 89-104
+- `infer_type` (function) — lines 21-42 · ⚠️ no test
+- `mask_row` (function) — lines 45-47 · ⚠️ no test
+- `explore_csv` (function) — lines 50-68 · ⚠️ no test
+- `print_file_report` (function) — lines 71-86 · ⚠️ no test
+- `main` (function) — lines 89-104 · ⚠️ no test
 
 ### Imports
-- `v
-i`
-- `s
-f`
-- `tetime i`
-- `thlib i`
+- `csv`
+- `sys`
+- `datetime`
+- `pathlib`
 
 ### Exports
-- `fer_type(v`
-- `sk_row(r`
-- `plore_csv(p`
-- `int_file_report(p`
-- `in()`
+- `infer_type`
+- `mask_row`
+- `explore_csv`
+- `print_file_report`
+- `main`
