@@ -53,6 +53,15 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `8f08068`
+feat(plan-keeper): +3 deviation_types vault (vault_orphan_annotation/vault_missing_note/vault_outdated) + détection détaillée dans subagent prompt
+- Updated `agents/contracts/plan_keeper.py` — `DeviationType` Literal étendu à 11 valeurs (8 originaux + 3 vault_*)
+- Updated `tests/agents/test_contracts.py::TestPlanKeeper::test_deviation_type_literal` — couvre les 11 valeurs (8/8 GREEN)
+- Updated `.claude/agents/plan-keeper.md` — table de détection enrichie avec les 3 types vault et leurs heuristiques (severity scaling sur ancienneté pour orphan, comparaison frontmatter `git_blob` vs `git ls-files -s` pour outdated, glob mismatch pour missing_note) + section "Détections vault — détail technique" avec snippets bash réutilisant `python3 -m agents.cartographer.cli --check`
+- Tests : 136/136 GREEN
+- Hook pre-commit live : 2 sources stagées → 2 notes vault auto-stagées (création de `docs/vault/code/tests/agents/test_contracts.md` — révèle que le glob bootstrap manque `tests/**` à inclure plus tard)
+- **Phase A.5 task #11 ✓ — Phase A.5 100% complète (11/11 tasks)**
+
 ### 2026-04-23 `25f51de`
 feat(phase-a.5): générateur changelog vault (1 note par commit, frontmatter+body) + bootstrap 30 dernières notes (7 tests GREEN)
 - Added `agents/cartographer/changelog_generator.py` — `parse_git_log_records()` (NUL-delimited+RS format), `load_recent_commits()` (git log + git show --name-only par commit), `render_changelog_note()` (frontmatter type/sha/full_sha/date/author/commit_type/scope/files/tags + body Files touched), `generate_changelog()` idempotent (skip si fichier existe sauf `regenerate=True`), CLI `python -m agents.cartographer.changelog_generator --limit N --regenerate`
