@@ -53,6 +53,14 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `d6f030d`
+feat(phase-a.5): hook pre-commit cartographer (re-render notes vault sur staged sources) + make setup-hooks active core.hooksPath
+- Added `.githooks/pre-commit` — filtre les fichiers staged par extensions source (`.py|.js|.mjs|.cjs|.kt|.kts|.html|.htm|.css`) ou path `docs/vault/annotations/`. Si annotation seule → `--full` (re-scan complet 5s). Si sources staged → `--diff <files>` (incrémental). Auto-stage `docs/vault/code/` + `docs/vault/_index/` régénérés. Skippable via `--no-verify` (déconseillé)
+- Updated `Makefile` — ajout target `setup-hooks` (`git config core.hooksPath .githooks`), invoqué automatiquement par `install`. Active aussi le pre-push existant (branch naming check)
+- Hook activé pour la session courante : `git config core.hooksPath .githooks`
+- Test à blanc : modif de `agents/cartographer/__init__.py` → 1 note vault re-rendue + auto-stagée ✓
+- Phase A.5 task #9 ✓ ; reste #10 changelog gen, #11 plan-keeper extension
+
 ### 2026-04-23 `40a195f`
 feat(phase-a.5): subagent code-cartographer + 3 skills (/sync-vault /annotate /anchor-review) avec linked-list pattern
 - Added `.claude/agents/code-cartographer.md` — subagent (tools : Read/Write/Grep/Glob/Bash, model sonnet, color teal). Workflow : invoque le CLI cartographer pour `full|diff|check`, gère les `AnnotationOpBrief` (create/update/delete/anchor-review). Règle stricte : sync sens unique code+annotations → notes vault rendues, jamais l'inverse
