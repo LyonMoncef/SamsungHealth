@@ -10,3 +10,7 @@ tree-sitter-kotlin>=0.3.0
 
 # code-cartographer — annotation files frontmatter (YAML)
 PyYAML>=6.0
+
+# code-cartographer — coverage map (Phase A.7) symbol/range ↔ tests linking
+pytest-cov>=5.0
+coverage>=7.0

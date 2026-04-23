@@ -44,3 +44,9 @@ work/
 docs/vault/logs/
 # Obsidian local config (graph layout, hotkeys, plugins state) — pollue les diffs
 docs/vault/.obsidian/
+
+# Coverage map (Phase A.7) — regénéré par /sync-coverage, pas dans git
+docs/vault/_index/coverage-map.json
+coverage.json
+.coverage*
+.coveragerc-cartographer
