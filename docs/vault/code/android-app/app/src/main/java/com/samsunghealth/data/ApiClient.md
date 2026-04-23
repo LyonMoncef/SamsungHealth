@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/com/samsunghealth/data/ApiClient.kt
 git_blob: 19b558888ba450d752c3a776c409256452151eb4
-last_synced: '2026-04-23T10:17:20Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 109
 annotations: []
 imports: []

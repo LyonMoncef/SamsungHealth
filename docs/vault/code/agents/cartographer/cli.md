@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/cli.py
 git_blob: 48714d232b32793c26b355337247239b46d5a452
-last_synced: '2026-04-23T10:17:52Z'
+last_synced: '2026-04-23T10:21:38Z'
 loc: 517
 annotations: []
 imports:
@@ -578,6 +578,9 @@ if __name__ == "__main__":
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — symbols: `_load_spec_index`, `_render_spec_notes`
+
 ### Symbols
 - `run` (function) — lines 57-145 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
 - `_discover_sources` (function) — lines 152-160 · **Tested by (7)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+2_
@@ -588,8 +591,8 @@ if __name__ == "__main__":
 - `_all_markers` (function) — lines 259-274 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunCheck.test_check_passes_when_clean`, `test_cli.TestRunCheck.test_check_returns_failed_on_orphan` _+3_
 - `_write_indexes` (function) — lines 277-324 · **Tested by (5)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files`
 - `_strip_ext` (function) — lines 327-328 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+1_
-- `_load_spec_index` (function) — lines 331-334
-- `_render_spec_notes` (function) — lines 337-360
+- `_load_spec_index` (function) — lines 331-334 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `_render_spec_notes` (function) — lines 337-360 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
 - `_render_spec_summary_note` (function) — lines 363-383
 - `_load_coverage` (function) — lines 386-413
 - `_mirror_vault` (function) — lines 416-437 · **Tested by (2)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`

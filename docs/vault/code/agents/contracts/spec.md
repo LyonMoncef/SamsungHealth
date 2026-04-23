@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/spec.py
 git_blob: d1c4b42a0c9c6fc58a1a6edf4bef3f3c40469561
-last_synced: '2026-04-23T10:17:52Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 53
 annotations: []
 imports:
@@ -86,10 +86,13 @@ class SpecMeta(BaseModel):
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — symbols: `SpecMeta`, `SpecImplements`, `SpecTestedBy`, `SpecType`, `SpecStatus`
+
 ### Symbols
-- `SpecImplements` (class) — lines 27-30
-- `SpecTestedBy` (class) — lines 33-36
-- `SpecMeta` (class) — lines 39-53
+- `SpecImplements` (class) — lines 27-30 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `SpecTestedBy` (class) — lines 33-36 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `SpecMeta` (class) — lines 39-53 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
 
 ### Imports
 - `datetime`

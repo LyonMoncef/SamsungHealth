@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/plan_keeper.py
 git_blob: 024cb7ca8d021f46cd6eaae696aab5bbc13fa4b9
-last_synced: '2026-04-23T10:18:41Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 47
 annotations: []
 imports:
@@ -81,6 +81,9 @@ class PlanAuditReport(AgentOutputBase):
 ---
 
 ## Appendix — symbols & navigation *(auto)*
+
+### Implements specs
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — symbols: `DeviationType`
 
 ### Symbols
 - `PlanAuditBrief` (class) — lines 26-30

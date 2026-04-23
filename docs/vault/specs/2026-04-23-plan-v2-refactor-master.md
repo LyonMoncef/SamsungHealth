@@ -236,6 +236,7 @@ Phasing méta-projet :
 - **Phase A.5 (4-5j) : code-as-vault** (cartographer + miroir docs/vault/code/ + annotations ancrées + skills /sync-vault, /annotate, /anchor-review + hook pre-commit) — peut démarrer en parallèle de A étapes 3+
 - Phase A.6 (2-3j) : annotation-suggester — **après A.5** — ✅ livré 2026-04-23
 - **Phase A.7 (~2h) : test ↔ code linking** (coverage_map + skill /sync-coverage + note_renderer intégration + CI workflow) — ✅ livré 2026-04-23
+- **Phase A.8 (~3h) : specs in vault** (migration PKM → repo + spec_indexer + bidirectional links spec ↔ code ↔ tests + skill /spec + plan-keeper +2 deviations + discipline spec-first) — ✅ livré 2026-04-23
 - Phase B (4-5j) : observabilité + Phoenix + dashboard harness — pendant P1 master
 - Phase C (2-3j) : agents CI — pendant P2 master
 - Phase D (1-2j) : agents Android — avant P4 master

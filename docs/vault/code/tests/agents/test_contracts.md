@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_contracts.py
 git_blob: 499d2620f0f19cce7ed7808d1509d1ae6e6825f8
-last_synced: '2026-04-23T10:18:41Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 1099
 annotations: []
 imports:
@@ -1177,3 +1177,8 @@ class TestPackageReExports:
 - `TestAnnotationSuggester`
 - `TestSpec`
 - `TestPackageReExports`
+
+
+## Validates specs *(auto — declared by spec)*
+
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — classes: `TestSpec`, `TestPlanKeeper`, `TestPackageReExports`

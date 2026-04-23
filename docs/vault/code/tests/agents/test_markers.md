@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_markers.py
 git_blob: e2c3346176b0e47d76de4b37b9b68e1b9c44f55d
-last_synced: '2026-04-23T10:17:20Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 206
 annotations: []
 imports:

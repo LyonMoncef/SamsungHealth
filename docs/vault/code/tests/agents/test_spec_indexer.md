@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_spec_indexer.py
 git_blob: 3f01d2c1d3360e44567b19495fe70c7096282cf4
-last_synced: '2026-04-23T10:17:20Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 151
 annotations: []
 imports:
@@ -199,3 +199,8 @@ class TestDriftDetection:
 - `TestLoadSpec`
 - `TestBuildIndex`
 - `TestDriftDetection`
+
+
+## Validates specs *(auto — declared by spec)*
+
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — classes: `TestLoadSpec`, `TestBuildIndex`, `TestDriftDetection`

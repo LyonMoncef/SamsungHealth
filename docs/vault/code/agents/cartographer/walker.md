@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/walker.py
 git_blob: e624d754e6623065eb2080b20b04d6c95d3fc656
-last_synced: '2026-04-23T10:17:20Z'
+last_synced: '2026-04-23T10:21:38Z'
 loc: 193
 annotations: []
 imports:

@@ -1,6 +1,6 @@
 ---
 type: vault-index
-last_synced: 2026-04-23T10:17:20Z
+last_synced: 2026-04-23T10:21:39Z
 ---
 
 # Specs index
@@ -13,6 +13,7 @@ All specs in `docs/vault/specs/`. Updated at every `/sync-vault --full`.
 |------|------|--------|------------|-----------|
 | [[../specs/2026-04-21-spec-nightfall-sleep-dashboard]] | spec | delivered | 4 | ⚠️ 0 |
 | [[../specs/2026-04-23-plan-code-as-vault]] | plan | approved | 0 | 0 |
+| [[../specs/2026-04-23-plan-specs-in-vault]] | spec | delivered | 8 | 4 |
 | [[../specs/2026-04-23-plan-test-code-links]] | spec | delivered | 0 | ⚠️ 0 |
 | [[../specs/2026-04-23-plan-v2-multi-agents-architecture]] | plan | approved | 0 | 0 |
 | [[../specs/2026-04-23-plan-v2-refactor-master]] | plan | approved | 0 | 0 |

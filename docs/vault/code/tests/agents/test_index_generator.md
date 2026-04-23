@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_index_generator.py
 git_blob: 1cb5ebc01bfa2f6a8c2936dbb69aa6e4b943c261
-last_synced: '2026-04-23T10:17:52Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 130
 annotations: []
 imports:
@@ -201,3 +201,8 @@ class TestGenerateTagsIndex:
 - [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_write`
 - [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `_ts`
 - [[../../code/agents/cartographer/index_generator|agents/cartographer/index_generator.py]] · `generate_tags_index`
+
+
+## Validates specs *(auto — declared by spec)*
+
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — classes: `TestGenerateSpecsIndex`

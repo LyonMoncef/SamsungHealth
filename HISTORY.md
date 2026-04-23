@@ -53,6 +53,43 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-23 `ac24832` → `52c5fc9` (Phase A.8 — specs in vault, 5 blocs)
+
+Specs deviennent first-class dans le vault. Discipline spec-first adoptée : `plan` (méta-architecture) vs `spec` (unitaire < 1 semaine). Top-down `tested_by:` côté spec.
+
+**Bloc 1** `ac24832` — migration 7 specs PKM → `docs/vault/specs/` (single source of truth dans le repo) + frontmatter `type:spec/plan` + stubs PKM avec wikilinks vers le repo.
+
+**Bloc 2** `14a129a` — contrat Pydantic + spec_indexer
+- `agents/contracts/spec.py` — `SpecMeta`, `SpecImplements`, `SpecTestedBy`, `SpecType` Literal (spec/plan/us/feature/stub), `SpecStatus` Literal (draft/ready/approved/in_progress/delivered/superseded/reference)
+- `agents/cartographer/spec_indexer.py` — `load_spec`, `build_index`, `discover_spec_paths`, `detect_implements_drift`, `untested_specs` (returns list[str] de slugs spec sans tested_by)
+- 8 tests + 5 re-exports
+- Tolérance YAML : `created` accepte `str | date`, `extra: ignore` sur SpecMeta
+
+**Bloc 3** `728ea5d` — note_renderer + index_generator integration
+- `note_renderer` accepte `spec_index`, ajoute :
+  - "Implements specs" section dans appendix code (file → specs)
+  - "Specs:" annotation per-symbol (matching impl symbols)
+  - "Validates specs" section sur tests (test → specs)
+  - "Targets" section sur spec notes (auto Implementation + Tests rendus depuis frontmatter)
+- `cli` : `_load_spec_index()` + `_render_spec_notes()` (spec-summary mirror dans `code/specs/`)
+- `index_generator.generate_specs_index()` → `_index/specs.md` (table 5 colonnes + Untested specs section avec ⚠️)
+- 4 nouveaux tests
+
+**Bloc 4** `1b82456` — plan-keeper +2 deviations
+- `DeviationType` += `spec_implements_drift`, `untested_spec` (Literal passe à 13 valeurs)
+- Subagent prompt enrichi : table de détection + snippet bash réutilisant `spec_indexer`
+- 1 test étendu (couverture des 13 valeurs)
+
+**Bloc 5** `52c5fc9` — skill `/spec`
+- `.claude/skills/spec/SKILL.md` génère squelette frontmatter pré-rempli (type/status/created/related_plans/implements []/tested_by [])
+- Body template : Vision (2-3 phrases) / Décisions techniques / Livrables (checklist) / Tests d'acceptation (given/when/then) / Suite naturelle
+- Refuse collisions, valide slug regex `^[a-z0-9][a-z0-9-]{2,40}$`
+- `next_default: /tdd`
+
+**État post-A.8** : 78 notes vault (+8 specs incl. nouvelle spec A.8), 7 specs indexées, 1 spec délivrée (nightfall) + 4 plans + 1 reference + 1 ready, 4 specs warning "untested" (action humaine), 175/175 tests GREEN. Code → spec → tests bidirectionnel visible dans Obsidian (mirror Windows).
+
+**Plans patchés** : master + multi-agents + nouveau `2026-04-23-plan-specs-in-vault.md` dans le vault.
+
 ### 2026-04-23 `5108be3` → `6bbbdb2` (Phase A.7 — test↔code linking, 4 blocs)
 
 **Bloc 1** `5108be3` — `tests/**`, `android-app/**/test/**` ajoutés à `DEFAULT_SOURCE_GLOBS` du cartographer + re-bootstrap (49 → 65 notes vault, +15 tests/conftest)

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/note_renderer.py
 git_blob: 7b37c0c30bdc338f60ca3f6dec91ccf4452e1e60
-last_synced: '2026-04-23T10:17:52Z'
+last_synced: '2026-04-23T10:21:38Z'
 loc: 443
 annotations: []
 imports:
@@ -487,6 +487,9 @@ def _render_exercises_section(
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — symbols: `_render_appendix`, `_render_validates_section`, `_render_spec_targets`
+
 ### Symbols
 - `render_note` (function) — lines 42-121 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
 - `_render_frontmatter` (function) — lines 128-156 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
@@ -494,10 +497,10 @@ def _render_exercises_section(
 - `_render_code_with_callouts` (function) — lines 182-220 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
 - `_wrap_code_block` (function) — lines 223-224 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
 - `_render_callout` (function) — lines 227-275 · **Tested by (2)**: `test_note_renderer.TestRenderNoteBasic.test_callout_inserted_at_single_line_marker`, `test_note_renderer.TestRenderNoteBasic.test_range_callout_after_range`
-- `_render_appendix` (function) — lines 282-344 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_
+- `_render_appendix` (function) — lines 282-344 · **Tested by (10)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunDiff.test_diff_only_renders_listed_files`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file` _+5_ · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
 - `_is_test_file` (function) — lines 351-353
-- `_render_validates_section` (function) — lines 356-370
-- `_render_spec_targets` (function) — lines 373-410
+- `_render_validates_section` (function) — lines 356-370 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `_render_spec_targets` (function) — lines 373-410 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
 - `_render_exercises_section` (function) — lines 413-443
 
 ### Imports

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_note_renderer.py
 git_blob: 673c0b21b80481515dbf0253dfc13aef9d15739a
-last_synced: '2026-04-23T10:17:52Z'
+last_synced: '2026-04-23T10:21:39Z'
 loc: 377
 annotations: []
 imports:
@@ -453,3 +453,8 @@ class TestCoverageIntegration:
 - [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_wrap_code_block`
 - [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_callout`
 - [[../../code/agents/cartographer/note_renderer|agents/cartographer/note_renderer.py]] · `_render_appendix`
+
+
+## Validates specs *(auto — declared by spec)*
+
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — classes: `TestCoverageIntegration` · methods: `test_appendix_lists_implementing_specs`, `test_test_file_validates_section`, `test_spec_note_targets_section`

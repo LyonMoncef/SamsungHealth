@@ -986,6 +986,22 @@ Subagent `code-cartographer` + module Python `agents/cartographer/` (markers, wa
 ### Phase A.6 — Annotation suggester (2-3 jours, après A.5) — ✅ livré 2026-04-23
 Subagent `annotation-suggester` + hook post-commit + heuristics (commit refs issue, complexité diff, mots-clés workaround/perf/rgpd/fix). Voir commits `a3f9c30`+.
 
+### Phase A.8 — Specs in vault (5 blocs, ~3h, après A.7) — ✅ livré 2026-04-23
+**Objectif** : specs first-class dans le vault, links bidirectionnels spec ↔ tests + spec ↔ code, discipline spec-first.
+
+**Livrables** :
+- Migration 7 specs PKM → `docs/vault/specs/` (single source of truth dans le repo) + stubs PKM avec wikilinks
+- `agents/contracts/spec.py` (`SpecMeta`/`SpecImplements`/`SpecTestedBy` Pydantic) + 5 re-exports
+- `agents/cartographer/spec_indexer.py` — `load_spec`, `build_index`, `discover_spec_paths`, `detect_implements_drift`, `untested_specs`
+- `note_renderer` étendu : section "Implements specs" (code → spec), section "Validates specs" (test → spec), section "Targets" (spec → code+tests)
+- Spec-summary notes auto dans `code/specs/` (mirror des sources)
+- `index_generator.generate_specs_index()` → `_index/specs.md` (table + Untested specs)
+- `plan-keeper` +2 deviation types (`spec_implements_drift`, `untested_spec`)
+- Skill `/spec` génère squelette frontmatter + body Vision/Décisions/Livrables/Tests
+- **Discipline spec-first** : 1 spec ≈ 1 US/feature livrable < 1 semaine ; 1 PR = 1 spec ; tests déclarés `tested_by:` côté spec (top-down). Vocabulaire : `plan` = méta-architecture multi-semaines, `spec` = unitaire, `us`/`feature` agile
+
+Commits : `ac24832` → `14a129a` → `728ea5d` → `1b82456` → `52c5fc9`.
+
 ### Phase A.7 — Test ↔ code linking (4 blocs, ~2h, après A.6) — ✅ livré 2026-04-23
 **Objectif** : naviguer dans une note vault de code et voir directement quels tests touchent chaque symbole/range.
 

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/index_generator.py
 git_blob: 8b007f0bc1b535dc239093ac4a9b1bb4aa0e2cf3
-last_synced: '2026-04-23T10:17:52Z'
+last_synced: '2026-04-23T10:21:38Z'
 loc: 188
 annotations: []
 imports:
@@ -227,13 +227,16 @@ def generate_tags_index(annotation_paths: list[str], output_path: str) -> None:
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — symbols: `generate_specs_index`
+
 ### Symbols
 - `_write` (function) — lines 16-19 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+3_
 - `_ts` (function) — lines 22-28 · **Tested by (8)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+3_
 - `generate_orphans_index` (function) — lines 31-64 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
 - `generate_coverage_index` (function) — lines 67-83 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
 - `generate_coverage_map_index` (function) — lines 86-119
-- `generate_specs_index` (function) — lines 122-159
+- `generate_specs_index` (function) — lines 122-159 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
 - `generate_tags_index` (function) — lines 162-188 · **Tested by (6)**: `test_cli.TestMirror.test_mirror_copies_vault_to_target`, `test_cli.TestMirror.test_mirror_overwrites_existing`, `test_cli.TestMirror.test_mirror_skipped_when_none`, `test_cli.TestRunFull.test_full_creates_notes_for_each_source_file`, `test_cli.TestRunFull.test_full_generates_index_files` _+1_
 
 ### Imports

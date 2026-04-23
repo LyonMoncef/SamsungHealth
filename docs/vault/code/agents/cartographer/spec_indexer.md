@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/spec_indexer.py
 git_blob: a102a995925fcf42a5d8378e18f086dc40e24d8b
-last_synced: '2026-04-23T10:17:20Z'
+last_synced: '2026-04-23T10:21:38Z'
 loc: 132
 annotations: []
 imports:
@@ -171,12 +171,15 @@ def _infer_language_for_walker(file_path: str) -> str | None:
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-23-plan-specs-in-vault]] — symbols: `load_spec`, `build_index`, `discover_spec_paths`, `detect_implements_drift`, `untested_specs`
+
 ### Symbols
-- `load_spec` (function) — lines 32-45
-- `build_index` (function) — lines 48-70
-- `discover_spec_paths` (function) — lines 73-74
-- `detect_implements_drift` (function) — lines 77-115
-- `untested_specs` (function) — lines 118-122
+- `load_spec` (function) — lines 32-45 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `build_index` (function) — lines 48-70 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `discover_spec_paths` (function) — lines 73-74 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `detect_implements_drift` (function) — lines 77-115 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
+- `untested_specs` (function) — lines 118-122 · **Specs**: [[../../specs/2026-04-23-plan-specs-in-vault|2026-04-23-plan-specs-in-vault]]
 - `_infer_language_for_walker` (function) — lines 125-132
 
 ### Imports
