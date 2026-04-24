@@ -1,14 +1,33 @@
 #!/usr/bin/env python3
-"""Generate ~30 days of realistic sample health data."""
+"""Generate ~30 days of realistic sample health data.
 
+⚠️ V2.1.1 cutover : ce script utilise encore SQLite (sera refondu en SQLAlchemy/PG via spec V2.1.2).
+"""
+
+import random
+import sqlite3
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import random
-from datetime import datetime, timedelta
-from server.database import init_db, get_connection
+
+# Standalone SQLite — pas de dépendance à server/database.py (PG-only depuis V2.1.1)
+DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+
+
+def get_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    raise SystemExit(
+        "❌ scripts/generate_sample.py est en attente de refonte V2.1.2. Utilise `make db-up && make db-migrate` "
+        "puis insert via SQLAlchemy depuis un REPL Python en attendant."
+    )
 
 
 STAGE_TYPES = ["light", "deep", "rem", "awake"]

@@ -29,7 +29,8 @@ SLEEP_PAYLOAD = {"sessions": [
 ]}
 
 
-def test_sleep_response_fields(client):
+def test_sleep_response_fields(client_pg_ready):
+    client = client_pg_ready
     client.post("/api/sleep", json=SLEEP_PAYLOAD)
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-22&include_stages=true")
     assert r.status_code == 200
@@ -43,7 +44,8 @@ def test_sleep_response_fields(client):
     assert "stages" in s
 
 
-def test_sleep_stages_fields(client):
+def test_sleep_stages_fields(client_pg_ready):
+    client = client_pg_ready
     client.post("/api/sleep", json=SLEEP_PAYLOAD)
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-22&include_stages=true")
     stage = r.json()[0]["stages"][0]
@@ -53,14 +55,16 @@ def test_sleep_stages_fields(client):
     assert stage["stage_type"] in ("light", "deep", "rem", "awake")
 
 
-def test_sleep_stages_empty_without_flag(client):
+def test_sleep_stages_empty_without_flag(client_pg_ready):
+    client = client_pg_ready
     client.post("/api/sleep", json=SLEEP_PAYLOAD)
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-22")
     s = r.json()[0]
     assert s.get("stages") is None or s.get("stages") == []
 
 
-def test_sleep_iso_strings_parseable(client):
+def test_sleep_iso_strings_parseable(client_pg_ready):
+    client = client_pg_ready
     """sleep_start / sleep_end doivent être des ISO strings parsables par JS new Date()."""
     client.post("/api/sleep", json=SLEEP_PAYLOAD)
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-22&include_stages=true")
@@ -73,7 +77,8 @@ def test_sleep_iso_strings_parseable(client):
         datetime.fromisoformat(st["stage_end"])
 
 
-def test_sleep_ordered_by_start(client):
+def test_sleep_ordered_by_start(client_pg_ready):
+    client = client_pg_ready
     client.post("/api/sleep", json=SLEEP_PAYLOAD)
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-22&include_stages=true")
     sessions = r.json()
@@ -81,14 +86,16 @@ def test_sleep_ordered_by_start(client):
     assert starts == sorted(starts)
 
 
-def test_sleep_date_range_filter(client):
+def test_sleep_date_range_filter(client_pg_ready):
+    client = client_pg_ready
     client.post("/api/sleep", json=SLEEP_PAYLOAD)
     # to=2026-04-20 → seule la session du 20 (sleep_start < 2026-04-21)
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-20&include_stages=true")
     assert len(r.json()) == 1
 
 
-def test_sleep_empty_db_returns_list(client):
+def test_sleep_empty_db_returns_list(client_pg_ready):
+    client = client_pg_ready
     r = client.get("/api/sleep?from=2026-04-20&to=2026-04-22&include_stages=true")
     assert r.status_code == 200
     assert r.json() == []

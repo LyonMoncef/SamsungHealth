@@ -2,13 +2,17 @@
 type: code-source
 language: python
 file_path: server/routers/heartrate.py
-git_blob: 60365f54de621d4994b187d64cdb042ad22653cd
-last_synced: '2026-04-23T10:49:30Z'
-loc: 49
+git_blob: 0350085825b384c1671a9dcff09b343a097860b6
+last_synced: '2026-04-24T02:28:09Z'
+loc: 62
 annotations: []
 imports:
 - fastapi
+- sqlalchemy
+- sqlalchemy.dialects.postgresql
+- sqlalchemy.orm
 - server.database
+- server.db.models
 - server.models
 exports: []
 tags:
@@ -25,62 +29,82 @@ coverage_pct: 22.857142857142858
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
-from fastapi import APIRouter, Query
-from server.database import get_connection
-from server.models import HeartRateHourlyOut, HeartRateBulkIn
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
+
+from server.database import get_session
+from server.db.models import HeartRateHourly
+from server.models import HeartRateBulkIn, HeartRateHourlyOut
 
 router = APIRouter(prefix="/api/heartrate", tags=["heartrate"])
 
 
 @router.post("", status_code=201)
-def create_heartrate(body: HeartRateBulkIn) -> dict:
-    conn = get_connection()
+def create_heartrate(body: HeartRateBulkIn, db: Session = Depends(get_session)) -> dict:
     inserted = 0
     skipped = 0
     for r in body.records:
-        cursor = conn.execute(
-            "INSERT OR IGNORE INTO heart_rate_hourly (date, hour, min_bpm, max_bpm, avg_bpm, sample_count) VALUES (?, ?, ?, ?, ?, ?)",
-            (r.date, r.hour, r.min_bpm, r.max_bpm, r.avg_bpm, r.sample_count),
+        stmt = (
+            pg_insert(HeartRateHourly)
+            .values(
+                date=r.date,
+                hour=r.hour,
+                min_bpm=r.min_bpm,
+                max_bpm=r.max_bpm,
+                avg_bpm=r.avg_bpm,
+                sample_count=r.sample_count,
+            )
+            .on_conflict_do_nothing(index_elements=["date", "hour"])
+            .returning(HeartRateHourly.id)
         )
-        if cursor.rowcount == 0:
-            skipped += 1
-        else:
+        if db.execute(stmt).first() is not None:
             inserted += 1
-    conn.commit()
-    conn.close()
+        else:
+            skipped += 1
+    db.commit()
     return {"inserted": inserted, "skipped": skipped}
 
 
 @router.get("")
 def get_heartrate(
-    from_date: str = Query(None, alias="from"),
-    to_date: str = Query(None, alias="to"),
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
+    db: Session = Depends(get_session),
 ) -> list[HeartRateHourlyOut]:
-    conn = get_connection()
-    query = "SELECT date, hour, min_bpm, max_bpm, avg_bpm, sample_count FROM heart_rate_hourly"
-    params: list[str] = []
-
-    if from_date and to_date:
-        query += " WHERE date >= ? AND date <= ?"
-        params = [from_date, to_date]
-    elif from_date:
-        query += " WHERE date >= ?"
-        params = [from_date]
-    elif to_date:
-        query += " WHERE date <= ?"
-        params = [to_date]
-
-    query += " ORDER BY date, hour"
-    rows = conn.execute(query, params).fetchall()
-    conn.close()
-    return [HeartRateHourlyOut(**dict(r)) for r in rows]
+    stmt = select(HeartRateHourly)
+    if from_date:
+        stmt = stmt.where(HeartRateHourly.date >= from_date)
+    if to_date:
+        stmt = stmt.where(HeartRateHourly.date <= to_date)
+    stmt = stmt.order_by(HeartRateHourly.date, HeartRateHourly.hour)
+    rows = db.execute(stmt).scalars().all()
+    return [
+        HeartRateHourlyOut(
+            date=r.date,
+            hour=r.hour,
+            min_bpm=r.min_bpm,
+            max_bpm=r.max_bpm,
+            avg_bpm=r.avg_bpm,
+            sample_count=r.sample_count,
+        )
+        for r in rows
+    ]
 ```
 
 ---
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`
+
 ### Imports
 - `fastapi`
+- `sqlalchemy`
+- `sqlalchemy.dialects.postgresql`
+- `sqlalchemy.orm`
 - `server.database`
+- `server.db.models`
 - `server.models`

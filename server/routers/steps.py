@@ -1,49 +1,45 @@
-from fastapi import APIRouter, Query
-from server.database import get_connection
-from server.models import StepsHourlyOut, StepsBulkIn
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
+
+from server.database import get_session
+from server.db.models import StepsHourly
+from server.models import StepsBulkIn, StepsHourlyOut
 
 router = APIRouter(prefix="/api/steps", tags=["steps"])
 
 
 @router.post("", status_code=201)
-def create_steps(body: StepsBulkIn) -> dict:
-    conn = get_connection()
+def create_steps(body: StepsBulkIn, db: Session = Depends(get_session)) -> dict:
     inserted = 0
     skipped = 0
     for r in body.records:
-        cursor = conn.execute(
-            "INSERT OR IGNORE INTO steps_hourly (date, hour, step_count) VALUES (?, ?, ?)",
-            (r.date, r.hour, r.step_count),
+        stmt = (
+            pg_insert(StepsHourly)
+            .values(date=r.date, hour=r.hour, step_count=r.step_count)
+            .on_conflict_do_nothing(index_elements=["date", "hour"])
+            .returning(StepsHourly.id)
         )
-        if cursor.rowcount == 0:
-            skipped += 1
-        else:
+        if db.execute(stmt).first() is not None:
             inserted += 1
-    conn.commit()
-    conn.close()
+        else:
+            skipped += 1
+    db.commit()
     return {"inserted": inserted, "skipped": skipped}
 
 
 @router.get("")
 def get_steps(
-    from_date: str = Query(None, alias="from"),
-    to_date: str = Query(None, alias="to"),
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
+    db: Session = Depends(get_session),
 ) -> list[StepsHourlyOut]:
-    conn = get_connection()
-    query = "SELECT date, hour, step_count FROM steps_hourly"
-    params: list[str] = []
-
-    if from_date and to_date:
-        query += " WHERE date >= ? AND date <= ?"
-        params = [from_date, to_date]
-    elif from_date:
-        query += " WHERE date >= ?"
-        params = [from_date]
-    elif to_date:
-        query += " WHERE date <= ?"
-        params = [to_date]
-
-    query += " ORDER BY date, hour"
-    rows = conn.execute(query, params).fetchall()
-    conn.close()
-    return [StepsHourlyOut(**dict(r)) for r in rows]
+    stmt = select(StepsHourly)
+    if from_date:
+        stmt = stmt.where(StepsHourly.date >= from_date)
+    if to_date:
+        stmt = stmt.where(StepsHourly.date <= to_date)
+    stmt = stmt.order_by(StepsHourly.date, StepsHourly.hour)
+    rows = db.execute(stmt).scalars().all()
+    return [StepsHourlyOut(date=r.date, hour=r.hour, step_count=r.step_count) for r in rows]

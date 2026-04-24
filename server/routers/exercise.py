@@ -1,49 +1,76 @@
-from fastapi import APIRouter, Query
-from server.database import get_connection
-from server.models import ExerciseSessionOut, ExerciseBulkIn
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
+
+from server.database import get_session
+from server.db.models import ExerciseSession
+from server.models import ExerciseBulkIn, ExerciseSessionOut
 
 router = APIRouter(prefix="/api/exercise", tags=["exercise"])
 
 
+def _to_dt(s: str) -> datetime:
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _iso(dt: datetime | None) -> str:
+    if dt is None:
+        return ""
+    return dt.isoformat()
+
+
 @router.post("", status_code=201)
-def create_exercise(body: ExerciseBulkIn) -> dict:
-    conn = get_connection()
+def create_exercise(body: ExerciseBulkIn, db: Session = Depends(get_session)) -> dict:
     inserted = 0
     skipped = 0
     for s in body.sessions:
-        cursor = conn.execute(
-            "INSERT OR IGNORE INTO exercise_sessions (exercise_type, exercise_start, exercise_end, duration_minutes) VALUES (?, ?, ?, ?)",
-            (s.exercise_type, s.exercise_start, s.exercise_end, s.duration_minutes),
+        stmt = (
+            pg_insert(ExerciseSession)
+            .values(
+                exercise_type=s.exercise_type,
+                exercise_start=_to_dt(s.exercise_start),
+                exercise_end=_to_dt(s.exercise_end),
+                duration_minutes=s.duration_minutes,
+            )
+            .on_conflict_do_nothing(index_elements=["exercise_start", "exercise_end"])
+            .returning(ExerciseSession.id)
         )
-        if cursor.rowcount == 0:
-            skipped += 1
-        else:
+        if db.execute(stmt).first() is not None:
             inserted += 1
-    conn.commit()
-    conn.close()
+        else:
+            skipped += 1
+    db.commit()
     return {"inserted": inserted, "skipped": skipped}
 
 
 @router.get("")
 def get_exercise(
-    from_date: str = Query(None, alias="from"),
-    to_date: str = Query(None, alias="to"),
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
+    db: Session = Depends(get_session),
 ) -> list[ExerciseSessionOut]:
-    conn = get_connection()
-    query = "SELECT exercise_type, exercise_start, exercise_end, duration_minutes FROM exercise_sessions"
-    params: list[str] = []
-
-    if from_date and to_date:
-        query += " WHERE date(exercise_start) >= ? AND date(exercise_start) <= ?"
-        params = [from_date, to_date]
-    elif from_date:
-        query += " WHERE date(exercise_start) >= ?"
-        params = [from_date]
-    elif to_date:
-        query += " WHERE date(exercise_start) <= ?"
-        params = [to_date]
-
-    query += " ORDER BY exercise_start"
-    rows = conn.execute(query, params).fetchall()
-    conn.close()
-    return [ExerciseSessionOut(**dict(r)) for r in rows]
+    stmt = select(ExerciseSession)
+    if from_date:
+        d_from = datetime.fromisoformat(from_date).replace(tzinfo=timezone.utc)
+        stmt = stmt.where(ExerciseSession.exercise_start >= d_from)
+    if to_date:
+        d_to = datetime.fromisoformat(to_date).replace(tzinfo=timezone.utc)
+        d_to_eod = d_to.replace(hour=23, minute=59, second=59)
+        stmt = stmt.where(ExerciseSession.exercise_start <= d_to_eod)
+    stmt = stmt.order_by(ExerciseSession.exercise_start)
+    rows = db.execute(stmt).scalars().all()
+    return [
+        ExerciseSessionOut(
+            exercise_type=r.exercise_type,
+            exercise_start=_iso(r.exercise_start),
+            exercise_end=_iso(r.exercise_end),
+            duration_minutes=r.duration_minutes,
+        )
+        for r in rows
+    ]

@@ -1,70 +1,101 @@
-from fastapi import APIRouter, Query
-from server.database import get_connection
-from server.models import SleepSessionOut, SleepBulkIn
+from datetime import date, datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from server.database import get_session
+from server.db.models import SleepSession, SleepStage
+from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
 
 router = APIRouter(prefix="/api/sleep", tags=["sleep"])
 
 
+def _parse_day(s: str) -> date:
+    return datetime.fromisoformat(s).date()
+
+
 @router.post("", status_code=201)
-def create_sleep_sessions(body: SleepBulkIn) -> dict:
-    conn = get_connection()
-    conn.execute("PRAGMA foreign_keys = ON")
+def create_sleep_sessions(body: SleepBulkIn, db: Session = Depends(get_session)) -> dict:
     inserted = 0
     skipped = 0
     for s in body.sessions:
-        cursor = conn.execute(
-            "INSERT OR IGNORE INTO sleep_sessions (sleep_start, sleep_end) VALUES (?, ?)",
-            (s.sleep_start.isoformat(), s.sleep_end.isoformat()),
-        )
-        if cursor.rowcount == 0:
+        existing = db.execute(
+            select(SleepSession).where(
+                SleepSession.sleep_start == s.sleep_start,
+                SleepSession.sleep_end == s.sleep_end,
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
             skipped += 1
             continue
-        session_id = cursor.lastrowid
-        inserted += 1
+        new_session = SleepSession(sleep_start=s.sleep_start, sleep_end=s.sleep_end)
+        db.add(new_session)
+        db.flush()
         if s.stages:
             for st in s.stages:
-                conn.execute(
-                    "INSERT INTO sleep_stages (session_id, stage_type, stage_start, stage_end) VALUES (?, ?, ?, ?)",
-                    (session_id, st.stage_type, st.stage_start.isoformat(), st.stage_end.isoformat()),
+                db.add(
+                    SleepStage(
+                        session_id=new_session.id,
+                        stage_type=st.stage_type,
+                        stage_start=st.stage_start,
+                        stage_end=st.stage_end,
+                    )
                 )
-    conn.commit()
-    conn.close()
+        inserted += 1
+    db.commit()
     return {"inserted": inserted, "skipped": skipped}
+
+
+def _to_iso(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _serialize(session: SleepSession, include_stages: bool) -> SleepSessionOut:
+    out = SleepSessionOut(
+        id=str(session.id),
+        sleep_start=_to_iso(session.sleep_start),
+        sleep_end=_to_iso(session.sleep_end),
+        created_at=_to_iso(session.created_at) if session.created_at else None,
+    )
+    if include_stages:
+        out.stages = [
+            SleepStageOut(
+                id=str(st.id),
+                session_id=str(st.session_id),
+                stage_type=st.stage_type,
+                stage_start=_to_iso(st.stage_start),
+                stage_end=_to_iso(st.stage_end),
+            )
+            for st in session.stages
+        ]
+    return out
 
 
 @router.get("")
 def get_sleep_sessions(
-    from_date: str = Query(None, alias="from"),
-    to_date: str = Query(None, alias="to"),
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
     include_stages: bool = Query(False),
+    db: Session = Depends(get_session),
 ) -> list[SleepSessionOut]:
-    conn = get_connection()
-    query = "SELECT id, sleep_start, sleep_end, created_at FROM sleep_sessions"
-    params: list[str] = []
+    stmt = select(SleepSession)
+    if include_stages:
+        stmt = stmt.options(selectinload(SleepSession.stages))
 
-    if from_date and to_date:
-        query += " WHERE sleep_start >= ? AND sleep_start < date(?, '+1 day')"
-        params = [from_date, to_date]
-    elif from_date:
-        query += " WHERE sleep_start >= ?"
-        params = [from_date]
-    elif to_date:
-        query += " WHERE sleep_start < date(?, '+1 day')"
-        params = [to_date]
+    if from_date:
+        d_from = _parse_day(from_date)
+        start_dt = datetime.combine(d_from, datetime.min.time(), tzinfo=timezone.utc)
+        stmt = stmt.where(SleepSession.sleep_start >= start_dt)
+    if to_date:
+        d_to = _parse_day(to_date) + timedelta(days=1)
+        end_dt = datetime.combine(d_to, datetime.min.time(), tzinfo=timezone.utc)
+        stmt = stmt.where(SleepSession.sleep_start < end_dt)
 
-    query += " ORDER BY sleep_start"
-    rows = conn.execute(query, params).fetchall()
-
-    sessions = []
-    for r in rows:
-        data = dict(r)
-        if include_stages:
-            stage_rows = conn.execute(
-                "SELECT id, session_id, stage_type, stage_start, stage_end FROM sleep_stages WHERE session_id = ?",
-                (r["id"],),
-            ).fetchall()
-            data["stages"] = [dict(sr) for sr in stage_rows]
-        sessions.append(SleepSessionOut(**data))
-
-    conn.close()
-    return sessions
+    stmt = stmt.order_by(SleepSession.sleep_start)
+    sessions = db.execute(stmt).scalars().all()
+    return [_serialize(s, include_stages) for s in sessions]

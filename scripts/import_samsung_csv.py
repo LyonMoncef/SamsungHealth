@@ -1,6 +1,12 @@
 """
-Import Samsung Health CSV export into health.db.
-Idempotent — uses INSERT OR IGNORE / upsert throughout.
+Import Samsung Health CSV export — LEGACY SQLite version.
+
+⚠️ V2.1.1 cutover : ce script utilise encore SQLite + INSERT OR IGNORE
+(le server tourne en Postgres + SQLAlchemy depuis V2.1.1). Refonte vers
+SQLAlchemy + ON CONFLICT DO NOTHING tracée dans la spec V2.1.2.
+
+En attendant la refonte, ce script crée un fichier health.db local autonome
+(non partagé avec le serveur) pour permettre les imports CSV ad-hoc.
 
 Usage:
     python3 scripts/import_samsung_csv.py [export_dir]
@@ -9,13 +15,31 @@ Default export_dir: /mnt/c/Users/idsmf/Desktop/SamsungHealth
 """
 
 import csv
+import sqlite3
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from server.database import DB_PATH, init_db, get_connection
+
+# Standalone SQLite — pas de dépendance à server/database.py (qui est PG-only depuis V2.1.1)
+DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+
+
+def get_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+
+def init_db():
+    """No-op — schema géré par Alembic côté serveur. À refondre en spec V2.1.2."""
+    raise SystemExit(
+        "❌ scripts/import_samsung_csv.py est en attente de refonte V2.1.2 (migration SQLAlchemy/PG). "
+        "Pour réimporter ton CSV, attends la spec 2026-04-XX-v2-csv-import-sqlalchemy."
+    )
 
 EXPORT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/mnt/c/Users/idsmf/Desktop/SamsungHealth")
 
