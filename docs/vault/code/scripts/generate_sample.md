@@ -2,24 +2,25 @@
 type: code-source
 language: python
 file_path: scripts/generate_sample.py
-git_blob: 81c06d07ab4efc8f5f37c62359a14453977ecb01
-last_synced: '2026-04-24T02:34:57Z'
-loc: 247
+git_blob: 7269e02d41926d3b2f101a7175d29f6d16d26543
+last_synced: '2026-04-24T03:01:13Z'
+loc: 225
 annotations: []
 imports:
 - random
-- sqlite3
 - sys
 - datetime
 - pathlib
+- sqlalchemy.dialects.postgresql
+- sqlalchemy.orm
+- server.database
+- server.db.models
 exports:
-- get_connection
-- init_db
 - generate_stages
-- generate_steps
-- generate_heart_rate
-- generate_exercise
-- generate
+- _upsert_steps
+- _upsert_heart_rate
+- _upsert_exercise
+- main
 tags:
 - code
 - python
@@ -35,104 +36,64 @@ coverage_pct: 0.0
 
 ```python
 #!/usr/bin/env python3
-"""Generate ~30 days of realistic sample health data.
-
-⚠️ V2.1.1 cutover : ce script utilise encore SQLite (sera refondu en SQLAlchemy/PG via spec V2.1.2).
-"""
+"""Generate ~30 days of realistic sample health data into Postgres (V2.1.2 SQLAlchemy)."""
 
 import random
-import sqlite3
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
 
-# Standalone SQLite — pas de dépendance à server/database.py (PG-only depuis V2.1.1)
-DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
-
-
-def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    raise SystemExit(
-        "❌ scripts/generate_sample.py est en attente de refonte V2.1.2. Utilise `make db-up && make db-migrate` "
-        "puis insert via SQLAlchemy depuis un REPL Python en attendant."
-    )
+from server.database import get_session
+from server.db.models import (
+    ExerciseSession,
+    HeartRateHourly,
+    SleepSession,
+    SleepStage,
+    StepsHourly,
+)
 
 
 STAGE_TYPES = ["light", "deep", "rem", "awake"]
-
 EXERCISE_TYPES = ["running", "walking", "cycling", "swimming", "hiking", "yoga", "strength_training"]
 
 
 def generate_stages(sleep_start: datetime, sleep_end: datetime) -> list[dict]:
-    """Generate realistic sleep stage cycles.
-
-    A typical night cycles through: light -> deep -> light -> REM,
-    with brief awake periods between cycles. Each cycle ~90 minutes.
-    """
+    """Generate realistic sleep stage cycles (~90 min each : light → deep → light → REM, occasional awake)."""
     stages = []
     cursor = sleep_start
     total_duration = (sleep_end - sleep_start).total_seconds()
-    cycle_count = max(1, int(total_duration / 5400))  # ~90min cycles
+    cycle_count = max(1, int(total_duration / 5400))
 
     for cycle in range(cycle_count):
         if cursor >= sleep_end:
             break
-
-        # Light sleep: 10-25 min
-        duration = random.randint(10, 25)
-        end = min(cursor + timedelta(minutes=duration), sleep_end)
-        stages.append({"stage_type": "light", "start": cursor, "end": end})
-        cursor = end
-        if cursor >= sleep_end:
-            break
-
-        # Deep sleep: 15-40 min (more in early cycles)
-        deep_max = 40 if cycle < 2 else 20
-        duration = random.randint(15, deep_max)
-        end = min(cursor + timedelta(minutes=duration), sleep_end)
-        stages.append({"stage_type": "deep", "start": cursor, "end": end})
-        cursor = end
-        if cursor >= sleep_end:
-            break
-
-        # Light sleep again: 5-15 min
-        duration = random.randint(5, 15)
-        end = min(cursor + timedelta(minutes=duration), sleep_end)
-        stages.append({"stage_type": "light", "start": cursor, "end": end})
-        cursor = end
-        if cursor >= sleep_end:
-            break
-
-        # REM: 10-30 min (longer in later cycles)
-        rem_min = 10 if cycle < 2 else 20
-        rem_max = 20 if cycle < 2 else 35
-        duration = random.randint(rem_min, rem_max)
-        end = min(cursor + timedelta(minutes=duration), sleep_end)
-        stages.append({"stage_type": "rem", "start": cursor, "end": end})
-        cursor = end
-        if cursor >= sleep_end:
-            break
-
-        # Brief awake between cycles: 1-5 min (not always)
-        if random.random() < 0.3:
+        for stage_type, dmin, dmax in (
+            ("light", 10, 25),
+            ("deep", 15, 40 if cycle < 2 else 20),
+            ("light", 5, 15),
+            ("rem", 10 if cycle < 2 else 20, 20 if cycle < 2 else 35),
+        ):
+            if cursor >= sleep_end:
+                break
+            duration = random.randint(dmin, dmax)
+            end = min(cursor + timedelta(minutes=duration), sleep_end)
+            stages.append({"stage_type": stage_type, "start": cursor, "end": end})
+            cursor = end
+        if cursor < sleep_end and random.random() < 0.3:
             duration = random.randint(1, 5)
             end = min(cursor + timedelta(minutes=duration), sleep_end)
             stages.append({"stage_type": "awake", "start": cursor, "end": end})
             cursor = end
-
     return stages
 
 
-def generate_steps(conn, base_date: datetime, num_days: int):
-    """Generate hourly step data for num_days. Low at night, peak midday."""
+def _upsert_steps(db: Session, base_date: datetime, num_days: int) -> int:  # base_date timezone-aware
+    inserted = 0
     for day_offset in range(num_days):
         date = base_date + timedelta(days=day_offset)
         date_str = date.strftime("%Y-%m-%d")
@@ -151,44 +112,55 @@ def generate_steps(conn, base_date: datetime, num_days: int):
                 steps = random.randint(200, 600)
             else:
                 steps = random.randint(20, 150)
-            conn.execute(
-                "INSERT OR IGNORE INTO steps_hourly (date, hour, step_count) VALUES (?, ?, ?)",
-                (date_str, hour, steps),
+            stmt = (
+                pg_insert(StepsHourly)
+                .values(date=date_str, hour=hour, step_count=steps)
+                .on_conflict_do_nothing(index_elements=["date", "hour"])
+                .returning(StepsHourly.id)
             )
+            if db.execute(stmt).first() is not None:
+                inserted += 1
+    return inserted
 
 
-def generate_heart_rate(conn, base_date: datetime, num_days: int):
-    """Generate hourly heart rate data. Lower at night, higher during day."""
+def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
+    inserted = 0
     for day_offset in range(num_days):
         date = base_date + timedelta(days=day_offset)
         date_str = date.strftime("%Y-%m-%d")
         for hour in range(24):
             if hour < 6:
-                avg = random.randint(55, 65)
-                spread = random.randint(3, 8)
+                avg, spread = random.randint(55, 65), random.randint(3, 8)
             elif hour < 9:
-                avg = random.randint(65, 80)
-                spread = random.randint(5, 15)
+                avg, spread = random.randint(65, 80), random.randint(5, 15)
             elif hour < 18:
-                avg = random.randint(72, 95)
-                spread = random.randint(8, 25)
+                avg, spread = random.randint(72, 95), random.randint(8, 25)
             elif hour < 22:
-                avg = random.randint(65, 82)
-                spread = random.randint(5, 15)
+                avg, spread = random.randint(65, 82), random.randint(5, 15)
             else:
-                avg = random.randint(58, 70)
-                spread = random.randint(3, 10)
+                avg, spread = random.randint(58, 70), random.randint(3, 10)
             min_bpm = max(40, avg - spread)
             max_bpm = min(180, avg + spread)
-            sample_count = random.randint(5, 30)
-            conn.execute(
-                "INSERT OR IGNORE INTO heart_rate_hourly (date, hour, min_bpm, max_bpm, avg_bpm, sample_count) VALUES (?, ?, ?, ?, ?, ?)",
-                (date_str, hour, min_bpm, max_bpm, avg, sample_count),
+            stmt = (
+                pg_insert(HeartRateHourly)
+                .values(
+                    date=date_str,
+                    hour=hour,
+                    min_bpm=min_bpm,
+                    max_bpm=max_bpm,
+                    avg_bpm=avg,
+                    sample_count=random.randint(5, 30),
+                )
+                .on_conflict_do_nothing(index_elements=["date", "hour"])
+                .returning(HeartRateHourly.id)
             )
+            if db.execute(stmt).first() is not None:
+                inserted += 1
+    return inserted
 
 
-def generate_exercise(conn, base_date: datetime, num_days: int):
-    """Generate 10-15 exercise sessions spread across num_days."""
+def _upsert_exercise(db: Session, base_date: datetime, num_days: int) -> int:
+    inserted = 0
     num_sessions = random.randint(10, 15)
     used_days = random.sample(range(num_days), min(num_sessions, num_days))
     for day_offset in used_days:
@@ -199,115 +171,124 @@ def generate_exercise(conn, base_date: datetime, num_days: int):
         duration = random.randint(20, 90)
         ex_start = date.replace(hour=start_hour, minute=start_minute, second=0)
         ex_end = ex_start + timedelta(minutes=duration)
-        conn.execute(
-            "INSERT OR IGNORE INTO exercise_sessions (exercise_type, exercise_start, exercise_end, duration_minutes) VALUES (?, ?, ?, ?)",
-            (ex_type, ex_start.isoformat(), ex_end.isoformat(), duration),
+        stmt = (
+            pg_insert(ExerciseSession)
+            .values(
+                exercise_type=ex_type,
+                exercise_start=ex_start,
+                exercise_end=ex_end,
+                duration_minutes=float(duration),
+            )
+            .on_conflict_do_nothing(index_elements=["exercise_start", "exercise_end"])
+            .returning(ExerciseSession.id)
         )
+        if db.execute(stmt).first() is not None:
+            inserted += 1
+    return inserted
 
 
-def generate():
-    init_db()
-    conn = get_connection()
-    conn.execute("PRAGMA foreign_keys = ON")
-
-    conn.execute("DELETE FROM sleep_stages")
-    conn.execute("DELETE FROM sleep_sessions")
-    conn.execute("DELETE FROM steps_hourly")
-    conn.execute("DELETE FROM heart_rate_hourly")
-    conn.execute("DELETE FROM exercise_sessions")
-
-    base_date = datetime(2026, 1, 15)
+def main():
+    # Seed déterministe : permet l'idempotence (2 runs = mêmes timestamps → ON CONFLICT skip)
+    random.seed(42)
+    db = get_session()
+    base_date = datetime(2026, 1, 15, tzinfo=timezone.utc)
     num_days = 30
 
-    # Sleep data
+    # Phase 1 : générer TOUS les (sleep_session, stages[]) en mémoire.
+    # Consommer le random linéairement, indépendamment de l'état DB → idempotence garantie.
+    sleep_plan: list[tuple[datetime, datetime, list[dict]]] = []
     for day_offset in range(num_days):
         date = base_date + timedelta(days=day_offset)
-
-        # Bedtime: 22:00–01:00 (next day)
         bed_hour = random.choice([22, 23, 0, 1])
         bed_minute = random.randint(0, 59)
         if bed_hour >= 22:
             sleep_start = date.replace(hour=bed_hour, minute=bed_minute, second=0)
         else:
-            sleep_start = (date + timedelta(days=1)).replace(
-                hour=bed_hour, minute=bed_minute, second=0
-            )
-
-        # Wake time: 6:00–9:00
+            sleep_start = (date + timedelta(days=1)).replace(hour=bed_hour, minute=bed_minute, second=0)
         wake_hour = random.randint(6, 8)
         wake_minute = random.randint(0, 59)
-        sleep_end = (sleep_start + timedelta(days=1)).replace(
-            hour=wake_hour, minute=wake_minute, second=0
-        ) if bed_hour >= 22 else sleep_start.replace(
-            hour=wake_hour, minute=wake_minute, second=0
+        sleep_end = (
+            (sleep_start + timedelta(days=1)).replace(hour=wake_hour, minute=wake_minute, second=0)
+            if bed_hour >= 22
+            else sleep_start.replace(hour=wake_hour, minute=wake_minute, second=0)
         )
-
-        # Ensure end is after start
         if sleep_end <= sleep_start:
             sleep_end += timedelta(days=1)
+        stages = generate_stages(sleep_start, sleep_end)  # consomme random même si la session sera skippée
+        sleep_plan.append((sleep_start, sleep_end, stages))
 
-        cursor = conn.execute(
-            "INSERT INTO sleep_sessions (sleep_start, sleep_end) VALUES (?, ?)",
-            (sleep_start.isoformat(), sleep_end.isoformat()),
+    # Phase 2 : insert via ON CONFLICT DO NOTHING (idempotent vs DB)
+    from server.db.uuid7 import uuid7
+    sleep_inserted = 0
+    for sleep_start, sleep_end, stages in sleep_plan:
+        new_uuid = uuid7()
+        stmt = (
+            pg_insert(SleepSession)
+            .values(id=new_uuid, sleep_start=sleep_start, sleep_end=sleep_end)
+            .on_conflict_do_nothing(index_elements=["sleep_start", "sleep_end"])
+            .returning(SleepSession.id)
         )
-        session_id = cursor.lastrowid
-
-        stages = generate_stages(sleep_start, sleep_end)
+        result = db.execute(stmt).first()
+        if result is None:
+            continue
+        session_id = result[0]
+        sleep_inserted += 1
         for st in stages:
-            conn.execute(
-                "INSERT INTO sleep_stages (session_id, stage_type, stage_start, stage_end) VALUES (?, ?, ?, ?)",
-                (session_id, st["stage_type"], st["start"].isoformat(), st["end"].isoformat()),
+            stage_stmt = (
+                pg_insert(SleepStage)
+                .values(
+                    session_id=session_id,
+                    stage_type=st["stage_type"],
+                    stage_start=st["start"],
+                    stage_end=st["end"],
+                )
+                .on_conflict_do_nothing(index_elements=["stage_start", "stage_end"])
             )
+            db.execute(stage_stmt)
 
-    # Steps, heart rate, exercise
-    generate_steps(conn, base_date, num_days)
-    generate_heart_rate(conn, base_date, num_days)
-    generate_exercise(conn, base_date, num_days)
+    steps_inserted = _upsert_steps(db, base_date, num_days)
+    hr_inserted = _upsert_heart_rate(db, base_date, num_days)
+    ex_inserted = _upsert_exercise(db, base_date, num_days)
+    db.commit()
 
-    conn.commit()
-
-    session_count = conn.execute("SELECT COUNT(*) FROM sleep_sessions").fetchone()[0]
-    stage_count = conn.execute("SELECT COUNT(*) FROM sleep_stages").fetchone()[0]
-    step_count = conn.execute("SELECT COUNT(*) FROM steps_hourly").fetchone()[0]
-    hr_count = conn.execute("SELECT COUNT(*) FROM heart_rate_hourly").fetchone()[0]
-    ex_count = conn.execute("SELECT COUNT(*) FROM exercise_sessions").fetchone()[0]
-    conn.close()
-    print("Inserted into health.db:")
-    print(f"  {session_count} sleep sessions with {stage_count} stages")
-    print(f"  {step_count} steps_hourly records")
-    print(f"  {hr_count} heart_rate_hourly records")
-    print(f"  {ex_count} exercise sessions")
+    print("Inserted into Postgres :")
+    print(f"  {sleep_inserted} sleep sessions (avec stages)")
+    print(f"  {steps_inserted} steps_hourly records")
+    print(f"  {hr_inserted} heart_rate_hourly records")
+    print(f"  {ex_inserted} exercise sessions")
 
 
 if __name__ == "__main__":
-    generate()
+    main()
 ```
 
 ---
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-24-v2-csv-import-sqlalchemy]] — symbols: `main`, `generate_sleep_sessions`, `generate_steps_hourly`, `generate_heart_rate_hourly`, `generate_exercise_sessions`
+
 ### Symbols
-- `get_connection` (function) — lines 20-23
-- `init_db` (function) — lines 26-30
-- `generate_stages` (function) — lines 38-95 · ⚠️ no test
-- `generate_steps` (function) — lines 98-121 · ⚠️ no test
-- `generate_heart_rate` (function) — lines 124-151 · ⚠️ no test
-- `generate_exercise` (function) — lines 154-169 · ⚠️ no test
-- `generate` (function) — lines 172-243 · ⚠️ no test
+- `generate_stages` (function) — lines 28-55 · ⚠️ no test
+- `_upsert_steps` (function) — lines 58-86
+- `_upsert_heart_rate` (function) — lines 89-122
+- `_upsert_exercise` (function) — lines 125-150
+- `main` (function) — lines 153-221 · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
 
 ### Imports
 - `random`
-- `sqlite3`
 - `sys`
 - `datetime`
 - `pathlib`
+- `sqlalchemy.dialects.postgresql`
+- `sqlalchemy.orm`
+- `server.database`
+- `server.db.models`
 
 ### Exports
-- `get_connection`
-- `init_db`
 - `generate_stages`
-- `generate_steps`
-- `generate_heart_rate`
-- `generate_exercise`
-- `generate`
+- `_upsert_steps`
+- `_upsert_heart_rate`
+- `_upsert_exercise`
+- `main`
