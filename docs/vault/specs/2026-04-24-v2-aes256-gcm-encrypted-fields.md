@@ -2,9 +2,9 @@
 type: spec
 title: "V2.2 — Chiffrement AES-256-GCM at-rest (fondation + table pilote mood)"
 slug: 2026-04-24-v2-aes256-gcm-encrypted-fields
-status: ready
+status: delivered
 created: 2026-04-24
-delivered: null
+delivered: 2026-04-24
 priority: high
 related_plans:
   - 2026-04-23-plan-v2-refactor-master
