@@ -17,20 +17,7 @@ from datetime import datetime, timezone
 import pytest
 
 
-def _alembic_upgrade(pg_url: str):
-    env = os.environ.copy()
-    env["DATABASE_URL"] = pg_url
-    result = subprocess.run(
-        ["alembic", "upgrade", "head"],
-        capture_output=True, text=True, env=env, check=False,
-    )
-    assert result.returncode == 0, f"alembic upgrade head a échoué : {result.stderr}"
-
-
-@pytest.fixture
-def schema_ready(pg_url):
-    _alembic_upgrade(pg_url)
-    yield pg_url
+# schema_ready vit dans tests/server/conftest.py
 
 
 class TestSleepSessionPersistence:
@@ -103,16 +90,13 @@ class TestSleepSessionPersistence:
 
 
 class TestApiBackCompat:
-    def test_get_sleep_response_shape_unchanged(self, schema_ready, db_session):
+    def test_get_sleep_response_shape_unchanged(self, schema_ready, client_pg, db_session):
         # spec V2.1.1 — §Tests d'acceptation #1 : back-compat shape JSON sur params réels Nightfall
         # Le frontend appelle GET /api/sleep?from=YYYY-MM-DD&to=YYYY-MM-DD&include_stages=true
         # (params adaptés depuis l'ancien `period=6m` qui n'existait pas dans le frontend réel)
         from datetime import date, timedelta
 
-        from fastapi.testclient import TestClient
-
         from server.db.models import SleepSession, SleepStage
-        from server.main import app
 
         d_start = date.today() - timedelta(days=2)
         base = datetime.combine(d_start, datetime.min.time(), tzinfo=timezone.utc)
@@ -132,15 +116,14 @@ class TestApiBackCompat:
         )
         db_session.commit()
 
-        with TestClient(app) as client:
-            resp = client.get(
-                "/api/sleep",
-                params={
-                    "from": d_start.isoformat(),
-                    "to": (d_start + timedelta(days=1)).isoformat(),
-                    "include_stages": "true",
-                },
-            )
+        resp = client_pg.get(
+            "/api/sleep",
+            params={
+                "from": d_start.isoformat(),
+                "to": (d_start + timedelta(days=1)).isoformat(),
+                "include_stages": "true",
+            },
+        )
 
         assert resp.status_code == 200, f"Status {resp.status_code} : {resp.text}"
         payload = resp.json()

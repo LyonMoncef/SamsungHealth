@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_routers_cutover.py
-git_blob: 885998c5e3085216aaa1590c8e619e2b3ada79fa
-last_synced: '2026-04-24T02:17:41Z'
-loc: 166
+git_blob: 338c7bc35c84df535b24523adf37335f5e119ec0
+last_synced: '2026-04-24T02:26:12Z'
+loc: 131
 annotations: []
 imports:
 - re
@@ -47,49 +47,12 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.fixture
-def schema_ready(pg_url):
-    import os
-    env = os.environ.copy()
-    env["DATABASE_URL"] = pg_url
-    res = subprocess.run(
-        ["alembic", "upgrade", "head"],
-        capture_output=True, text=True, env=env, check=False,
-    )
-    assert res.returncode == 0, f"alembic upgrade head échoué : {res.stderr}"
-    yield pg_url
-
-
-@pytest.fixture
-def client_pg(schema_ready, pg_url):
-    """TestClient avec dependency_override sur get_session vers le testcontainer PG."""
-    from fastapi.testclient import TestClient
-
-    from server.database import get_session
-    from server.main import app
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    engine = create_engine(pg_url, future=True)
-    SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
-
-    def _override():
-        sess = SessionLocal()
-        try:
-            yield sess
-        finally:
-            sess.close()
-
-    app.dependency_overrides[get_session] = _override
-    with TestClient(app) as client:
-        yield client
-    app.dependency_overrides.clear()
-    engine.dispose()
+# schema_ready + client_pg_ready vivent dans tests/server/conftest.py
 
 
 class TestHeartRateRouter:
-    def test_post_get_heart_rate_round_trip(self, client_pg, db_session):
+    def test_post_get_heart_rate_round_trip(self, client_pg_ready, db_session):
+        client_pg = client_pg_ready
         # spec V2.1.1 §Tests d'acceptation #2
         from sqlalchemy import select
         from server.db.models import HeartRateHourly
@@ -116,7 +79,8 @@ class TestHeartRateRouter:
 
 
 class TestStepsRouter:
-    def test_post_get_steps_round_trip(self, client_pg, db_session):
+    def test_post_get_steps_round_trip(self, client_pg_ready, db_session):
+        client_pg = client_pg_ready
         # spec V2.1.1 §Tests d'acceptation #3
         from sqlalchemy import select
         from server.db.models import StepsHourly
@@ -142,7 +106,8 @@ class TestStepsRouter:
 
 
 class TestExerciseRouter:
-    def test_post_get_exercise_round_trip(self, client_pg, db_session):
+    def test_post_get_exercise_round_trip(self, client_pg_ready, db_session):
+        client_pg = client_pg_ready
         # spec V2.1.1 §Tests d'acceptation #4
         from sqlalchemy import select
         from server.db.models import ExerciseSession
@@ -203,10 +168,10 @@ class TestNoSqliteResidual:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `TestHeartRateRouter` (class) — lines 59-83
-- `TestStepsRouter` (class) — lines 86-109
-- `TestExerciseRouter` (class) — lines 112-144
-- `TestNoSqliteResidual` (class) — lines 147-166
+- `TestHeartRateRouter` (class) — lines 21-46
+- `TestStepsRouter` (class) — lines 49-73
+- `TestExerciseRouter` (class) — lines 76-109
+- `TestNoSqliteResidual` (class) — lines 112-131
 
 ### Imports
 - `re`

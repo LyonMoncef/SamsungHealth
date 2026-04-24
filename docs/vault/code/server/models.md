@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: server/models.py
-git_blob: 5706f27c34bd6e78819147bc5227fa99fdc383b2
-last_synced: '2026-04-23T10:49:30Z'
+git_blob: 822915afbdb1c7e02abc50c971bad695bd5c6466
+last_synced: '2026-04-24T02:26:12Z'
 loc: 90
 annotations: []
 imports:
@@ -49,8 +49,8 @@ class SleepStageIn(BaseModel):
 
 
 class SleepStageOut(BaseModel):
-    id: int
-    session_id: int
+    id: str
+    session_id: str
     stage_type: str
     stage_start: str
     stage_end: str
@@ -63,10 +63,10 @@ class SleepSessionIn(BaseModel):
 
 
 class SleepSessionOut(BaseModel):
-    id: int
+    id: str
     sleep_start: str
     sleep_end: str
-    created_at: str
+    created_at: str | None = None
     stages: list[SleepStageOut] | None = None
 
 
@@ -134,11 +134,14 @@ class ExerciseBulkIn(BaseModel):
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `SleepSessionOut`, `SleepStageOut`
+
 ### Symbols
 - `SleepStageIn` (class) — lines 5-8
-- `SleepStageOut` (class) — lines 11-16
+- `SleepStageOut` (class) — lines 11-16 · **Specs**: [[../../specs/2026-04-24-v2-postgres-routers-cutover|2026-04-24-v2-postgres-routers-cutover]]
 - `SleepSessionIn` (class) — lines 19-22
-- `SleepSessionOut` (class) — lines 25-30
+- `SleepSessionOut` (class) — lines 25-30 · **Specs**: [[../../specs/2026-04-24-v2-postgres-routers-cutover|2026-04-24-v2-postgres-routers-cutover]]
 - `SleepBulkIn` (class) — lines 33-34
 - `StepsHourlyIn` (class) — lines 37-40
 - `StepsHourlyOut` (class) — lines 43-46

@@ -9,8 +9,8 @@ class SleepStageIn(BaseModel):
 
 
 class SleepStageOut(BaseModel):
-    id: int
-    session_id: int
+    id: str
+    session_id: str
     stage_type: str
     stage_start: str
     stage_end: str
@@ -23,10 +23,10 @@ class SleepSessionIn(BaseModel):
 
 
 class SleepSessionOut(BaseModel):
-    id: int
+    id: str
     sleep_start: str
     sleep_end: str
-    created_at: str
+    created_at: str | None = None
     stages: list[SleepStageOut] | None = None
 
 
