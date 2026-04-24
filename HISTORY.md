@@ -53,6 +53,29 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 V2.1.2 — refonte scripts CSV import + sample generator vers SQLAlchemy/PG
+
+`cf78667` spec V2.1.2 (4 tests d'acceptation, 21 importers à migrer).
+
+`033515c` test(v2.1.2): 4 tests RED — `TestImportSamsungCsv` (round-trip + idempotent) + `TestGenerateSample` (30d + idempotent).
+
+`898eab7` feat(v2.1.2): refactor `scripts/generate_sample.py` vers SQLAlchemy/PG → 2/4 GREEN.
+- Pattern décisif pour l'idempotence : `random.seed(42)` au top de `main()` + **séparation génération vs insertion** (Phase 1 = sleep_plan en mémoire consomme tout le random linéairement, Phase 2 = pg_insert ON CONFLICT DO NOTHING). Sans ça, le `continue` après ON CONFLICT skippe `generate_stages` au 2e run → random consommé différemment → jours suivants divergent → 30 → 59 sessions
+- Use `pg_insert(...).on_conflict_do_nothing(index_elements=...).returning(<PK>)` partout (steps_hourly, heart_rate_hourly, exercise_sessions, sleep_sessions, sleep_stages)
+- `base_date` passé en `datetime(..., tzinfo=timezone.utc)` pour matcher PG `DateTime(timezone=True)` exactement entre runs
+- Suppression complète SQLite (`sqlite3`, `DB_PATH`, `init_db()`, `get_connection()` inlinés)
+
+`cc468d1` feat(v2.1.2): refactor `scripts/import_samsung_csv.py` vers SQLAlchemy/PG → 4/4 GREEN.
+- **21 importers** migrés de `INSERT OR IGNORE` SQLite vers `pg_insert(Model).on_conflict_do_nothing(index_elements=...).returning(Model.id)`
+- Helper unique `_upsert(db, model, values, conflict_cols) -> bool` au top du module — élimine la duplication 21×
+- `parse_dt()` retourne maintenant `datetime` aware UTC (au lieu de string ISO) — préserve les égalités ON CONFLICT pour les colonnes `DateTime(timezone=True)`
+- Helper `parse_day()` factorise les conversions `day_time` → `YYYY-MM-DD` string (cas `parse_dt` + `ms_to_date_str` selon source CSV)
+- `import_sleep_stages` utilise `select(SleepSession.id, SleepSession.sleep_start, SleepSession.sleep_end)` au lieu d'un `SELECT *` (~10× plus rapide sur 30k+ sleep sessions)
+- `main()` utilise `get_session()`, suppression de `init_db()`/`get_connection()` (Alembic gère le schema)
+- README mis à jour : Components table → "Done (SQLAlchemy depuis V2.1.2)" pour `generate_sample` et `import_samsung_csv`
+- Spec V2.1.2 → `delivered: 2026-04-24`
+- **Suite globale : 207/207 tests GREEN** (203 + 4 V2.1.2)
+
 ### 2026-04-24 `1483873` (V2.1.1 cleanup final)
 feat(v2.1.1): cleanup SQLite — purge legacy, scripts isolés, README PG, V2.1 delivered
 - `server/database.py` : purge complète (`sqlite3`, `DB_PATH`, `_add_col`, `init_db`, `get_connection` supprimés). Garde `get_engine`/`get_session`/`SessionLocal`/`_DEFAULT_PG_URL`

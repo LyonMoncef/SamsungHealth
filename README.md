@@ -37,7 +37,8 @@ Samsung Health → Health Connect ← Android App →HTTP→ FastAPI + SQLAlchem
 | Database | Postgres 16 (Alembic-managed, UUID v7 PK) | Done (V2.1) |
 | Web dashboard | HTML/CSS/JS (5 tabs) | Done |
 | Android app | Kotlin, Jetpack Compose, Health Connect | Done |
-| Sample data generator | Python | ⚠ Refonte SQLAlchemy en attente (spec V2.1.2) |
+| Sample data generator | Python (SQLAlchemy depuis V2.1.2) | Done |
+| CSV import (Samsung Health export) | Python (SQLAlchemy + ON CONFLICT depuis V2.1.2) | Done |
 
 ## Setup
 

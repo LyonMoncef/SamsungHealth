@@ -2,28 +2,32 @@
 type: code-source
 language: python
 file_path: scripts/import_samsung_csv.py
-git_blob: 37258c948f8e5d046482956770a391e0078fe8bf
-last_synced: '2026-04-24T02:34:57Z'
-loc: 714
+git_blob: bafabbf2a8bc941be73e8a31a12cad0b9615c301
+last_synced: '2026-04-24T03:05:51Z'
+loc: 661
 annotations: []
 imports:
 - csv
-- sqlite3
 - sys
 - collections
 - datetime
 - pathlib
+- sqlalchemy
+- sqlalchemy.dialects.postgresql
+- sqlalchemy.orm
+- server.database
+- server.db.models
 exports:
-- get_connection
-- init_db
 - find_csv
 - read_csv
 - fv
 - parse_dt
-- ms_to_date
+- ms_to_date_str
+- parse_day
 - to_float
 - to_int
 - report
+- _upsert
 - import_sleep
 - import_sleep_stages
 - import_steps_hourly
@@ -61,14 +65,9 @@ coverage_pct: 0.0
 
 ```python
 """
-Import Samsung Health CSV export — LEGACY SQLite version.
+Import Samsung Health CSV export into Postgres (V2.1.2 SQLAlchemy refactor).
 
-⚠️ V2.1.1 cutover : ce script utilise encore SQLite + INSERT OR IGNORE
-(le server tourne en Postgres + SQLAlchemy depuis V2.1.1). Refonte vers
-SQLAlchemy + ON CONFLICT DO NOTHING tracée dans la spec V2.1.2.
-
-En attendant la refonte, ce script crée un fichier health.db local autonome
-(non partagé avec le serveur) pour permettre les imports CSV ad-hoc.
+Idempotent — toutes les insertions utilisent `ON CONFLICT DO NOTHING`.
 
 Usage:
     python3 scripts/import_samsung_csv.py [export_dir]
@@ -77,7 +76,6 @@ Default export_dir: /mnt/c/Users/idsmf/Desktop/SamsungHealth
 """
 
 import csv
-import sqlite3
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -85,23 +83,34 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# Standalone SQLite — pas de dépendance à server/database.py (qui est PG-only depuis V2.1.1)
-DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
 
-
-def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    return conn
-
-
-def init_db():
-    """No-op — schema géré par Alembic côté serveur. À refondre en spec V2.1.2."""
-    raise SystemExit(
-        "❌ scripts/import_samsung_csv.py est en attente de refonte V2.1.2 (migration SQLAlchemy/PG). "
-        "Pour réimporter ton CSV, attends la spec 2026-04-XX-v2-csv-import-sqlalchemy."
-    )
+from server.database import get_session
+from server.db.models import (
+    ActivityDaily,
+    ActivityLevel,
+    BloodPressure,
+    Ecg,
+    ExerciseSession,
+    FloorsDaily,
+    HeartRateHourly,
+    Height,
+    Hrv,
+    Mood,
+    RespiratoryRate,
+    SkinTemperature,
+    SleepSession,
+    SleepStage,
+    Spo2,
+    StepsDaily,
+    StepsHourly,
+    Stress,
+    VitalityScore,
+    WaterIntake,
+    Weight,
+)
 
 EXPORT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/mnt/c/Users/idsmf/Desktop/SamsungHealth")
 
@@ -109,7 +118,8 @@ EXPORT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/mnt/c/Users/idsm
 SLEEP_STAGE_MAP = {40001: "awake", 40002: "light", 40003: "deep", 40004: "rem"}
 
 
-# ── CSV helpers ──────────────────────────────────────────────────────────────
+# ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def find_csv(name_pattern: str) -> Path | None:
     matches = sorted(EXPORT_DIR.glob(f"{name_pattern}.*.csv"))
@@ -117,20 +127,17 @@ def find_csv(name_pattern: str) -> Path | None:
 
 
 def read_csv(name_pattern: str):
-    """Yield DictReader rows, skipping Samsung's metadata line 1."""
     path = find_csv(name_pattern)
     if path is None:
         return
     with open(path, encoding="utf-8-sig", newline="") as f:
-        f.readline()  # skip: "table_name,id,count"
+        f.readline()  # skip Samsung's metadata line 1
         reader = csv.DictReader(f)
         for row in reader:
-            # DictReader puts overflow values (trailing comma) under key None
             yield {k: v for k, v in row.items() if k is not None}
 
 
 def fv(row: dict, *keys, default=None):
-    """Return first non-empty value from the given keys."""
     for k in keys:
         v = row.get(k, "")
         if v not in ("", None):
@@ -138,20 +145,19 @@ def fv(row: dict, *keys, default=None):
     return default
 
 
-def parse_dt(s) -> str | None:
-    """Samsung datetime → ISO 8601 (no ms, no tz suffix)."""
+def parse_dt(s) -> datetime | None:
+    """Samsung datetime string → datetime aware UTC."""
     if not s:
         return None
     for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
         try:
-            return datetime.strptime(s, fmt).strftime("%Y-%m-%dT%H:%M:%S")
+            return datetime.strptime(s, fmt).replace(tzinfo=timezone.utc)
         except ValueError:
             pass
     return None
 
 
-def ms_to_date(ms_str) -> str | None:
-    """Unix ms integer → YYYY-MM-DD (UTC)."""
+def ms_to_date_str(ms_str) -> str | None:
     if ms_str in (None, ""):
         return None
     try:
@@ -159,6 +165,14 @@ def ms_to_date(ms_str) -> str | None:
         return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
     except (ValueError, OSError):
         return None
+
+
+def parse_day(s) -> str | None:
+    """Parse to YYYY-MM-DD string (10 chars) for *_daily tables."""
+    dt = parse_dt(s)
+    if dt is not None:
+        return dt.strftime("%Y-%m-%d")
+    return ms_to_date_str(s)
 
 
 def to_float(s) -> float | None:
@@ -179,63 +193,57 @@ def report(label: str, ins: int, skp: int) -> None:
     print(f"  {label:<35} inserted {ins:>6} | skipped {skp:>6}")
 
 
+def _upsert(db: Session, model, values: dict, conflict_cols: list[str]) -> bool:
+    """Insert via ON CONFLICT DO NOTHING. Returns True si insert effectif, False si skip."""
+    stmt = (
+        pg_insert(model)
+        .values(**values)
+        .on_conflict_do_nothing(index_elements=conflict_cols)
+        .returning(model.id)
+    )
+    return db.execute(stmt).first() is not None
+
+
 # ── importers ────────────────────────────────────────────────────────────────
 
-def import_sleep(conn) -> dict:
-    """
-    Import sleep sessions from com.samsung.shealth.sleep (1242 rows, HC-prefixed columns).
-    Returns HC datauuid → (sleep_start, sleep_end) map for stages FK resolution.
-    sleep_combined only has 155 rows and uses a different UUID namespace.
-    """
+
+def import_sleep(db: Session) -> dict:
+    """Import sleep_sessions, retourne {datauuid: (sleep_start, sleep_end)} pour stages FK."""
     pfx = "com.samsung.health.sleep."
-    uuid_map: dict[str, tuple[str, str]] = {}
+    uuid_map: dict[str, tuple[datetime, datetime]] = {}
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.sleep"):
         start = parse_dt(fv(row, f"{pfx}start_time"))
-        end   = parse_dt(fv(row, f"{pfx}end_time"))
+        end = parse_dt(fv(row, f"{pfx}end_time"))
         if not start or not end:
             continue
         uuid = fv(row, f"{pfx}datauuid")
         if uuid:
             uuid_map[uuid] = (start, end)
-        cur = conn.execute("""
-            INSERT INTO sleep_sessions
-                (sleep_start, sleep_end, sleep_score, efficiency, sleep_duration_min,
-                 sleep_cycle, mental_recovery, physical_recovery, sleep_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(sleep_start, sleep_end) DO UPDATE SET
-                sleep_score        = excluded.sleep_score,
-                efficiency         = excluded.efficiency,
-                sleep_duration_min = excluded.sleep_duration_min,
-                sleep_cycle        = excluded.sleep_cycle,
-                mental_recovery    = excluded.mental_recovery,
-                physical_recovery  = excluded.physical_recovery,
-                sleep_type         = excluded.sleep_type
-        """, (
-            start, end,
-            to_int(fv(row, "sleep_score")),
-            to_float(fv(row, "efficiency")),
-            to_int(fv(row, "sleep_duration")),
-            to_int(fv(row, "sleep_cycle")),
-            to_float(fv(row, "mental_recovery")),
-            to_float(fv(row, "physical_recovery")),
-            to_int(fv(row, "sleep_type")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            sleep_start=start,
+            sleep_end=end,
+            sleep_score=to_int(fv(row, "sleep_score")),
+            efficiency=to_float(fv(row, "efficiency")),
+            sleep_duration_min=to_int(fv(row, "sleep_duration")),
+            sleep_cycle=to_int(fv(row, "sleep_cycle")),
+            mental_recovery=to_float(fv(row, "mental_recovery")),
+            physical_recovery=to_float(fv(row, "physical_recovery")),
+            sleep_type=to_int(fv(row, "sleep_type")),
+        )
+        if _upsert(db, SleepSession, values, ["sleep_start", "sleep_end"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("sleep_sessions", ins, skp)
     return uuid_map
 
 
-def import_sleep_stages(conn, uuid_map: dict) -> None:
-    # Build (start, end) → session_id from the DB
-    session_id_map: dict[tuple, int] = {
-        (r["sleep_start"], r["sleep_end"]): r["id"]
-        for r in conn.execute("SELECT id, sleep_start, sleep_end FROM sleep_sessions")
-    }
+def import_sleep_stages(db: Session, uuid_map: dict) -> None:
+    # Build (start, end) → session_id from PG
+    rows = db.execute(select(SleepSession.id, SleepSession.sleep_start, SleepSession.sleep_end)).all()
+    session_id_map = {(r.sleep_start, r.sleep_end): r.id for r in rows}
 
     ins = skp = 0
     for row in read_csv("com.samsung.health.sleep_stage"):
@@ -251,524 +259,467 @@ def import_sleep_stages(conn, uuid_map: dict) -> None:
         stage_int = to_int(fv(row, "stage"))
         stage_type = SLEEP_STAGE_MAP.get(stage_int, f"unknown_{stage_int}")
         start = parse_dt(fv(row, "start_time"))
-        end   = parse_dt(fv(row, "end_time"))
+        end = parse_dt(fv(row, "end_time"))
         if not start or not end:
             skp += 1
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO sleep_stages (session_id, stage_type, stage_start, stage_end) VALUES (?,?,?,?)",
-            (session_id, stage_type, start, end),
+        values = dict(
+            session_id=session_id,
+            stage_type=stage_type,
+            stage_start=start,
+            stage_end=end,
         )
-        if cur.rowcount:
+        if _upsert(db, SleepStage, values, ["stage_start", "stage_end"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("sleep_stages", ins, skp)
 
 
-def import_steps_hourly(conn) -> None:
+def import_steps_hourly(db: Session) -> None:
     buckets: dict[tuple, int] = defaultdict(int)
     for row in read_csv("com.samsung.shealth.tracker.pedometer_step_count"):
         start = parse_dt(fv(row, "com.samsung.health.step_count.start_time"))
         count = to_int(fv(row, "com.samsung.health.step_count.count"))
         if not start or count is None:
             continue
-        dt = datetime.fromisoformat(start)
-        buckets[(dt.strftime("%Y-%m-%d"), dt.hour)] += count
+        buckets[(start.strftime("%Y-%m-%d"), start.hour)] += count
     ins = skp = 0
     for (date, hour), total in buckets.items():
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO steps_hourly (date, hour, step_count) VALUES (?,?,?)",
-            (date, hour, total),
-        )
-        if cur.rowcount:
+        if _upsert(db, StepsHourly, dict(date=date, hour=hour, step_count=total), ["date", "hour"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("steps_hourly", ins, skp)
 
 
-def import_steps_daily(conn) -> None:
+def import_steps_daily(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.tracker.pedometer_day_summary"):
-        day = ms_to_date(fv(row, "day_time"))
+        day = ms_to_date_str(fv(row, "day_time"))
         if not day:
             continue
-        cur = conn.execute("""
-            INSERT OR IGNORE INTO steps_daily
-                (day_date, step_count, walk_step_count, run_step_count, distance_m, calorie_kcal, active_time_ms)
-            VALUES (?,?,?,?,?,?,?)
-        """, (
-            day,
-            to_int(fv(row, "step_count")),
-            to_int(fv(row, "walk_step_count")),
-            to_int(fv(row, "run_step_count")),
-            to_float(fv(row, "distance")),
-            to_float(fv(row, "calorie")),
-            to_int(fv(row, "active_time")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            day_date=day,
+            step_count=to_int(fv(row, "step_count")),
+            walk_step_count=to_int(fv(row, "walk_step_count")),
+            run_step_count=to_int(fv(row, "run_step_count")),
+            distance_m=to_float(fv(row, "distance")),
+            calorie_kcal=to_float(fv(row, "calorie")),
+            active_time_ms=to_int(fv(row, "active_time")),
+        )
+        if _upsert(db, StepsDaily, values, ["day_date"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("steps_daily", ins, skp)
 
 
-def import_heart_rate_hourly(conn) -> None:
+def import_heart_rate_hourly(db: Session) -> None:
     buckets: dict[tuple, list] = defaultdict(list)
     pfx = "com.samsung.health.heart_rate."
     for row in read_csv("com.samsung.shealth.tracker.heart_rate"):
         start = parse_dt(fv(row, f"{pfx}start_time"))
-        bpm   = to_float(fv(row, f"{pfx}heart_rate"))
+        bpm = to_float(fv(row, f"{pfx}heart_rate"))
         if not start or bpm is None:
             continue
-        dt = datetime.fromisoformat(start)
-        buckets[(dt.strftime("%Y-%m-%d"), dt.hour)].append(bpm)
+        buckets[(start.strftime("%Y-%m-%d"), start.hour)].append(bpm)
     ins = skp = 0
     for (date, hour), bpms in buckets.items():
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO heart_rate_hourly (date, hour, min_bpm, max_bpm, avg_bpm, sample_count) VALUES (?,?,?,?,?,?)",
-            (date, hour, round(min(bpms)), round(max(bpms)), round(sum(bpms) / len(bpms)), len(bpms)),
+        values = dict(
+            date=date,
+            hour=hour,
+            min_bpm=round(min(bpms)),
+            max_bpm=round(max(bpms)),
+            avg_bpm=round(sum(bpms) / len(bpms)),
+            sample_count=len(bpms),
         )
-        if cur.rowcount:
+        if _upsert(db, HeartRateHourly, values, ["date", "hour"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("heart_rate_hourly", ins, skp)
 
 
-def import_exercise(conn) -> None:
+def import_exercise(db: Session) -> None:
     pfx = "com.samsung.health.exercise."
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.exercise"):
-        start    = parse_dt(fv(row, f"{pfx}start_time"))
-        end      = parse_dt(fv(row, f"{pfx}end_time"))
-        ex_type  = fv(row, f"{pfx}exercise_type", default="unknown")
+        start = parse_dt(fv(row, f"{pfx}start_time"))
+        end = parse_dt(fv(row, f"{pfx}end_time"))
+        ex_type = fv(row, f"{pfx}exercise_type", default="unknown")
         duration_ms = to_int(fv(row, f"{pfx}duration"))
         if not start or not end:
             continue
         dur_min = round(duration_ms / 60000, 2) if duration_ms else 0.0
-        cur = conn.execute("""
-            INSERT INTO exercise_sessions
-                (exercise_type, exercise_start, exercise_end, duration_minutes,
-                 calorie_kcal, distance_m, mean_heart_rate, max_heart_rate, min_heart_rate, mean_speed_ms)
-            VALUES (?,?,?,?,?,?,?,?,?,?)
-            ON CONFLICT(exercise_start, exercise_end) DO UPDATE SET
-                calorie_kcal    = excluded.calorie_kcal,
-                distance_m      = excluded.distance_m,
-                mean_heart_rate = excluded.mean_heart_rate,
-                max_heart_rate  = excluded.max_heart_rate,
-                min_heart_rate  = excluded.min_heart_rate,
-                mean_speed_ms   = excluded.mean_speed_ms
-        """, (
-            str(ex_type), start, end, dur_min,
-            to_float(fv(row, f"{pfx}calorie")),
-            to_float(fv(row, f"{pfx}distance")),
-            to_float(fv(row, f"{pfx}mean_heart_rate")),
-            to_float(fv(row, f"{pfx}max_heart_rate")),
-            to_float(fv(row, f"{pfx}min_heart_rate")),
-            to_float(fv(row, f"{pfx}mean_speed")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            exercise_type=str(ex_type),
+            exercise_start=start,
+            exercise_end=end,
+            duration_minutes=dur_min,
+            calorie_kcal=to_float(fv(row, f"{pfx}calorie")),
+            distance_m=to_float(fv(row, f"{pfx}distance")),
+            mean_heart_rate=to_float(fv(row, f"{pfx}mean_heart_rate")),
+            max_heart_rate=to_float(fv(row, f"{pfx}max_heart_rate")),
+            min_heart_rate=to_float(fv(row, f"{pfx}min_heart_rate")),
+            mean_speed_ms=to_float(fv(row, f"{pfx}mean_speed")),
+        )
+        if _upsert(db, ExerciseSession, values, ["exercise_start", "exercise_end"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("exercise_sessions", ins, skp)
 
 
-def import_stress(conn) -> None:
+def import_stress(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.stress"):
         start = parse_dt(fv(row, "start_time"))
-        end   = parse_dt(fv(row, "end_time"))
+        end = parse_dt(fv(row, "end_time"))
         if not start or not end:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO stress (start_time, end_time, score, tag_id) VALUES (?,?,?,?)",
-            (start, end, to_float(fv(row, "score")), to_int(fv(row, "tag_id"))),
+        values = dict(
+            start_time=start,
+            end_time=end,
+            score=to_float(fv(row, "score")),
+            tag_id=to_int(fv(row, "tag_id")),
         )
-        if cur.rowcount:
+        if _upsert(db, Stress, values, ["start_time", "end_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("stress", ins, skp)
 
 
-def import_spo2(conn) -> None:
+def import_spo2(db: Session) -> None:
     pfx = "com.samsung.health.oxygen_saturation."
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.tracker.oxygen_saturation"):
         start = parse_dt(fv(row, f"{pfx}start_time"))
-        end   = parse_dt(fv(row, f"{pfx}end_time"))
+        end = parse_dt(fv(row, f"{pfx}end_time"))
         if not start or not end:
             continue
-        cur = conn.execute("""
-            INSERT OR IGNORE INTO spo2 (start_time, end_time, spo2, min_spo2, max_spo2, low_duration_s, tag_id)
-            VALUES (?,?,?,?,?,?,?)
-        """, (
-            start, end,
-            to_float(fv(row, f"{pfx}spo2")),
-            to_float(fv(row, f"{pfx}min")),
-            to_float(fv(row, f"{pfx}max")),
-            to_int(fv(row, f"{pfx}low_duration")),
-            to_int(fv(row, "tag_id")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            start_time=start,
+            end_time=end,
+            spo2=to_float(fv(row, f"{pfx}spo2")),
+            min_spo2=to_float(fv(row, f"{pfx}min")),
+            max_spo2=to_float(fv(row, f"{pfx}max")),
+            low_duration_s=to_int(fv(row, f"{pfx}low_duration")),
+            tag_id=to_int(fv(row, "tag_id")),
+        )
+        if _upsert(db, Spo2, values, ["start_time", "end_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("spo2", ins, skp)
 
 
-def import_respiratory_rate(conn) -> None:
+def import_respiratory_rate(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.respiratory_rate"):
         start = parse_dt(fv(row, "start_time"))
-        end   = parse_dt(fv(row, "end_time"))
+        end = parse_dt(fv(row, "end_time"))
         if not start or not end:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO respiratory_rate (start_time, end_time, average, lower_limit, upper_limit) VALUES (?,?,?,?,?)",
-            (start, end, to_float(fv(row, "average")), to_float(fv(row, "lower_limit")), to_float(fv(row, "upper_limit"))),
+        values = dict(
+            start_time=start,
+            end_time=end,
+            average=to_float(fv(row, "average")),
+            lower_limit=to_float(fv(row, "lower_limit")),
+            upper_limit=to_float(fv(row, "upper_limit")),
         )
-        if cur.rowcount:
+        if _upsert(db, RespiratoryRate, values, ["start_time", "end_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("respiratory_rate", ins, skp)
 
 
-def import_hrv(conn) -> None:
+def import_hrv(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.hrv"):
         start = parse_dt(fv(row, "start_time"))
-        end   = parse_dt(fv(row, "end_time"))
+        end = parse_dt(fv(row, "end_time"))
         if not start or not end:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO hrv (start_time, end_time) VALUES (?,?)",
-            (start, end),
-        )
-        if cur.rowcount:
+        if _upsert(db, Hrv, dict(start_time=start, end_time=end), ["start_time", "end_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("hrv", ins, skp)
 
 
-def import_skin_temperature(conn) -> None:
+def import_skin_temperature(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.skin_temperature"):
         start = parse_dt(fv(row, "start_time"))
-        end   = parse_dt(fv(row, "end_time"))
+        end = parse_dt(fv(row, "end_time"))
         if not start or not end:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO skin_temperature (start_time, end_time, temperature, min_temp, max_temp, tag_id) VALUES (?,?,?,?,?,?)",
-            (start, end, to_float(fv(row, "temperature")), to_float(fv(row, "min")), to_float(fv(row, "max")), to_int(fv(row, "tag_id"))),
+        values = dict(
+            start_time=start,
+            end_time=end,
+            temperature=to_float(fv(row, "temperature")),
+            min_temp=to_float(fv(row, "min")),
+            max_temp=to_float(fv(row, "max")),
+            tag_id=to_int(fv(row, "tag_id")),
         )
-        if cur.rowcount:
+        if _upsert(db, SkinTemperature, values, ["start_time", "end_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("skin_temperature", ins, skp)
 
 
-def import_weight(conn) -> None:
+def import_weight(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.weight"):
         start = parse_dt(fv(row, "start_time"))
         if not start:
             continue
-        cur = conn.execute("""
-            INSERT OR IGNORE INTO weight
-                (start_time, weight_kg, body_fat_pct, skeletal_muscle_pct,
-                 skeletal_muscle_mass_kg, fat_free_mass_kg, basal_metabolic_rate, total_body_water_kg)
-            VALUES (?,?,?,?,?,?,?,?)
-        """, (
-            start,
-            to_float(fv(row, "weight")),
-            to_float(fv(row, "body_fat")),
-            to_float(fv(row, "skeletal_muscle")),
-            to_float(fv(row, "skeletal_muscle_mass")),
-            to_float(fv(row, "fat_free_mass")),
-            to_int(fv(row, "basal_metabolic_rate")),
-            to_float(fv(row, "total_body_water")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            start_time=start,
+            weight_kg=to_float(fv(row, "weight")),
+            body_fat_pct=to_float(fv(row, "body_fat")),
+            skeletal_muscle_pct=to_float(fv(row, "skeletal_muscle")),
+            skeletal_muscle_mass_kg=to_float(fv(row, "skeletal_muscle_mass")),
+            fat_free_mass_kg=to_float(fv(row, "fat_free_mass")),
+            basal_metabolic_rate=to_int(fv(row, "basal_metabolic_rate")),
+            total_body_water_kg=to_float(fv(row, "total_body_water")),
+        )
+        if _upsert(db, Weight, values, ["start_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("weight", ins, skp)
 
 
-def import_height(conn) -> None:
+def import_height(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.height"):
         start = parse_dt(fv(row, "start_time"))
         if not start:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO height (start_time, height_cm) VALUES (?,?)",
-            (start, to_float(fv(row, "height"))),
-        )
-        if cur.rowcount:
+        values = dict(start_time=start, height_cm=to_float(fv(row, "height")))
+        if _upsert(db, Height, values, ["start_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("height", ins, skp)
 
 
-def import_blood_pressure(conn) -> None:
+def import_blood_pressure(db: Session) -> None:
     pfx = "com.samsung.health.blood_pressure."
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.blood_pressure"):
         start = parse_dt(fv(row, f"{pfx}start_time"))
         if not start:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO blood_pressure (start_time, systolic, diastolic, pulse, mean_bp) VALUES (?,?,?,?,?)",
-            (
-                start,
-                to_float(fv(row, f"{pfx}systolic")),
-                to_float(fv(row, f"{pfx}diastolic")),
-                to_int(fv(row, f"{pfx}pulse")),
-                to_float(fv(row, f"{pfx}mean")),
-            ),
+        values = dict(
+            start_time=start,
+            systolic=to_float(fv(row, f"{pfx}systolic")),
+            diastolic=to_float(fv(row, f"{pfx}diastolic")),
+            pulse=to_int(fv(row, f"{pfx}pulse")),
+            mean_bp=to_float(fv(row, f"{pfx}mean")),
         )
-        if cur.rowcount:
+        if _upsert(db, BloodPressure, values, ["start_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("blood_pressure", ins, skp)
 
 
-def import_mood(conn) -> None:
+def import_mood(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.mood"):
         start = parse_dt(fv(row, "start_time"))
         if not start:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO mood (start_time, mood_type, emotions, factors, notes, place, company) VALUES (?,?,?,?,?,?,?)",
-            (
-                start,
-                to_int(fv(row, "mood_type")),
-                fv(row, "emotions"),
-                fv(row, "factors"),
-                fv(row, "notes"),
-                fv(row, "place"),
-                fv(row, "company"),
-            ),
+        values = dict(
+            start_time=start,
+            mood_type=to_int(fv(row, "mood_type")),
+            emotions=fv(row, "emotions"),
+            factors=fv(row, "factors"),
+            notes=fv(row, "notes"),
+            place=fv(row, "place"),
+            company=fv(row, "company"),
         )
-        if cur.rowcount:
+        if _upsert(db, Mood, values, ["start_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("mood", ins, skp)
 
 
-def import_water_intake(conn) -> None:
+def import_water_intake(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.water_intake"):
         start = parse_dt(fv(row, "start_time"))
         if not start:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO water_intake (start_time, amount_ml) VALUES (?,?)",
-            (start, to_float(fv(row, "amount"))),
-        )
-        if cur.rowcount:
+        values = dict(start_time=start, amount_ml=to_float(fv(row, "amount")))
+        if _upsert(db, WaterIntake, values, ["start_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("water_intake", ins, skp)
 
 
-def import_activity_daily(conn) -> None:
+def import_activity_daily(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.activity.day_summary"):
-        day = parse_dt(fv(row, "day_time"))
-        if day:
-            day = day[:10]  # date only
+        day = parse_day(fv(row, "day_time"))
         if not day:
             continue
-        cur = conn.execute("""
-            INSERT OR IGNORE INTO activity_daily
-                (day_date, step_count, distance_m, calorie_kcal, exercise_time_ms, active_time_ms, floor_count, score)
-            VALUES (?,?,?,?,?,?,?,?)
-        """, (
-            day,
-            to_int(fv(row, "step_count")),
-            to_float(fv(row, "distance")),
-            to_float(fv(row, "calorie")),
-            to_int(fv(row, "exercise_time")),
-            to_int(fv(row, "active_time")),
-            to_float(fv(row, "floor_count")),
-            to_int(fv(row, "score")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            day_date=day,
+            step_count=to_int(fv(row, "step_count")),
+            distance_m=to_float(fv(row, "distance")),
+            calorie_kcal=to_float(fv(row, "calorie")),
+            exercise_time_ms=to_int(fv(row, "exercise_time")),
+            active_time_ms=to_int(fv(row, "active_time")),
+            floor_count=to_float(fv(row, "floor_count")),
+            score=to_int(fv(row, "score")),
+        )
+        if _upsert(db, ActivityDaily, values, ["day_date"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("activity_daily", ins, skp)
 
 
-def import_vitality_score(conn) -> None:
+def import_vitality_score(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.vitality_score"):
-        day = parse_dt(fv(row, "day_time"))
-        if day:
-            day = day[:10]
-        if not day:
-            day = ms_to_date(fv(row, "day_time"))
+        day = parse_day(fv(row, "day_time"))
         if not day:
             continue
-        cur = conn.execute("""
-            INSERT OR IGNORE INTO vitality_score
-                (day_date, total_score, sleep_score, sleep_balance, sleep_regularity, sleep_timing,
-                 activity_score, active_time_ms, mvpa_time_ms, shr_score, shr_value, shrv_score, shrv_value)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            day,
-            to_float(fv(row, "total_score")),
-            to_float(fv(row, "sleep_score")),
-            to_float(fv(row, "sleep_balance")),
-            to_float(fv(row, "sleep_regularity")),
-            to_float(fv(row, "sleep_timing")),
-            to_float(fv(row, "activity_score")),
-            to_int(fv(row, "active_time")),
-            to_int(fv(row, "mvpa_time")),
-            to_float(fv(row, "shr_score")),
-            to_float(fv(row, "shr_value")),
-            to_float(fv(row, "shrv_score")),
-            to_float(fv(row, "shrv_value")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            day_date=day,
+            total_score=to_float(fv(row, "total_score")),
+            sleep_score=to_float(fv(row, "sleep_score")),
+            sleep_balance=to_float(fv(row, "sleep_balance")),
+            sleep_regularity=to_float(fv(row, "sleep_regularity")),
+            sleep_timing=to_float(fv(row, "sleep_timing")),
+            activity_score=to_float(fv(row, "activity_score")),
+            active_time_ms=to_int(fv(row, "active_time")),
+            mvpa_time_ms=to_int(fv(row, "mvpa_time")),
+            shr_score=to_float(fv(row, "shr_score")),
+            shr_value=to_float(fv(row, "shr_value")),
+            shrv_score=to_float(fv(row, "shrv_score")),
+            shrv_value=to_float(fv(row, "shrv_value")),
+        )
+        if _upsert(db, VitalityScore, values, ["day_date"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("vitality_score", ins, skp)
 
 
-def import_floors_daily(conn) -> None:
+def import_floors_daily(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.tracker.floors_day_summary"):
-        day = ms_to_date(fv(row, "day_time"))
+        day = ms_to_date_str(fv(row, "day_time"))
         if not day:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO floors_daily (day_date, floor_count) VALUES (?,?)",
-            (day, to_int(fv(row, "floor_count"))),
-        )
-        if cur.rowcount:
+        if _upsert(db, FloorsDaily, dict(day_date=day, floor_count=to_int(fv(row, "floor_count"))), ["day_date"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("floors_daily", ins, skp)
 
 
-def import_activity_level(conn) -> None:
+def import_activity_level(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.shealth.activity_level"):
         start = parse_dt(fv(row, "start_time"))
         if not start:
             continue
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO activity_level (start_time, activity_level) VALUES (?,?)",
-            (start, to_int(fv(row, "activity_level"))),
-        )
-        if cur.rowcount:
+        if _upsert(db, ActivityLevel, dict(start_time=start, activity_level=to_int(fv(row, "activity_level"))), ["start_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("activity_level", ins, skp)
 
 
-def import_ecg(conn) -> None:
+def import_ecg(db: Session) -> None:
     ins = skp = 0
     for row in read_csv("com.samsung.health.ecg"):
         start = parse_dt(fv(row, "start_time"))
-        end   = parse_dt(fv(row, "end_time"))
+        end = parse_dt(fv(row, "end_time"))
         if not start or not end:
             continue
-        cur = conn.execute("""
-            INSERT OR IGNORE INTO ecg (start_time, end_time, mean_heart_rate, sample_frequency, sample_count, classification)
-            VALUES (?,?,?,?,?,?)
-        """, (
-            start, end,
-            to_float(fv(row, "mean_heart_rate")),
-            to_int(fv(row, "sample_frequency")),
-            to_int(fv(row, "sample_count")),
-            to_int(fv(row, "classification")),
-        ))
-        if cur.rowcount:
+        values = dict(
+            start_time=start,
+            end_time=end,
+            mean_heart_rate=to_float(fv(row, "mean_heart_rate")),
+            sample_frequency=to_int(fv(row, "sample_frequency")),
+            sample_count=to_int(fv(row, "sample_count")),
+            classification=to_int(fv(row, "classification")),
+        )
+        if _upsert(db, Ecg, values, ["start_time", "end_time"]):
             ins += 1
         else:
             skp += 1
-    conn.commit()
+    db.commit()
     report("ecg", ins, skp)
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     if not EXPORT_DIR.exists():
         print(f"ERROR: export dir not found: {EXPORT_DIR}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"DB: {DB_PATH}")
     print(f"Export: {EXPORT_DIR}")
-    print("Initialising schema …")
-    init_db()
-    print()
+    print("Importing into Postgres (alembic schema déjà appliqué via `make db-migrate`) …")
+    db = get_session()
 
-    conn = get_connection()
-    conn.execute("PRAGMA foreign_keys = ON")
+    uuid_map = import_sleep(db)
+    import_sleep_stages(db, uuid_map)
+    import_steps_hourly(db)
+    import_steps_daily(db)
+    import_heart_rate_hourly(db)
+    import_exercise(db)
+    import_stress(db)
+    import_spo2(db)
+    import_respiratory_rate(db)
+    import_hrv(db)
+    import_skin_temperature(db)
+    import_weight(db)
+    import_height(db)
+    import_blood_pressure(db)
+    import_mood(db)
+    import_water_intake(db)
+    import_activity_daily(db)
+    import_vitality_score(db)
+    import_floors_daily(db)
+    import_activity_level(db)
+    import_ecg(db)
 
-    print("Importing …")
-    uuid_map = import_sleep(conn)
-    import_sleep_stages(conn, uuid_map)
-    import_steps_hourly(conn)
-    import_steps_daily(conn)
-    import_heart_rate_hourly(conn)
-    import_exercise(conn)
-    import_stress(conn)
-    import_spo2(conn)
-    import_respiratory_rate(conn)
-    import_hrv(conn)
-    import_skin_temperature(conn)
-    import_weight(conn)
-    import_height(conn)
-    import_blood_pressure(conn)
-    import_mood(conn)
-    import_water_intake(conn)
-    import_activity_daily(conn)
-    import_vitality_score(conn)
-    import_floors_daily(conn)
-    import_activity_level(conn)
-    import_ecg(conn)
-
-    conn.close()
+    db.close()
     print("\nDone.")
 
 
@@ -780,59 +731,66 @@ if __name__ == "__main__":
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-24-v2-csv-import-sqlalchemy]] — symbols: `main`, `import_sleep`, `import_sleep_stages`, `import_steps_hourly`, `import_steps_daily`, `import_heart_rate_hourly`, `import_exercise`, `import_stress`, `import_spo2`, `import_respiratory_rate`, `import_hrv`, `import_skin_temperature`, `import_weight`, `import_height`, `import_blood_pressure`, `import_mood`, `import_water_intake`, `import_activity_daily`, `import_vitality_score`, `import_floors_daily`, `import_activity_level`, `import_ecg`
+
 ### Symbols
-- `get_connection` (function) — lines 30-34
-- `init_db` (function) — lines 37-42
-- `find_csv` (function) — lines 52-54 · ⚠️ no test
-- `read_csv` (function) — lines 57-67 · ⚠️ no test
-- `fv` (function) — lines 70-76 · ⚠️ no test
-- `parse_dt` (function) — lines 79-88 · ⚠️ no test
-- `ms_to_date` (function) — lines 91-99 · ⚠️ no test
-- `to_float` (function) — lines 102-106 · ⚠️ no test
-- `to_int` (function) — lines 109-113 · ⚠️ no test
-- `report` (function) — lines 116-117 · ⚠️ no test
-- `import_sleep` (function) — lines 122-168 · ⚠️ no test
-- `import_sleep_stages` (function) — lines 171-205 · ⚠️ no test
-- `import_steps_hourly` (function) — lines 208-228 · ⚠️ no test
-- `import_steps_daily` (function) — lines 231-255 · ⚠️ no test
-- `import_heart_rate_hourly` (function) — lines 258-279 · ⚠️ no test
-- `import_exercise` (function) — lines 282-319 · ⚠️ no test
-- `import_stress` (function) — lines 322-338 · ⚠️ no test
-- `import_spo2` (function) — lines 341-365 · ⚠️ no test
-- `import_respiratory_rate` (function) — lines 368-384 · ⚠️ no test
-- `import_hrv` (function) — lines 387-403 · ⚠️ no test
-- `import_skin_temperature` (function) — lines 406-422 · ⚠️ no test
-- `import_weight` (function) — lines 425-451 · ⚠️ no test
-- `import_height` (function) — lines 454-469 · ⚠️ no test
-- `import_blood_pressure` (function) — lines 472-494 · ⚠️ no test
-- `import_mood` (function) — lines 497-520 · ⚠️ no test
-- `import_water_intake` (function) — lines 523-538 · ⚠️ no test
-- `import_activity_daily` (function) — lines 541-568 · ⚠️ no test
-- `import_vitality_score` (function) — lines 571-606 · ⚠️ no test
-- `import_floors_daily` (function) — lines 609-624 · ⚠️ no test
-- `import_activity_level` (function) — lines 627-642 · ⚠️ no test
-- `import_ecg` (function) — lines 645-667 · ⚠️ no test
-- `main` (function) — lines 672-710 · ⚠️ no test
+- `find_csv` (function) — lines 58-60 · ⚠️ no test
+- `read_csv` (function) — lines 63-71 · ⚠️ no test
+- `fv` (function) — lines 74-79 · ⚠️ no test
+- `parse_dt` (function) — lines 82-91 · ⚠️ no test
+- `ms_to_date_str` (function) — lines 94-101
+- `parse_day` (function) — lines 104-109
+- `to_float` (function) — lines 112-116 · ⚠️ no test
+- `to_int` (function) — lines 119-123 · ⚠️ no test
+- `report` (function) — lines 126-127 · ⚠️ no test
+- `_upsert` (function) — lines 130-138
+- `import_sleep` (function) — lines 144-174 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_sleep_stages` (function) — lines 177-211 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_steps_hourly` (function) — lines 214-229 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_steps_daily` (function) — lines 232-252 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_heart_rate_hourly` (function) — lines 255-279 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_exercise` (function) — lines 282-310 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_stress` (function) — lines 313-331 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_spo2` (function) — lines 334-356 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_respiratory_rate` (function) — lines 359-378 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_hrv` (function) — lines 381-393 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_skin_temperature` (function) — lines 396-416 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_weight` (function) — lines 419-440 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_height` (function) — lines 443-455 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_blood_pressure` (function) — lines 458-477 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_mood` (function) — lines 480-500 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_water_intake` (function) — lines 503-515 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_activity_daily` (function) — lines 518-539 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_vitality_score` (function) — lines 542-568 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_floors_daily` (function) — lines 571-582 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_activity_level` (function) — lines 585-596 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_ecg` (function) — lines 599-619 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `main` (function) — lines 625-657 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
 
 ### Imports
 - `csv`
-- `sqlite3`
 - `sys`
 - `collections`
 - `datetime`
 - `pathlib`
+- `sqlalchemy`
+- `sqlalchemy.dialects.postgresql`
+- `sqlalchemy.orm`
+- `server.database`
+- `server.db.models`
 
 ### Exports
-- `get_connection`
-- `init_db`
 - `find_csv`
 - `read_csv`
 - `fv`
 - `parse_dt`
-- `ms_to_date`
+- `ms_to_date_str`
+- `parse_day`
 - `to_float`
 - `to_int`
 - `report`
+- `_upsert`
 - `import_sleep`
 - `import_sleep_stages`
 - `import_steps_hourly`
