@@ -1,4 +1,4 @@
-.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest setup-hooks vault-mirror
+.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest setup-hooks vault-mirror db-up db-down db-migrate db-reset
 
 ## install : install Python dependencies + activate git hooks
 install:
@@ -20,6 +20,32 @@ vault-mirror:
 	fi
 	python3 -m agents.cartographer.cli --full --mirror-to "$$CARTOGRAPHER_MIRROR_TO"
 	@echo "✓ Vault mirror updated → $$CARTOGRAPHER_MIRROR_TO"
+
+## db-up : start Postgres 16 via Docker Compose (idempotent)
+db-up:
+	docker compose up -d postgres
+	@echo "Waiting for Postgres to be ready..."
+	@until docker compose exec -T postgres pg_isready -U samsung -d samsunghealth >/dev/null 2>&1; do sleep 1; done
+	@echo "✓ Postgres ready on localhost:5432 (user: samsung, db: samsunghealth)"
+
+## db-down : stop Postgres container (volume preserved)
+db-down:
+	docker compose down
+
+## db-migrate : run pending alembic migrations against $$DATABASE_URL (defaults to local PG)
+db-migrate:
+	@if [ -z "$$DATABASE_URL" ]; then \
+		DATABASE_URL="postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth" alembic upgrade head; \
+	else \
+		alembic upgrade head; \
+	fi
+
+## db-reset : DESTRUCTIVE — drop volume + recreate empty PG, then re-apply migrations
+db-reset:
+	docker compose down -v
+	$(MAKE) db-up
+	$(MAKE) db-migrate
+	@echo "✓ Postgres reset — empty schema migrated to head"
 
 ## dev : start the FastAPI server (reload + accessible from phone on LAN)
 dev:
