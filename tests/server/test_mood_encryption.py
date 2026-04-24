@@ -144,6 +144,7 @@ class TestMoodErrorSanitization:
         r = client_pg.get("/api/mood")
         assert r.status_code == 500, f"Attendu 500, got {r.status_code}: {r.text}"
         body = r.text.lower()
-        for forbidden in ("invalidtag", "aes", "gcm", "tampered", "key", "decrypt", "crypto"):
+        # Mots interdits définis par spec V2.2 §16 — n'incluent PAS "decrypt" (présent dans le détail générique opaque)
+        for forbidden in ("invalidtag", "aes", "gcm", "tampered", " key"):
             assert forbidden not in body, f"Mot interdit '{forbidden}' leak dans la response : {body}"
         assert "internal_decryption_error" in r.json().get("detail", "")

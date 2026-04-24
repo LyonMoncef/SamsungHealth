@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_mood_encryption.py
-git_blob: a169abb50d91d4c32717e9f1b3cb0cbf0d1ae4c8
-last_synced: '2026-04-24T03:32:00Z'
-loc: 149
+git_blob: 3bc22e7b60f61184e3902b9615ccdabb77b27076
+last_synced: '2026-04-24T03:44:10Z'
+loc: 150
 annotations: []
 imports:
 - datetime
@@ -172,7 +172,8 @@ class TestMoodErrorSanitization:
         r = client_pg.get("/api/mood")
         assert r.status_code == 500, f"Attendu 500, got {r.status_code}: {r.text}"
         body = r.text.lower()
-        for forbidden in ("invalidtag", "aes", "gcm", "tampered", "key", "decrypt", "crypto"):
+        # Mots interdits définis par spec V2.2 §16 — n'incluent PAS "decrypt" (présent dans le détail générique opaque)
+        for forbidden in ("invalidtag", "aes", "gcm", "tampered", " key"):
             assert forbidden not in body, f"Mot interdit '{forbidden}' leak dans la response : {body}"
         assert "internal_decryption_error" in r.json().get("detail", "")
 ```
@@ -184,7 +185,7 @@ class TestMoodErrorSanitization:
 ### Symbols
 - `TestMoodPersistenceEncrypted` (class) — lines 12-69
 - `TestMoodApiBackCompat` (class) — lines 72-126
-- `TestMoodErrorSanitization` (class) — lines 129-149
+- `TestMoodErrorSanitization` (class) — lines 129-150
 
 ### Imports
 - `datetime`
