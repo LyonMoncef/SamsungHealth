@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_models_postgres.py
-git_blob: d11aad32a7ec4678eb7dcabddd4571c50c79ddb3
-last_synced: '2026-04-24T01:39:50Z'
-loc: 148
+git_blob: 87ee557f1e30e7fb8ce9e78e18988a1b6dc96480
+last_synced: '2026-04-24T02:17:41Z'
+loc: 165
 annotations: []
 imports:
 - os
@@ -134,49 +134,66 @@ class TestSleepSessionPersistence:
 
 
 class TestApiBackCompat:
-    def test_get_sleep_period_6m_response_shape_unchanged(self, schema_ready, db_session):
-        # spec: "Back-compat API frontend" — §Tests d'acceptation #10
-        # Le frontend Nightfall attend un shape JSON stable sur GET /api/sleep?period=6m
-        # Seed minimal + appel endpoint + assertions sur keys/types (pas sur IDs UUID exacts)
+    def test_get_sleep_response_shape_unchanged(self, schema_ready, db_session):
+        # spec V2.1.1 — §Tests d'acceptation #1 : back-compat shape JSON sur params réels Nightfall
+        # Le frontend appelle GET /api/sleep?from=YYYY-MM-DD&to=YYYY-MM-DD&include_stages=true
+        # (params adaptés depuis l'ancien `period=6m` qui n'existait pas dans le frontend réel)
         from datetime import date, timedelta
 
         from fastapi.testclient import TestClient
 
-        from server.db.models import SleepSession
+        from server.db.models import SleepSession, SleepStage
         from server.main import app
 
-        # Seed 2 sessions il y a 1 mois
-        base = datetime.combine(date.today() - timedelta(days=30), datetime.min.time(), tzinfo=timezone.utc)
-        for i in range(2):
-            db_session.add(
-                SleepSession(
-                    sleep_start=base.replace(hour=22) + timedelta(days=i),
-                    sleep_end=base.replace(hour=6) + timedelta(days=i + 1),
-                    sleep_duration_min=480,
-                    sleep_score=80 + i,
-                )
+        d_start = date.today() - timedelta(days=2)
+        base = datetime.combine(d_start, datetime.min.time(), tzinfo=timezone.utc)
+        s1 = SleepSession(
+            sleep_start=base.replace(hour=22),
+            sleep_end=base.replace(hour=6) + timedelta(days=1),
+        )
+        db_session.add(s1)
+        db_session.flush()
+        db_session.add(
+            SleepStage(
+                session_id=s1.id,
+                stage_type="deep",
+                stage_start=base.replace(hour=23),
+                stage_end=base.replace(hour=23) + timedelta(hours=1),
             )
+        )
         db_session.commit()
 
         with TestClient(app) as client:
-            resp = client.get("/api/sleep", params={"period": "6m"})
+            resp = client.get(
+                "/api/sleep",
+                params={
+                    "from": d_start.isoformat(),
+                    "to": (d_start + timedelta(days=1)).isoformat(),
+                    "include_stages": "true",
+                },
+            )
 
         assert resp.status_code == 200, f"Status {resp.status_code} : {resp.text}"
         payload = resp.json()
-        assert isinstance(payload, list), f"Payload doit être une liste, got {type(payload)}"
-        assert len(payload) >= 2, f"Au moins 2 sessions seedées, got {len(payload)}"
+        assert isinstance(payload, list)
+        assert len(payload) >= 1
 
-        # Shape d'une session (clés que Nightfall consomme)
         first = payload[0]
-        expected_keys = {"id", "sleep_start", "sleep_end", "sleep_duration_min", "sleep_score"}
+        expected_keys = {"id", "sleep_start", "sleep_end", "stages"}
         missing = expected_keys - set(first.keys())
-        assert not missing, f"Clés manquantes dans la réponse : {missing} (payload : {first})"
+        assert not missing, f"Clés manquantes : {missing} (payload : {first})"
 
-        # Types
-        assert isinstance(first["id"], str), "id doit être sérialisé en str (UUID)"
-        assert isinstance(first["sleep_start"], str), "sleep_start doit être str ISO"
-        assert isinstance(first["sleep_end"], str), "sleep_end doit être str ISO"
-        assert isinstance(first["sleep_duration_min"], int)
+        # id passe en str (UUID sérialisé) — break-change attendu, frontend Nightfall ne consomme l'id qu'en passe-plat
+        assert isinstance(first["id"], str)
+        assert isinstance(first["sleep_start"], str)
+        assert isinstance(first["sleep_end"], str)
+
+        # Stages présents et bien formatés
+        assert isinstance(first["stages"], list)
+        assert len(first["stages"]) >= 1
+        stage = first["stages"][0]
+        for k in ("stage_type", "stage_start", "stage_end"):
+            assert k in stage, f"Clé {k} manquante dans stage"
 ```
 
 ---
@@ -186,7 +203,7 @@ class TestApiBackCompat:
 ### Symbols
 - `_alembic_upgrade` (function) — lines 20-27
 - `TestSleepSessionPersistence` (class) — lines 36-102
-- `TestApiBackCompat` (class) — lines 105-148
+- `TestApiBackCompat` (class) — lines 105-165
 
 ### Imports
 - `os`
@@ -204,3 +221,4 @@ class TestApiBackCompat:
 ## Validates specs *(auto — declared by spec)*
 
 - [[../../specs/2026-04-24-v2-postgres-migration]] — classes: `TestSleepSessionPersistence`, `TestApiBackCompat` · methods: `test_insert_sleep_session_assigns_uuid_and_created_at`, `test_read_sleep_session_by_uuid`, `test_get_sleep_period_6m_response_shape_unchanged`, `test_sleep_session_with_stages_atomic`
+- [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — classes: `TestApiBackCompat` · methods: `test_get_sleep_period_6m_response_shape_unchanged`
