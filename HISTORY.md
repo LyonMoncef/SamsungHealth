@@ -53,6 +53,12 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 `e9c727e`
+feat(skill): /tdd (test-writer) — bouclage du chaînon manquant /spec → /tdd → /impl
+- Découvert pendant V2.1 kickoff : `/tdd` était référencé partout (`/spec` next_default, `/impl` prev) mais jamais créé
+- `.claude/skills/tdd/SKILL.md` — délègue à `test-writer` subagent. Valide prérequis (spec status ≥ ready, frontmatter `tested_by:` non vide). Auto-détecte `target_test_dir` depuis `dirname(tested_by[0].file)`. Prépare `brief.json` (contrat `TestBrief`). Garde-fou : si `tests_green_count > 0` avant impl → faux test, signale au lieu de continuer
+- Linked-list maintenant complète : `/spec` → `/tdd` → `/impl` → `/review` → `/align` → `/commit`
+
 ### 2026-04-24 `fa2906a`
 feat(spec): v2-postgres-migration (status ready, 22 tables, 10 tests d'acceptation, UUID v7 + Alembic + testcontainers)
 - Première vraie spec V2.1 produit, branche `feat/v2-postgres-migration` (depuis umbrella `refactor/phase-a-foundation-agents`)
