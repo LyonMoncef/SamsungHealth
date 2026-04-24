@@ -53,6 +53,32 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 `9c4f87c`
+fix(tests): truncate cascade entre tests pour isolation forte → 9/10 tests V2.1 GREEN
+- Tests `TestSleepSessionPersistence` partageaient le testcontainer PG session-scoped → state résiduel entre tests (tests insert+read laissaient des rows, atomic test échouait sur "0 rows attendus")
+- Fix : fixture `db_session` truncate cascade toutes les tables non-alembic en teardown
+- Bilan tests V2.1 : **9 PASSED / 1 FAILED** (uuid7 ×3 + bootstrap ×3 + persistence ×3 GREEN ; back-compat HTTP `test_get_sleep_period_6m_response_shape_unchanged` reste RED car router refactor pas fait)
+
+### 2026-04-24 `45cc18f`
+feat(v2.1): server/database.py refactor (get_engine/get_session) + 21 SQLAlchemy models + alembic init + 0001_initial migration → 6/10 tests GREEN
+- `server/database.py` : ajout `get_engine()` (lru_cache, lit `DATABASE_URL` ou défaut local), `get_session()`, `SessionLocal`. Legacy `get_connection()`/`DB_PATH`/`init_db()` conservés pour back-compat des 175+ tests SQLite existants (suppression dans impl 7/7)
+- `server/db/models.py` : 21 tables SQLAlchemy 2.x avec `Mapped[]`, `Uuid7PkMixin` + `TimestampedMixin`, FK UUID + ondelete CASCADE, contraintes UNIQUE conservées (sleep_sessions, sleep_stages, steps_*, heart_rate_hourly, exercise_sessions, stress, spo2, respiratory_rate, hrv, skin_temperature, weight, height, blood_pressure, mood, water_intake, activity_daily, vitality_score, floors_daily, activity_level, ecg)
+- `alembic/env.py` : lit `DATABASE_URL` env, target_metadata = `Base.metadata`
+- `alembic/versions/0001_initial.py` : autogenerate complet + ajout `import server.db.uuid7` (pour résoudre le `server.db.uuid7.Uuid7()` référencé)
+- `tests/server/conftest.py` : forcer driver psycopg 3 dans l'URL testcontainers (`postgresql://` → `postgresql+psycopg://`)
+- 0 régression sur les 175 tests existants (legacy `get_connection`/`init_db` SQLite intact)
+
+### 2026-04-24 `9491013`
+feat(v2.1): docker-compose PG 16-alpine + Makefile db-up/db-down/db-migrate/db-reset
+- `docker-compose.yml` : service `postgres:16-alpine` + volume nommé `pgdata` + healthcheck `pg_isready` + port 5432 exposé
+- `Makefile` 4 targets : `db-up` (idempotent + wait-ready), `db-down` (volume préservé), `db-migrate` (DATABASE_URL local par défaut si absent), `db-reset` (DESTRUCTIVE — drop volume + recreate + migrate)
+
+### 2026-04-24 `35c559e`
+feat(v2.1): uuid7 helper + Uuid7 TypeDecorator + deps PG → 3 tests uuid7 GREEN
+- `server/db/uuid7.py` : `uuid7()` (wrapper sur `uuid_utils.uuid7`, retourne `_uuid.UUID` standard) + `Uuid7` TypeDecorator (PG → `UUID(as_uuid=True)`, autres dialects → `CHAR(36)` string)
+- `requirements.txt` : ajout `sqlalchemy>=2.0`, `psycopg[binary]>=3.1`, `alembic>=1.13`, `uuid_utils>=0.10`, `testcontainers[postgres]>=4.0`
+- 3 tests `TestUuid7` (version 7, monotone par ms, timestamp extractable) GREEN immédiats — pas de DB requise
+
 ### 2026-04-24 `161aa86`
 test(v2.1): 10 tests RED pour spec postgres-migration
 - Première application réelle de la boucle TDD V2.1 — exécution `/tdd` inline (pas de subagent project-local exposé via Agent tool, comme noté wrap V2 foundation)
