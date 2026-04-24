@@ -2,11 +2,13 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 6307a4ba2f05cc660b3429b0011abcd959f23528
-last_synced: '2026-04-24T02:26:12Z'
-loc: 124
+git_blob: 689476fef60fb48d37485ac46eec8f0fa7adf6be
+last_synced: '2026-04-24T03:44:01Z'
+loc: 143
 annotations: []
 imports:
+- base64
+- secrets
 - pytest
 exports: []
 tags:
@@ -23,12 +25,31 @@ tags:
 
 ```python
 """
-Fixtures Postgres pour la spec V2.1.
+Fixtures Postgres + chiffrement pour les specs server-side.
 
 Requiert testcontainers[postgres] et Docker. Si l'un des deux manque,
 les tests dépendant de `pg_url` sont skip avec message clair.
 """
+import base64
+import secrets
+
 import pytest
+
+
+_TEST_KEY_B64 = base64.b64encode(b"v2_2_test_key_32_bytes_exactly__")[:44].decode("ascii")
+
+
+@pytest.fixture(autouse=True)
+def _set_test_encryption_key(monkeypatch):
+    """V2.2 — clé de test stable, set avant chaque test, reset le cache lru."""
+    monkeypatch.setenv("SAMSUNGHEALTH_ENCRYPTION_KEY", _TEST_KEY_B64)
+    try:
+        from server.security.crypto import reset_key_cache
+        reset_key_cache()
+        yield
+        reset_key_cache()
+    except ImportError:
+        yield  # pas encore implémenté, OK pour les tests RED de la fondation
 
 
 @pytest.fixture(scope="session")
@@ -153,4 +174,6 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Imports
+- `base64`
+- `secrets`
 - `pytest`

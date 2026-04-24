@@ -1,10 +1,29 @@
 """
-Fixtures Postgres pour la spec V2.1.
+Fixtures Postgres + chiffrement pour les specs server-side.
 
 Requiert testcontainers[postgres] et Docker. Si l'un des deux manque,
 les tests dépendant de `pg_url` sont skip avec message clair.
 """
+import base64
+import secrets
+
 import pytest
+
+
+_TEST_KEY_B64 = base64.b64encode(b"v2_2_test_key_32_bytes_exactly__")[:44].decode("ascii")
+
+
+@pytest.fixture(autouse=True)
+def _set_test_encryption_key(monkeypatch):
+    """V2.2 — clé de test stable, set avant chaque test, reset le cache lru."""
+    monkeypatch.setenv("SAMSUNGHEALTH_ENCRYPTION_KEY", _TEST_KEY_B64)
+    try:
+        from server.security.crypto import reset_key_cache
+        reset_key_cache()
+        yield
+        reset_key_cache()
+    except ImportError:
+        yield  # pas encore implémenté, OK pour les tests RED de la fondation
 
 
 @pytest.fixture(scope="session")
