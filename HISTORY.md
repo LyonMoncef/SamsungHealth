@@ -53,6 +53,22 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 `fa2906a`
+feat(spec): v2-postgres-migration (status ready, 22 tables, 10 tests d'acceptation, UUID v7 + Alembic + testcontainers)
+- Première vraie spec V2.1 produit, branche `feat/v2-postgres-migration` (depuis umbrella `refactor/phase-a-foundation-agents`)
+- `docs/vault/specs/2026-04-24-v2-postgres-migration.md`
+- Vision : sortir SQLite (single-file, schéma fragile via `_add_col` runtime) au profit de PG 16 + Alembic + UUID v7. Pas de feature produit livrée — fondation pour V2.2+ (chiffrement AES-GCM, JWT, structlog)
+- Décisions : PG 16 + tout côté Python (UUID v7 via `uuid_utils`, AES-GCM via `cryptography` futur), SQLAlchemy 2.x ORM + `psycopg[binary]` synchrone, Alembic autogenerate baseline + revue manuelle, `testcontainers-postgres` pour intégration, API publique inchangée (Nightfall ne bouge pas), pas de port de données SQLite
+- Livrables : `docker-compose.yml` PG 16-alpine, `server/db/{uuid7.py,models.py}`, `server/database.py` refactor (`get_engine`/`get_session`), `alembic/{env.py,versions/0001_initial.py}`, refactor 4 routers (`sleep`/`heart_rate`/`steps`/`activity`), suppression code SQLite, Makefile targets `db-up`/`db-down`/`db-migrate`/`db-reset`
+- 10 tests d'acceptation given/when/then mappés sur 3 fichiers de test : `tests/server/{test_postgres_bootstrap,test_uuid7,test_models_postgres}.py` (bootstrap idempotent, downgrade réversible, UUID v7 monotone/version/timestamp, insert sleep session avec UUID + timestamps auto, read by UUID, atomicité session+stages, back-compat API frontend)
+- Out-of-scope verrouillé : AES-GCM (V2.2), JWT (V2.3), structlog (V2.4), async SQLAlchemy, port données
+
+### 2026-04-24 `086c597`
+feat(skills): /impl (coder-backend) + /align (plan-keeper) pour boucle TDD V2.1
+- Skills manquants identifiés dans le wrap V2 foundation, créés en début de V2.1
+- `.claude/skills/impl/SKILL.md` — délègue au subagent `coder-<target>` (backend par défaut). Valide prérequis (spec ≥ ready, tests RED présents et bien rouges), résout `tests_red_path` via frontmatter `tested_by:` de la spec, prépare `brief.json` (contrat `CodeBrief`), délègue. Linked-list : prev `/tdd`, next `/review`
+- `.claude/skills/align/SKILL.md` — délègue à `plan-keeper` pour audit déviations plans ↔ livraison. Read-only strict. Compare plans de la branche courante à l'état actuel des fichiers (snapshot ici-et-maintenant, pas de diff vs main). Prépare `brief.json` (contrat `PlanAuditBrief`) avec `triggered_by`/`recent_changes`/`severity_threshold`. Premier vrai test du plan-keeper en conditions réelles (deferred Option C dans wrap V2 foundation). Linked-list : prev `/review`, next `/commit`
+
 ### 2026-04-23 `bcde863`
 docs(plans/agents): patch tous les paths vault/02_Projects/SamsungHealth/ → docs/vault/ suite vault Obsidian dédié
 - `.claude/agents/spec-writer.md` — `vault/02_Projects/.../specs/` → `docs/vault/specs/` (×2 occurrences)
