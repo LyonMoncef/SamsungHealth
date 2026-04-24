@@ -14,3 +14,12 @@ PyYAML>=6.0
 # code-cartographer — coverage map (Phase A.7) symbol/range ↔ tests linking
 pytest-cov>=5.0
 coverage>=7.0
+
+# V2.1 Postgres migration — SQLAlchemy 2.x ORM + Alembic + UUID v7
+sqlalchemy>=2.0
+psycopg[binary]>=3.1
+alembic>=1.13
+uuid_utils>=0.10
+
+# V2.1 Postgres tests — testcontainers spin un PG 16 jetable par session pytest
+testcontainers[postgres]>=4.0
