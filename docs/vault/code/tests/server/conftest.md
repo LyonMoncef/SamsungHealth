@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 5266560d90849a167e090f570cfa9adcd9aa5c04
-last_synced: '2026-04-24T01:54:48Z'
-loc: 47
+git_blob: 013cf5bcdbed001b311c0f81c7582ec1db36dde3
+last_synced: '2026-04-24T01:58:19Z'
+loc: 58
 annotations: []
 imports:
 - pytest
@@ -65,10 +65,21 @@ def engine(pg_url):
 
 @pytest.fixture
 def db_session(engine):
+    from sqlalchemy import text
     from sqlalchemy.orm import sessionmaker
+
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     with SessionLocal() as sess:
         yield sess
+        sess.rollback()
+    # Isolation forte entre tests : truncate cascade sur toutes les tables non-alembic
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename != 'alembic_version'")
+        ).fetchall()
+        if rows:
+            tables = ", ".join(r[0] for r in rows)
+            conn.execute(text(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE"))
 ```
 
 ---

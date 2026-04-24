@@ -41,7 +41,18 @@ def engine(pg_url):
 
 @pytest.fixture
 def db_session(engine):
+    from sqlalchemy import text
     from sqlalchemy.orm import sessionmaker
+
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     with SessionLocal() as sess:
         yield sess
+        sess.rollback()
+    # Isolation forte entre tests : truncate cascade sur toutes les tables non-alembic
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename != 'alembic_version'")
+        ).fetchall()
+        if rows:
+            tables = ", ".join(r[0] for r in rows)
+            conn.execute(text(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE"))
