@@ -2,9 +2,9 @@
 type: spec
 title: "V2.1.2 — Refonte scripts CSV import + sample generator vers SQLAlchemy/PG"
 slug: 2026-04-24-v2-csv-import-sqlalchemy
-status: ready
+status: delivered
 created: 2026-04-24
-delivered: null
+delivered: 2026-04-24
 priority: medium
 related_plans:
   - 2026-04-23-plan-v2-refactor-master
