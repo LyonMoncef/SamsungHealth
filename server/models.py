@@ -88,3 +88,28 @@ class ExerciseSessionOut(BaseModel):
 
 class ExerciseBulkIn(BaseModel):
     sessions: list[ExerciseSessionIn]
+
+
+# V2.2 — mood (champs Art.9 chiffrés côté DB, types python natifs côté API)
+class MoodIn(BaseModel):
+    start_time: str
+    mood_type: int | None = None
+    emotions: str | None = None
+    factors: str | None = None
+    notes: str | None = None
+    place: str | None = None
+    company: str | None = None
+
+
+class MoodOut(BaseModel):
+    start_time: str | None
+    mood_type: int | None = None
+    emotions: str | None = None
+    factors: str | None = None
+    notes: str | None = None
+    place: str | None = None
+    company: str | None = None
+
+
+class MoodBulkIn(BaseModel):
+    entries: list[MoodIn]

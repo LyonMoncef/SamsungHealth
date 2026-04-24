@@ -22,6 +22,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from .encrypted import EncryptedInt, EncryptedString
 from .uuid7 import Uuid7, uuid7
 
 
@@ -240,10 +241,17 @@ class Mood(Uuid7PkMixin, TimestampedMixin, Base):
     __table_args__ = (UniqueConstraint("start_time", name="uq_mood_time"),)
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    mood_type: Mapped[int | None] = mapped_column(Integer)
-    emotions: Mapped[str | None] = mapped_column(Text)
-    factors: Mapped[str | None] = mapped_column(Text)
-    notes: Mapped[str | None] = mapped_column(Text)
+    # V2.2 — colonnes Art.9 chiffrées AES-256-GCM (BYTEA en DB, str/int en Python)
+    mood_type: Mapped[int | None] = mapped_column(EncryptedInt)
+    emotions: Mapped[str | None] = mapped_column(EncryptedString)
+    factors: Mapped[str | None] = mapped_column(EncryptedString)
+    notes: Mapped[str | None] = mapped_column(EncryptedString)
+    # Versionning chiffrement — permet rotation future sans perte
+    mood_type_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    emotions_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    factors_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    notes_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    # Champs non Art.9 (contexte, pas valeur santé)
     place: Mapped[str | None] = mapped_column(Text)
     company: Mapped[str | None] = mapped_column(Text)
 

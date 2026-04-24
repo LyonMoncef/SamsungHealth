@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/models.py
-git_blob: 822915afbdb1c7e02abc50c971bad695bd5c6466
-last_synced: '2026-04-24T02:26:12Z'
-loc: 90
+git_blob: 3068f278a792f3b0f6ec526f5d08dad1990cb277
+last_synced: '2026-04-24T03:44:10Z'
+loc: 115
 annotations: []
 imports:
 - pydantic
@@ -24,6 +24,9 @@ exports:
 - ExerciseSessionIn
 - ExerciseSessionOut
 - ExerciseBulkIn
+- MoodIn
+- MoodOut
+- MoodBulkIn
 tags:
 - code
 - python
@@ -128,6 +131,31 @@ class ExerciseSessionOut(BaseModel):
 
 class ExerciseBulkIn(BaseModel):
     sessions: list[ExerciseSessionIn]
+
+
+# V2.2 — mood (champs Art.9 chiffrés côté DB, types python natifs côté API)
+class MoodIn(BaseModel):
+    start_time: str
+    mood_type: int | None = None
+    emotions: str | None = None
+    factors: str | None = None
+    notes: str | None = None
+    place: str | None = None
+    company: str | None = None
+
+
+class MoodOut(BaseModel):
+    start_time: str | None
+    mood_type: int | None = None
+    emotions: str | None = None
+    factors: str | None = None
+    notes: str | None = None
+    place: str | None = None
+    company: str | None = None
+
+
+class MoodBulkIn(BaseModel):
+    entries: list[MoodIn]
 ```
 
 ---
@@ -135,6 +163,7 @@ class ExerciseBulkIn(BaseModel):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Implements specs
+- [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `MoodIn`, `MoodOut`, `MoodBulkIn`
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `SleepSessionOut`, `SleepStageOut`
 
 ### Symbols
@@ -152,6 +181,9 @@ class ExerciseBulkIn(BaseModel):
 - `ExerciseSessionIn` (class) — lines 75-79
 - `ExerciseSessionOut` (class) — lines 82-86
 - `ExerciseBulkIn` (class) — lines 89-90
+- `MoodIn` (class) — lines 94-101 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `MoodOut` (class) — lines 104-111 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `MoodBulkIn` (class) — lines 114-115 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
 
 ### Imports
 - `pydantic`
@@ -172,3 +204,6 @@ class ExerciseBulkIn(BaseModel):
 - `ExerciseSessionIn`
 - `ExerciseSessionOut`
 - `ExerciseBulkIn`
+- `MoodIn`
+- `MoodOut`
+- `MoodBulkIn`

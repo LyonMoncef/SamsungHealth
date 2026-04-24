@@ -23,3 +23,6 @@ uuid_utils>=0.10
 
 # V2.1 Postgres tests — testcontainers spin un PG 16 jetable par session pytest
 testcontainers[postgres]>=4.0
+
+# V2.2 — chiffrement at-rest AES-256-GCM applicatif (champs Art.9 RGPD)
+cryptography>=42.0

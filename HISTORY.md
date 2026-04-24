@@ -53,6 +53,28 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 V2.2 — fondation chiffrement AES-256-GCM at-rest + table pilote mood
+
+`085dbcd` spec V2.2 (16 tests d'acceptation, fondation crypto + table pilote mood, scope strict Art.9 RGPD).
+
+`1b9c5c9` test(v2.2): 16 tests RED — `TestLoadEncryptionKey` ×5 + `TestEncryptDecryptField` ×3 + `TestEncryptedTypeDecorator` ×1 + `TestBootValidation` ×1 + `TestMoodPersistenceEncrypted` ×3 + `TestMoodApiBackCompat` ×2 + `TestMoodErrorSanitization` ×1.
+
+`66de248` feat(v2.2): fondation crypto AES-256-GCM → 9 tests fondation GREEN.
+- `server/security/crypto.py` : `load_encryption_key()` validation stricte (présence + base64 + 32 bytes + non-zero), `encrypt_field`/`decrypt_field` (nonce 12 + ciphertext+tag concaténés), exceptions `EncryptionConfigError` et `DecryptionError` (wrap `cryptography.exceptions.InvalidTag`)
+- `server/db/encrypted.py` : `EncryptedBytes`/`EncryptedString`/`EncryptedInt` SQLAlchemy `TypeDecorator` (transparent à l'ORM, sérialisation UTF-8 / ASCII int, BYTEA storage)
+- `tests/server/conftest.py` : fixture autouse `_set_test_encryption_key` (clé test stable, reset cache lru entre tests)
+- `.env.example` : template clé maître + commande de génération + warning sauvegarde
+- `requirements.txt` : `cryptography>=42.0` (déjà 46.0.7 installé localement)
+
+`5df4b2c` feat(v2.2): mood router + model chiffré → 16/16 V2.2 GREEN, 223 suite globale.
+- `server/db/models.py::Mood` : `notes`/`emotions`/`factors` en `EncryptedString`, `mood_type` en `EncryptedInt`. Ajout `notes_crypto_v`/`emotions_crypto_v`/`factors_crypto_v`/`mood_type_crypto_v` (smallint NOT NULL default=1) — versionning chiffrement pour rotation future sans perte
+- `alembic/versions/0002_encrypt_mood.py` : `op.alter_column` TEXT/INT → BYTEA via `postgresql_using='NULL'` (fresh DB assumée, downgrade non-data-preserving documenté)
+- `server/main.py` : `lifespan` async context manager appelle `_validate_encryption_at_boot()` au démarrage uvicorn (pas à l'import — pour ne pas casser pytest collect)
+- `server/routers/mood.py` : POST/GET `/api/mood`, `Depends(get_session)`, `pg_insert.on_conflict_do_nothing(start_time)`, wrap `DecryptionError` → `HTTPException(500, "internal_decryption_error")` opaque (sanitization spec §16)
+- `server/models.py` : `MoodIn`/`MoodOut`/`MoodBulkIn` Pydantic (types python natifs, pas de bytes leak côté API)
+- **Pattern transparent à valider en V2.2.1** : changer `Mapped[str]` → `mapped_column(EncryptedString)` + ajouter colonne `_crypto_v` + migration Alembic = ~2 min par champ. Reproductible mécaniquement sur les 9 tables Art.9 restantes
+- **Suite globale : 223 tests GREEN** (207 + 16 V2.2)
+
 ### 2026-04-24 V2.1.2 — refonte scripts CSV import + sample generator vers SQLAlchemy/PG
 
 `cf78667` spec V2.1.2 (4 tests d'acceptation, 21 importers à migrer).

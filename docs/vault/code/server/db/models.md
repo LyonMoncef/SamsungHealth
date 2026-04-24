@@ -2,15 +2,16 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: b7d89553c153c0e4d06d9b98873b5f23a4bb573b
-last_synced: '2026-04-24T01:54:48Z'
-loc: 319
+git_blob: be17fbee6197f85733569708f3d3bd34d6778f71
+last_synced: '2026-04-24T03:44:10Z'
+loc: 327
 annotations: []
 imports:
 - datetime
 - uuid
 - sqlalchemy
 - sqlalchemy.orm
+- .encrypted
 - .uuid7
 exports:
 - Base
@@ -74,6 +75,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from .encrypted import EncryptedInt, EncryptedString
 from .uuid7 import Uuid7, uuid7
 
 
@@ -292,10 +294,17 @@ class Mood(Uuid7PkMixin, TimestampedMixin, Base):
     __table_args__ = (UniqueConstraint("start_time", name="uq_mood_time"),)
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    mood_type: Mapped[int | None] = mapped_column(Integer)
-    emotions: Mapped[str | None] = mapped_column(Text)
-    factors: Mapped[str | None] = mapped_column(Text)
-    notes: Mapped[str | None] = mapped_column(Text)
+    # V2.2 — colonnes Art.9 chiffrées AES-256-GCM (BYTEA en DB, str/int en Python)
+    mood_type: Mapped[int | None] = mapped_column(EncryptedInt)
+    emotions: Mapped[str | None] = mapped_column(EncryptedString)
+    factors: Mapped[str | None] = mapped_column(EncryptedString)
+    notes: Mapped[str | None] = mapped_column(EncryptedString)
+    # Versionning chiffrement — permet rotation future sans perte
+    mood_type_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    emotions_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    factors_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    notes_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    # Champs non Art.9 (contexte, pas valeur santé)
     place: Mapped[str | None] = mapped_column(Text)
     company: Mapped[str | None] = mapped_column(Text)
 
@@ -376,39 +385,41 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Implements specs
+- [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `Mood`
 - [[../../specs/2026-04-24-v2-postgres-migration]] — symbols: `Base`, `SleepSession`, `SleepStage`, `HeartRateHourly`, `StepsDaily`, `StepsHourly`, `ExerciseSession`, `ActivityDaily`, `Stress`, `Spo2`, `RespiratoryRate`, `Hrv`, `SkinTemperature`, `Weight`, `Height`, `BloodPressure`, `Mood`, `WaterIntake`, `VitalityScore`, `FloorsDaily`, `ActivityLevel`, `Ecg`
 
 ### Symbols
-- `Base` (class) — lines 28-29 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `TimestampedMixin` (class) — lines 32-41
-- `Uuid7PkMixin` (class) — lines 44-45
-- `SleepSession` (class) — lines 49-68 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `SleepStage` (class) — lines 71-85 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `StepsHourly` (class) — lines 89-95 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `StepsDaily` (class) — lines 98-108 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `HeartRateHourly` (class) — lines 112-121 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ExerciseSession` (class) — lines 125-140 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Stress` (class) — lines 144-154 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Spo2` (class) — lines 157-170 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `RespiratoryRate` (class) — lines 173-181 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Hrv` (class) — lines 184-189 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `SkinTemperature` (class) — lines 192-201 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Weight` (class) — lines 205-216 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Height` (class) — lines 219-224 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `BloodPressure` (class) — lines 227-235 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Mood` (class) — lines 238-248 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `WaterIntake` (class) — lines 251-256 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ActivityDaily` (class) — lines 260-271 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `VitalityScore` (class) — lines 274-290 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `FloorsDaily` (class) — lines 293-298 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ActivityLevel` (class) — lines 301-306 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Ecg` (class) — lines 310-319 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Base` (class) — lines 29-30 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `TimestampedMixin` (class) — lines 33-42
+- `Uuid7PkMixin` (class) — lines 45-46
+- `SleepSession` (class) — lines 50-69 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SleepStage` (class) — lines 72-86 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `StepsHourly` (class) — lines 90-96 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `StepsDaily` (class) — lines 99-109 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `HeartRateHourly` (class) — lines 113-122 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ExerciseSession` (class) — lines 126-141 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Stress` (class) — lines 145-155 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Spo2` (class) — lines 158-171 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `RespiratoryRate` (class) — lines 174-182 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Hrv` (class) — lines 185-190 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SkinTemperature` (class) — lines 193-202 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Weight` (class) — lines 206-217 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Height` (class) — lines 220-225 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `BloodPressure` (class) — lines 228-236 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Mood` (class) — lines 239-256 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `WaterIntake` (class) — lines 259-264 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ActivityDaily` (class) — lines 268-279 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `VitalityScore` (class) — lines 282-298 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `FloorsDaily` (class) — lines 301-306 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ActivityLevel` (class) — lines 309-314 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Ecg` (class) — lines 318-327 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 
 ### Imports
 - `datetime`
 - `uuid`
 - `sqlalchemy`
 - `sqlalchemy.orm`
+- `.encrypted`
 - `.uuid7`
 
 ### Exports
