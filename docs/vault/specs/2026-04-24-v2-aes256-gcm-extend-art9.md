@@ -2,9 +2,9 @@
 type: spec
 title: "V2.2.1 — Étendre chiffrement AES-256-GCM aux 9 tables Art.9 restantes"
 slug: 2026-04-24-v2-aes256-gcm-extend-art9
-status: ready
+status: delivered
 created: 2026-04-24
-delivered: null
+delivered: 2026-04-24
 priority: high
 related_plans:
   - 2026-04-23-plan-v2-refactor-master
