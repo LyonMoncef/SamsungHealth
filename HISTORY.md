@@ -53,6 +53,18 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 `161aa86`
+test(v2.1): 10 tests RED pour spec postgres-migration
+- Première application réelle de la boucle TDD V2.1 — exécution `/tdd` inline (pas de subagent project-local exposé via Agent tool, comme noté wrap V2 foundation)
+- `tests/server/conftest.py` — fixtures session : `pg_container` (testcontainers-postgres PG 16-alpine, skip si Docker indispo), `pg_url`, `engine`, `db_session` (SessionLocal SQLAlchemy)
+- `tests/server/test_uuid7.py` — `TestUuid7` ×3 : `test_version_field_is_7`, `test_monotonic_within_ms` (100 UUID consécutifs en ordre strict), `test_timestamp_extractable` (extraction 48 bits hex, |Δ| < 5ms)
+- `tests/server/test_postgres_bootstrap.py` — `TestBootstrap` ×3 : alembic upgrade head crée 22 tables avec PK UUID + created_at/updated_at obligatoires, idempotent (no "Running upgrade" en 2e run), downgrade base réversible (toutes tables sauf alembic_version disparaissent)
+- `tests/server/test_models_postgres.py` — `TestSleepSessionPersistence` ×3 + `TestApiBackCompat` ×1 : insert assigne UUID v7 + created_at == updated_at, read by UUID, atomicité session+stages (FK invalide → rollback complet), back-compat shape JSON GET /api/sleep?period=6m (Nightfall ne bouge pas)
+- Bilan RED : **10 tests, 0 GREEN, 4 FAILED + 6 ERROR setup**, tous attribuables à du code/infra manquant déclaré par la spec (`server.db.uuid7`, `server.db.models`, `alembic.ini`, `alembic/versions/0001_initial.py`)
+- Stack runtime installé pour valider RED (sera réinstallé via `requirements.txt` à l'étape /impl) : `sqlalchemy>=2.0`, `psycopg[binary]>=3.1`, `alembic>=1.13`, `uuid_utils>=0.10`, `testcontainers[postgres]>=4.0`
+- Découverte fix incidente : un `tests/server/__init__.py` créé par mégarde fait que pytest l'importe en tant que package `server` (collision avec `/server/`). Suppression → fix
+- 4 notes vault auto-générées par pre-commit hook (cartographer)
+
 ### 2026-04-24 `e9c727e`
 feat(skill): /tdd (test-writer) — bouclage du chaînon manquant /spec → /tdd → /impl
 - Découvert pendant V2.1 kickoff : `/tdd` était référencé partout (`/spec` next_default, `/impl` prev) mais jamais créé
