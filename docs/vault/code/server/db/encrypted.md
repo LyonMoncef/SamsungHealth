@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/db/encrypted.py
-git_blob: 7e51c2243b3188075e921cc730b4efab6ce4bbb3
-last_synced: '2026-04-24T03:44:01Z'
-loc: 64
+git_blob: 2f0f258af7a6a742aa0aced2537927d24be480ec
+last_synced: '2026-04-24T04:04:56Z'
+loc: 85
 annotations: []
 imports:
 - sqlalchemy
@@ -14,6 +14,7 @@ exports:
 - EncryptedBytes
 - EncryptedString
 - EncryptedInt
+- EncryptedFloat
 tags:
 - code
 - python
@@ -91,6 +92,27 @@ class EncryptedInt(TypeDecorator):
         if value is None:
             return None
         return int(decrypt_field(bytes(value)).decode("ascii"))
+
+
+class EncryptedFloat(TypeDecorator):
+    """Stocke `float` chiffrés en BYTEA. Sérialise via repr(float).encode('ascii') (préserve IEEE 754)."""
+
+    impl = LargeBinary
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, int) and not isinstance(value, bool):
+            value = float(value)
+        if not isinstance(value, float):
+            raise TypeError(f"EncryptedFloat attend float, got {type(value).__name__}")
+        return encrypt_field(repr(value).encode("ascii"))
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return float(decrypt_field(bytes(value)).decode("ascii"))
 ```
 
 ---
@@ -99,11 +121,13 @@ class EncryptedInt(TypeDecorator):
 
 ### Implements specs
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `EncryptedBytes`, `EncryptedString`, `EncryptedInt`
+- [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9]] — symbols: `EncryptedFloat`
 
 ### Symbols
 - `EncryptedBytes` (class) — lines 10-26 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
 - `EncryptedString` (class) — lines 29-45 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
 - `EncryptedInt` (class) — lines 48-64 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `EncryptedFloat` (class) — lines 67-85 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]]
 
 ### Imports
 - `sqlalchemy`
@@ -114,3 +138,4 @@ class EncryptedInt(TypeDecorator):
 - `EncryptedBytes`
 - `EncryptedString`
 - `EncryptedInt`
+- `EncryptedFloat`
