@@ -22,7 +22,11 @@ def pg_container():
 
 @pytest.fixture
 def pg_url(pg_container):
-    return pg_container.get_connection_url()
+    raw = pg_container.get_connection_url()
+    # Force psycopg 3 driver (testcontainers default = psycopg2 which n'est pas installé)
+    return raw.replace("postgresql+psycopg2://", "postgresql+psycopg://").replace(
+        "postgresql://", "postgresql+psycopg://"
+    )
 
 
 @pytest.fixture

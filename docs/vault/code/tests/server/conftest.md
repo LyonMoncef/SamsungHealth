@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 1a40d6b679ba94363dfc8fe364e2025755eac13d
-last_synced: '2026-04-24T01:39:50Z'
-loc: 43
+git_blob: 5266560d90849a167e090f570cfa9adcd9aa5c04
+last_synced: '2026-04-24T01:54:48Z'
+loc: 47
 annotations: []
 imports:
 - pytest
@@ -46,7 +46,11 @@ def pg_container():
 
 @pytest.fixture
 def pg_url(pg_container):
-    return pg_container.get_connection_url()
+    raw = pg_container.get_connection_url()
+    # Force psycopg 3 driver (testcontainers default = psycopg2 which n'est pas installé)
+    return raw.replace("postgresql+psycopg2://", "postgresql+psycopg://").replace(
+        "postgresql://", "postgresql+psycopg://"
+    )
 
 
 @pytest.fixture

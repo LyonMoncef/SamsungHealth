@@ -2,14 +2,19 @@
 type: code-source
 language: python
 file_path: server/database.py
-git_blob: ee741d78f2a40ce2816bd100f4a410a73eaadb48
-last_synced: '2026-04-23T10:49:30Z'
-loc: 298
+git_blob: 16f7e42e831ec2abacbf6132b3e82c038086c5cb
+last_synced: '2026-04-24T01:54:48Z'
+loc: 323
 annotations: []
 imports:
+- os
 - sqlite3
+- functools
 - pathlib
+- sqlalchemy
+- sqlalchemy.orm
 exports:
+- get_session
 - get_connection
 - _add_col
 - init_db
@@ -27,10 +32,35 @@ coverage_pct: 100.0
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
+import os
 import sqlite3
+from functools import lru_cache
 from pathlib import Path
 
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+
+_DEFAULT_PG_URL = "postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth"
+
+
+@lru_cache(maxsize=1)
+def get_engine() -> Engine:
+    url = os.environ.get("DATABASE_URL", _DEFAULT_PG_URL)
+    return create_engine(url, future=True, pool_pre_ping=True)
+
+
+@lru_cache(maxsize=1)
+def _session_factory() -> sessionmaker:
+    return sessionmaker(bind=get_engine(), expire_on_commit=False, future=True)
+
+
+SessionLocal = _session_factory
+
+
+def get_session() -> Session:
+    return _session_factory()()
 
 
 def get_connection() -> sqlite3.Connection:
@@ -331,16 +361,25 @@ def init_db():
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-24-v2-postgres-migration]] — symbols: `get_engine`, `get_session`, `SessionLocal`
+
 ### Symbols
-- `get_connection` (function) — lines 7-11 · **Tested by (12)**: `test_sleep.test_get_sleep_not_found`, `test_sleep.test_get_sleep_sessions`, `test_sleep.test_post_sleep_dedup`, `test_sleep.test_post_sleep_session`, `test_sleep.test_post_sleep_with_stages` _+7_
-- `_add_col` (function) — lines 14-17 · ⚠️ no test
-- `init_db` (function) — lines 20-298 · ⚠️ no test
+- `get_session` (function) — lines 28-29 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `get_connection` (function) — lines 32-36 · **Tested by (12)**: `test_sleep.test_get_sleep_not_found`, `test_sleep.test_get_sleep_sessions`, `test_sleep.test_post_sleep_dedup`, `test_sleep.test_post_sleep_session`, `test_sleep.test_post_sleep_with_stages` _+7_
+- `_add_col` (function) — lines 39-42 · ⚠️ no test
+- `init_db` (function) — lines 45-323 · ⚠️ no test
 
 ### Imports
+- `os`
 - `sqlite3`
+- `functools`
 - `pathlib`
+- `sqlalchemy`
+- `sqlalchemy.orm`
 
 ### Exports
+- `get_session`
 - `get_connection`
 - `_add_col`
 - `init_db`
