@@ -23,7 +23,7 @@ An end-to-end pipeline that automatically syncs Samsung Health data via Android 
 ## Architecture
 
 ```
-Samsung Health → Health Connect ← Android App →HTTP→ FastAPI Backend →→ SQLite (health.db)
+Samsung Health → Health Connect ← Android App →HTTP→ FastAPI + SQLAlchemy →→ Postgres 16
                                                             ↓
                                                    Tabbed Web Dashboard
                                             (Sleep | Steps | HR | Exercise | Trends)
@@ -33,34 +33,42 @@ Samsung Health → Health Connect ← Android App →HTTP→ FastAPI Backend →
 
 | Component | Tech | Status |
 |-----------|------|--------|
-| Backend API | Python, FastAPI | Done |
-| Database | SQLite (`health.db`) | Done |
+| Backend API | Python, FastAPI, SQLAlchemy 2.x | Done |
+| Database | Postgres 16 (Alembic-managed, UUID v7 PK) | Done (V2.1) |
 | Web dashboard | HTML/CSS/JS (5 tabs) | Done |
 | Android app | Kotlin, Jetpack Compose, Health Connect | Done |
-| Sample data generator | Python | Done |
+| Sample data generator | Python | ⚠ Refonte SQLAlchemy en attente (spec V2.1.2) |
 
 ## Setup
+
+Prérequis : Docker (pour Postgres local).
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Démarrer Postgres + appliquer le schema
+make db-up
+make db-migrate
 ```
+
+Variables d'environnement :
+- `DATABASE_URL` — URL SQLAlchemy (défaut : `postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth`)
 
 ## Usage
 
 ```bash
-# Generate sample data (sleep, steps, HR, exercise)
-python scripts/generate_sample.py
+# Lancer le serveur
+make dev
 
-# Start the server
-uvicorn server.main:app
+# Ouvrir http://localhost:8001 dans le navigateur
 
-# Open http://localhost:8000 in your browser
-
-# Import Samsung Health CSV export
-python scripts/import_csv.py path/to/sleep.csv
+# Reset complet de la DB (DESTRUCTIVE — drop + recreate)
+make db-reset
 ```
+
+⚠️ **Migration depuis V1 (SQLite)** : V2.1 supprime SQLite. Si tu as un `health.db` legacy, sauvegarde-le séparément ; les CSV Samsung peuvent être ré-importés via le pipeline (refonte SQLAlchemy en cours via spec V2.1.2 — attendre avant ré-import).
 
 ## Related Projects
 

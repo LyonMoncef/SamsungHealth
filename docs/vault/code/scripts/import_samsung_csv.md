@@ -2,18 +2,20 @@
 type: code-source
 language: python
 file_path: scripts/import_samsung_csv.py
-git_blob: 038f9c4235e77939e91c817f7b788b78353b595f
-last_synced: '2026-04-23T10:49:30Z'
-loc: 690
+git_blob: 37258c948f8e5d046482956770a391e0078fe8bf
+last_synced: '2026-04-24T02:34:57Z'
+loc: 714
 annotations: []
 imports:
 - csv
+- sqlite3
 - sys
 - collections
 - datetime
 - pathlib
-- server.database
 exports:
+- get_connection
+- init_db
 - find_csv
 - read_csv
 - fv
@@ -59,8 +61,14 @@ coverage_pct: 0.0
 
 ```python
 """
-Import Samsung Health CSV export into health.db.
-Idempotent — uses INSERT OR IGNORE / upsert throughout.
+Import Samsung Health CSV export — LEGACY SQLite version.
+
+⚠️ V2.1.1 cutover : ce script utilise encore SQLite + INSERT OR IGNORE
+(le server tourne en Postgres + SQLAlchemy depuis V2.1.1). Refonte vers
+SQLAlchemy + ON CONFLICT DO NOTHING tracée dans la spec V2.1.2.
+
+En attendant la refonte, ce script crée un fichier health.db local autonome
+(non partagé avec le serveur) pour permettre les imports CSV ad-hoc.
 
 Usage:
     python3 scripts/import_samsung_csv.py [export_dir]
@@ -69,13 +77,31 @@ Default export_dir: /mnt/c/Users/idsmf/Desktop/SamsungHealth
 """
 
 import csv
+import sqlite3
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from server.database import DB_PATH, init_db, get_connection
+
+# Standalone SQLite — pas de dépendance à server/database.py (qui est PG-only depuis V2.1.1)
+DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+
+
+def get_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+
+def init_db():
+    """No-op — schema géré par Alembic côté serveur. À refondre en spec V2.1.2."""
+    raise SystemExit(
+        "❌ scripts/import_samsung_csv.py est en attente de refonte V2.1.2 (migration SQLAlchemy/PG). "
+        "Pour réimporter ton CSV, attends la spec 2026-04-XX-v2-csv-import-sqlalchemy."
+    )
 
 EXPORT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/mnt/c/Users/idsmf/Desktop/SamsungHealth")
 
@@ -755,46 +781,50 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `find_csv` (function) — lines 28-30 · ⚠️ no test
-- `read_csv` (function) — lines 33-43 · ⚠️ no test
-- `fv` (function) — lines 46-52 · ⚠️ no test
-- `parse_dt` (function) — lines 55-64 · ⚠️ no test
-- `ms_to_date` (function) — lines 67-75 · ⚠️ no test
-- `to_float` (function) — lines 78-82 · ⚠️ no test
-- `to_int` (function) — lines 85-89 · ⚠️ no test
-- `report` (function) — lines 92-93 · ⚠️ no test
-- `import_sleep` (function) — lines 98-144 · ⚠️ no test
-- `import_sleep_stages` (function) — lines 147-181 · ⚠️ no test
-- `import_steps_hourly` (function) — lines 184-204 · ⚠️ no test
-- `import_steps_daily` (function) — lines 207-231 · ⚠️ no test
-- `import_heart_rate_hourly` (function) — lines 234-255 · ⚠️ no test
-- `import_exercise` (function) — lines 258-295 · ⚠️ no test
-- `import_stress` (function) — lines 298-314 · ⚠️ no test
-- `import_spo2` (function) — lines 317-341 · ⚠️ no test
-- `import_respiratory_rate` (function) — lines 344-360 · ⚠️ no test
-- `import_hrv` (function) — lines 363-379 · ⚠️ no test
-- `import_skin_temperature` (function) — lines 382-398 · ⚠️ no test
-- `import_weight` (function) — lines 401-427 · ⚠️ no test
-- `import_height` (function) — lines 430-445 · ⚠️ no test
-- `import_blood_pressure` (function) — lines 448-470 · ⚠️ no test
-- `import_mood` (function) — lines 473-496 · ⚠️ no test
-- `import_water_intake` (function) — lines 499-514 · ⚠️ no test
-- `import_activity_daily` (function) — lines 517-544 · ⚠️ no test
-- `import_vitality_score` (function) — lines 547-582 · ⚠️ no test
-- `import_floors_daily` (function) — lines 585-600 · ⚠️ no test
-- `import_activity_level` (function) — lines 603-618 · ⚠️ no test
-- `import_ecg` (function) — lines 621-643 · ⚠️ no test
-- `main` (function) — lines 648-686 · ⚠️ no test
+- `get_connection` (function) — lines 30-34
+- `init_db` (function) — lines 37-42
+- `find_csv` (function) — lines 52-54 · ⚠️ no test
+- `read_csv` (function) — lines 57-67 · ⚠️ no test
+- `fv` (function) — lines 70-76 · ⚠️ no test
+- `parse_dt` (function) — lines 79-88 · ⚠️ no test
+- `ms_to_date` (function) — lines 91-99 · ⚠️ no test
+- `to_float` (function) — lines 102-106 · ⚠️ no test
+- `to_int` (function) — lines 109-113 · ⚠️ no test
+- `report` (function) — lines 116-117 · ⚠️ no test
+- `import_sleep` (function) — lines 122-168 · ⚠️ no test
+- `import_sleep_stages` (function) — lines 171-205 · ⚠️ no test
+- `import_steps_hourly` (function) — lines 208-228 · ⚠️ no test
+- `import_steps_daily` (function) — lines 231-255 · ⚠️ no test
+- `import_heart_rate_hourly` (function) — lines 258-279 · ⚠️ no test
+- `import_exercise` (function) — lines 282-319 · ⚠️ no test
+- `import_stress` (function) — lines 322-338 · ⚠️ no test
+- `import_spo2` (function) — lines 341-365 · ⚠️ no test
+- `import_respiratory_rate` (function) — lines 368-384 · ⚠️ no test
+- `import_hrv` (function) — lines 387-403 · ⚠️ no test
+- `import_skin_temperature` (function) — lines 406-422 · ⚠️ no test
+- `import_weight` (function) — lines 425-451 · ⚠️ no test
+- `import_height` (function) — lines 454-469 · ⚠️ no test
+- `import_blood_pressure` (function) — lines 472-494 · ⚠️ no test
+- `import_mood` (function) — lines 497-520 · ⚠️ no test
+- `import_water_intake` (function) — lines 523-538 · ⚠️ no test
+- `import_activity_daily` (function) — lines 541-568 · ⚠️ no test
+- `import_vitality_score` (function) — lines 571-606 · ⚠️ no test
+- `import_floors_daily` (function) — lines 609-624 · ⚠️ no test
+- `import_activity_level` (function) — lines 627-642 · ⚠️ no test
+- `import_ecg` (function) — lines 645-667 · ⚠️ no test
+- `main` (function) — lines 672-710 · ⚠️ no test
 
 ### Imports
 - `csv`
+- `sqlite3`
 - `sys`
 - `collections`
 - `datetime`
 - `pathlib`
-- `server.database`
 
 ### Exports
+- `get_connection`
+- `init_db`
 - `find_csv`
 - `read_csv`
 - `fv`

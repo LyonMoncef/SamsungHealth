@@ -2,9 +2,9 @@
 type: spec
 title: "V2.1 — Migration SQLite → Postgres + Alembic + UUID v7"
 slug: 2026-04-24-v2-postgres-migration
-status: in_progress
+status: delivered
 created: 2026-04-24
-delivered: null
+delivered: 2026-04-24
 priority: high
 related_plans:
   - 2026-04-23-plan-v2-refactor-master

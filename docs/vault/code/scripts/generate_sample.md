@@ -2,17 +2,19 @@
 type: code-source
 language: python
 file_path: scripts/generate_sample.py
-git_blob: 385bede655d13c372e0273f47ac92ffe8924ba84
-last_synced: '2026-04-23T10:49:30Z'
-loc: 228
+git_blob: 81c06d07ab4efc8f5f37c62359a14453977ecb01
+last_synced: '2026-04-24T02:34:57Z'
+loc: 247
 annotations: []
 imports:
-- sys
-- pathlib
 - random
+- sqlite3
+- sys
 - datetime
-- server.database
+- pathlib
 exports:
+- get_connection
+- init_db
 - generate_stages
 - generate_steps
 - generate_heart_rate
@@ -33,16 +35,35 @@ coverage_pct: 0.0
 
 ```python
 #!/usr/bin/env python3
-"""Generate ~30 days of realistic sample health data."""
+"""Generate ~30 days of realistic sample health data.
 
+⚠️ V2.1.1 cutover : ce script utilise encore SQLite (sera refondu en SQLAlchemy/PG via spec V2.1.2).
+"""
+
+import random
+import sqlite3
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import random
-from datetime import datetime, timedelta
-from server.database import init_db, get_connection
+
+# Standalone SQLite — pas de dépendance à server/database.py (PG-only depuis V2.1.1)
+DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+
+
+def get_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    raise SystemExit(
+        "❌ scripts/generate_sample.py est en attente de refonte V2.1.2. Utilise `make db-up && make db-migrate` "
+        "puis insert via SQLAlchemy depuis un REPL Python en attendant."
+    )
 
 
 STAGE_TYPES = ["light", "deep", "rem", "awake"]
@@ -267,20 +288,24 @@ if __name__ == "__main__":
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `generate_stages` (function) — lines 19-76 · ⚠️ no test
-- `generate_steps` (function) — lines 79-102 · ⚠️ no test
-- `generate_heart_rate` (function) — lines 105-132 · ⚠️ no test
-- `generate_exercise` (function) — lines 135-150 · ⚠️ no test
-- `generate` (function) — lines 153-224 · ⚠️ no test
+- `get_connection` (function) — lines 20-23
+- `init_db` (function) — lines 26-30
+- `generate_stages` (function) — lines 38-95 · ⚠️ no test
+- `generate_steps` (function) — lines 98-121 · ⚠️ no test
+- `generate_heart_rate` (function) — lines 124-151 · ⚠️ no test
+- `generate_exercise` (function) — lines 154-169 · ⚠️ no test
+- `generate` (function) — lines 172-243 · ⚠️ no test
 
 ### Imports
-- `sys`
-- `pathlib`
 - `random`
+- `sqlite3`
+- `sys`
 - `datetime`
-- `server.database`
+- `pathlib`
 
 ### Exports
+- `get_connection`
+- `init_db`
 - `generate_stages`
 - `generate_steps`
 - `generate_heart_rate`

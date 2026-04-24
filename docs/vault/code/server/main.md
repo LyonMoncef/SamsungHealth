@@ -2,16 +2,15 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: 30cef3a0065aa5d95cacd4b32cdf6f13af7dc8e7
-last_synced: '2026-04-23T10:49:30Z'
-loc: 25
+git_blob: bb74d634963f61c056466f567debc6c0894f5af4
+last_synced: '2026-04-24T02:34:57Z'
+loc: 21
 annotations: []
 imports:
-- fastapi
-- fastapi.staticfiles
-- fastapi.responses
 - pathlib
-- server.database
+- fastapi
+- fastapi.responses
+- fastapi.staticfiles
 - server.routers
 exports: []
 tags:
@@ -28,12 +27,13 @@ coverage_pct: 94.73684210526316
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pathlib import Path
-from server.database import init_db
-from server.routers import sleep, steps, heartrate, exercise
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from server.routers import exercise, heartrate, sleep, steps
 
 app = FastAPI(title="SamsungHealth")
 app.include_router(sleep.router)
@@ -45,11 +45,6 @@ static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
-
-
 @app.get("/")
 def index():
     return FileResponse(str(static_dir / "index.html"))
@@ -59,10 +54,12 @@ def index():
 
 ## Appendix — symbols & navigation *(auto)*
 
+### Implements specs
+- [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `app`, `startup`
+
 ### Imports
-- `fastapi`
-- `fastapi.staticfiles`
-- `fastapi.responses`
 - `pathlib`
-- `server.database`
+- `fastapi`
+- `fastapi.responses`
+- `fastapi.staticfiles`
 - `server.routers`
