@@ -53,6 +53,66 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 `9c4f87c`
+fix(tests): truncate cascade entre tests pour isolation forte → 9/10 tests V2.1 GREEN
+- Tests `TestSleepSessionPersistence` partageaient le testcontainer PG session-scoped → state résiduel entre tests (tests insert+read laissaient des rows, atomic test échouait sur "0 rows attendus")
+- Fix : fixture `db_session` truncate cascade toutes les tables non-alembic en teardown
+- Bilan tests V2.1 : **9 PASSED / 1 FAILED** (uuid7 ×3 + bootstrap ×3 + persistence ×3 GREEN ; back-compat HTTP `test_get_sleep_period_6m_response_shape_unchanged` reste RED car router refactor pas fait)
+
+### 2026-04-24 `45cc18f`
+feat(v2.1): server/database.py refactor (get_engine/get_session) + 21 SQLAlchemy models + alembic init + 0001_initial migration → 6/10 tests GREEN
+- `server/database.py` : ajout `get_engine()` (lru_cache, lit `DATABASE_URL` ou défaut local), `get_session()`, `SessionLocal`. Legacy `get_connection()`/`DB_PATH`/`init_db()` conservés pour back-compat des 175+ tests SQLite existants (suppression dans impl 7/7)
+- `server/db/models.py` : 21 tables SQLAlchemy 2.x avec `Mapped[]`, `Uuid7PkMixin` + `TimestampedMixin`, FK UUID + ondelete CASCADE, contraintes UNIQUE conservées (sleep_sessions, sleep_stages, steps_*, heart_rate_hourly, exercise_sessions, stress, spo2, respiratory_rate, hrv, skin_temperature, weight, height, blood_pressure, mood, water_intake, activity_daily, vitality_score, floors_daily, activity_level, ecg)
+- `alembic/env.py` : lit `DATABASE_URL` env, target_metadata = `Base.metadata`
+- `alembic/versions/0001_initial.py` : autogenerate complet + ajout `import server.db.uuid7` (pour résoudre le `server.db.uuid7.Uuid7()` référencé)
+- `tests/server/conftest.py` : forcer driver psycopg 3 dans l'URL testcontainers (`postgresql://` → `postgresql+psycopg://`)
+- 0 régression sur les 175 tests existants (legacy `get_connection`/`init_db` SQLite intact)
+
+### 2026-04-24 `9491013`
+feat(v2.1): docker-compose PG 16-alpine + Makefile db-up/db-down/db-migrate/db-reset
+- `docker-compose.yml` : service `postgres:16-alpine` + volume nommé `pgdata` + healthcheck `pg_isready` + port 5432 exposé
+- `Makefile` 4 targets : `db-up` (idempotent + wait-ready), `db-down` (volume préservé), `db-migrate` (DATABASE_URL local par défaut si absent), `db-reset` (DESTRUCTIVE — drop volume + recreate + migrate)
+
+### 2026-04-24 `35c559e`
+feat(v2.1): uuid7 helper + Uuid7 TypeDecorator + deps PG → 3 tests uuid7 GREEN
+- `server/db/uuid7.py` : `uuid7()` (wrapper sur `uuid_utils.uuid7`, retourne `_uuid.UUID` standard) + `Uuid7` TypeDecorator (PG → `UUID(as_uuid=True)`, autres dialects → `CHAR(36)` string)
+- `requirements.txt` : ajout `sqlalchemy>=2.0`, `psycopg[binary]>=3.1`, `alembic>=1.13`, `uuid_utils>=0.10`, `testcontainers[postgres]>=4.0`
+- 3 tests `TestUuid7` (version 7, monotone par ms, timestamp extractable) GREEN immédiats — pas de DB requise
+
+### 2026-04-24 `161aa86`
+test(v2.1): 10 tests RED pour spec postgres-migration
+- Première application réelle de la boucle TDD V2.1 — exécution `/tdd` inline (pas de subagent project-local exposé via Agent tool, comme noté wrap V2 foundation)
+- `tests/server/conftest.py` — fixtures session : `pg_container` (testcontainers-postgres PG 16-alpine, skip si Docker indispo), `pg_url`, `engine`, `db_session` (SessionLocal SQLAlchemy)
+- `tests/server/test_uuid7.py` — `TestUuid7` ×3 : `test_version_field_is_7`, `test_monotonic_within_ms` (100 UUID consécutifs en ordre strict), `test_timestamp_extractable` (extraction 48 bits hex, |Δ| < 5ms)
+- `tests/server/test_postgres_bootstrap.py` — `TestBootstrap` ×3 : alembic upgrade head crée 22 tables avec PK UUID + created_at/updated_at obligatoires, idempotent (no "Running upgrade" en 2e run), downgrade base réversible (toutes tables sauf alembic_version disparaissent)
+- `tests/server/test_models_postgres.py` — `TestSleepSessionPersistence` ×3 + `TestApiBackCompat` ×1 : insert assigne UUID v7 + created_at == updated_at, read by UUID, atomicité session+stages (FK invalide → rollback complet), back-compat shape JSON GET /api/sleep?period=6m (Nightfall ne bouge pas)
+- Bilan RED : **10 tests, 0 GREEN, 4 FAILED + 6 ERROR setup**, tous attribuables à du code/infra manquant déclaré par la spec (`server.db.uuid7`, `server.db.models`, `alembic.ini`, `alembic/versions/0001_initial.py`)
+- Stack runtime installé pour valider RED (sera réinstallé via `requirements.txt` à l'étape /impl) : `sqlalchemy>=2.0`, `psycopg[binary]>=3.1`, `alembic>=1.13`, `uuid_utils>=0.10`, `testcontainers[postgres]>=4.0`
+- Découverte fix incidente : un `tests/server/__init__.py` créé par mégarde fait que pytest l'importe en tant que package `server` (collision avec `/server/`). Suppression → fix
+- 4 notes vault auto-générées par pre-commit hook (cartographer)
+
+### 2026-04-24 `e9c727e`
+feat(skill): /tdd (test-writer) — bouclage du chaînon manquant /spec → /tdd → /impl
+- Découvert pendant V2.1 kickoff : `/tdd` était référencé partout (`/spec` next_default, `/impl` prev) mais jamais créé
+- `.claude/skills/tdd/SKILL.md` — délègue à `test-writer` subagent. Valide prérequis (spec status ≥ ready, frontmatter `tested_by:` non vide). Auto-détecte `target_test_dir` depuis `dirname(tested_by[0].file)`. Prépare `brief.json` (contrat `TestBrief`). Garde-fou : si `tests_green_count > 0` avant impl → faux test, signale au lieu de continuer
+- Linked-list maintenant complète : `/spec` → `/tdd` → `/impl` → `/review` → `/align` → `/commit`
+
+### 2026-04-24 `fa2906a`
+feat(spec): v2-postgres-migration (status ready, 22 tables, 10 tests d'acceptation, UUID v7 + Alembic + testcontainers)
+- Première vraie spec V2.1 produit, branche `feat/v2-postgres-migration` (depuis umbrella `refactor/phase-a-foundation-agents`)
+- `docs/vault/specs/2026-04-24-v2-postgres-migration.md`
+- Vision : sortir SQLite (single-file, schéma fragile via `_add_col` runtime) au profit de PG 16 + Alembic + UUID v7. Pas de feature produit livrée — fondation pour V2.2+ (chiffrement AES-GCM, JWT, structlog)
+- Décisions : PG 16 + tout côté Python (UUID v7 via `uuid_utils`, AES-GCM via `cryptography` futur), SQLAlchemy 2.x ORM + `psycopg[binary]` synchrone, Alembic autogenerate baseline + revue manuelle, `testcontainers-postgres` pour intégration, API publique inchangée (Nightfall ne bouge pas), pas de port de données SQLite
+- Livrables : `docker-compose.yml` PG 16-alpine, `server/db/{uuid7.py,models.py}`, `server/database.py` refactor (`get_engine`/`get_session`), `alembic/{env.py,versions/0001_initial.py}`, refactor 4 routers (`sleep`/`heart_rate`/`steps`/`activity`), suppression code SQLite, Makefile targets `db-up`/`db-down`/`db-migrate`/`db-reset`
+- 10 tests d'acceptation given/when/then mappés sur 3 fichiers de test : `tests/server/{test_postgres_bootstrap,test_uuid7,test_models_postgres}.py` (bootstrap idempotent, downgrade réversible, UUID v7 monotone/version/timestamp, insert sleep session avec UUID + timestamps auto, read by UUID, atomicité session+stages, back-compat API frontend)
+- Out-of-scope verrouillé : AES-GCM (V2.2), JWT (V2.3), structlog (V2.4), async SQLAlchemy, port données
+
+### 2026-04-24 `086c597`
+feat(skills): /impl (coder-backend) + /align (plan-keeper) pour boucle TDD V2.1
+- Skills manquants identifiés dans le wrap V2 foundation, créés en début de V2.1
+- `.claude/skills/impl/SKILL.md` — délègue au subagent `coder-<target>` (backend par défaut). Valide prérequis (spec ≥ ready, tests RED présents et bien rouges), résout `tests_red_path` via frontmatter `tested_by:` de la spec, prépare `brief.json` (contrat `CodeBrief`), délègue. Linked-list : prev `/tdd`, next `/review`
+- `.claude/skills/align/SKILL.md` — délègue à `plan-keeper` pour audit déviations plans ↔ livraison. Read-only strict. Compare plans de la branche courante à l'état actuel des fichiers (snapshot ici-et-maintenant, pas de diff vs main). Prépare `brief.json` (contrat `PlanAuditBrief`) avec `triggered_by`/`recent_changes`/`severity_threshold`. Premier vrai test du plan-keeper en conditions réelles (deferred Option C dans wrap V2 foundation). Linked-list : prev `/review`, next `/commit`
+
 ### 2026-04-23 `bcde863`
 docs(plans/agents): patch tous les paths vault/02_Projects/SamsungHealth/ → docs/vault/ suite vault Obsidian dédié
 - `.claude/agents/spec-writer.md` — `vault/02_Projects/.../specs/` → `docs/vault/specs/` (×2 occurrences)

@@ -1,7 +1,32 @@
+import os
 import sqlite3
+from functools import lru_cache
 from pathlib import Path
 
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 DB_PATH = Path(__file__).resolve().parent.parent / "health.db"
+
+_DEFAULT_PG_URL = "postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth"
+
+
+@lru_cache(maxsize=1)
+def get_engine() -> Engine:
+    url = os.environ.get("DATABASE_URL", _DEFAULT_PG_URL)
+    return create_engine(url, future=True, pool_pre_ping=True)
+
+
+@lru_cache(maxsize=1)
+def _session_factory() -> sessionmaker:
+    return sessionmaker(bind=get_engine(), expire_on_commit=False, future=True)
+
+
+SessionLocal = _session_factory
+
+
+def get_session() -> Session:
+    return _session_factory()()
 
 
 def get_connection() -> sqlite3.Connection:
