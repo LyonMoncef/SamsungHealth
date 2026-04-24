@@ -53,6 +53,44 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-24 `1483873` (V2.1.1 cleanup final)
+feat(v2.1.1): cleanup SQLite — purge legacy, scripts isolés, README PG, V2.1 delivered
+- `server/database.py` : purge complète (`sqlite3`, `DB_PATH`, `_add_col`, `init_db`, `get_connection` supprimés). Garde `get_engine`/`get_session`/`SessionLocal`/`_DEFAULT_PG_URL`
+- `server/main.py` : suppression hook `@app.on_event("startup") def startup(): init_db()` — schema géré par Alembic uniquement
+- `scripts/import_samsung_csv.py` + `scripts/generate_sample.py` : helpers SQLite inlinés (autonomes, plus d'import depuis `server.database`). `init_db()` raise `SystemExit` avec message pédagogique pointant spec V2.1.2 (refonte SQLAlchemy à venir)
+- `tests/conftest.py` : supprimé (le `client`/`clean_db` fixture SQLite n'a plus de consumer après migration tests sleep vers `tests/server/`)
+- `README.md` : section Setup réécrite (Postgres + Docker prérequis, `make db-up && make db-migrate`), Components table mise à jour (SQLAlchemy 2.x, PG 16 Alembic UUID v7), warning migration depuis V1
+- Spec `docs/vault/specs/2026-04-24-v2-postgres-migration.md` : `status: delivered`, `delivered: 2026-04-24`
+- **Suite globale : 203 tests GREEN, 0 failed** (175 pré-existants + 12 sleep migrés vers PG + 6 round-trip cutover + 10 V2.1 fondation)
+- 6 tests sentinelles cutover GREEN (`TestNoSqliteResidual` × 3 + 3 round-trip routers)
+
+### 2026-04-24 `12140e8`
+feat(v2.1.1): refactor heartrate + steps + exercise routers → SQLAlchemy + on_conflict_do_nothing returning id (3 round-trip GREEN)
+- 3 routers convertis en SessionLocal + `pg_insert(...).on_conflict_do_nothing(index_elements=...).returning(<PK>)`
+- Pattern `RETURNING id` requis car `result.rowcount` retourne -1 sur ON CONFLICT — la présence d'un row dans `RETURNING` indique l'insertion effective vs le skip
+- Helper `_to_dt`/`_iso` dans exercise pour normaliser timezone UTC (les datetimes PG sont timezone-aware)
+- Tests round-trip GREEN : POST 3 records → GET filter → assertions sur shape + count + valeurs croisées avec PG via `db_session`
+
+### 2026-04-24 `b75482f`
+feat(v2.1.1): refactor sleep router → SQLAlchemy + 12 tests legacy migrés vers tests/server (PG via testcontainers)
+- `server/routers/sleep.py` : POST utilise `select` pour dedup (idempotent) puis `db.add(SleepSession)` + flush + add stages ; GET utilise `selectinload(SleepSession.stages)` quand `include_stages=true`
+- `server/models.py` : `SleepSessionOut.id`/`SleepStageOut.id`/`session_id` passent `int → str` (UUID sérialisé). `created_at: str | None = None` (PG renvoie datetime, pas string)
+- `tests/test_sleep.py` + `tests/test_sleep_api_shape.py` déplacés dans `tests/server/` (12 tests). Le `client` fixture remplacé par `client_pg_ready` (TestClient + `app.dependency_overrides[get_session]` vers le testcontainer)
+- `tests/server/conftest.py` : remontée des fixtures `schema_ready` (alembic upgrade head sur testcontainer) + `client_pg_ready` (combine schema + client_pg). Fixture autouse `_pg_truncate_between_tests` (skip si test ne demande pas pg_container)
+- 16 tests sleep-related GREEN (12 legacy + 3 persistence + 1 back-compat)
+
+### 2026-04-24 `37d38fb`
+test(v2.1.1): 7 tests RED — back-compat sleep adapté + 3 round-trip routers + 3 sentinelles SQLite cleanup
+- `tests/server/test_routers_cutover.py` : `TestHeartRateRouter`/`TestStepsRouter`/`TestExerciseRouter` round-trip POST→GET avec assert via `db_session` PG (preuve que le router tape vraiment PG, pas SQLite résiduel)
+- `TestNoSqliteResidual` × 3 : grep `^(import sqlite3|from sqlite3 )` dans `server/**/*.py`, présence `health.db`, `from server.database import get_connection` raise ImportError
+- Test back-compat sleep adapté : params `from`/`to`/`include_stages` (réels frontend Nightfall) au lieu de `period=6m` (faux paramètre inventé)
+
+### 2026-04-24 `b0edf6e`
+spec(v2.1.1): cutover routers SQLite → SQLAlchemy + suppression code SQLite (spec fille de V2.1) + V2.1 in_progress
+- Décision en cours de session : V2.1 splitée en 2 PR (option B). PR fondation = engine + models + alembic + docker + uuid7 (mergeable indépendamment). PR fille (V2.1.1) = refactor 4 routers + suppression complète SQLite + 12 tests legacy migrés
+- `docs/vault/specs/2026-04-24-v2-postgres-routers-cutover.md` créée (status: ready, 8 livrables, 9 tests d'acceptation)
+- Spec parente `2026-04-24-v2-postgres-migration.md` passée `status: in_progress` + section "Suite naturelle" mise à jour avec le découpage
+
 ### 2026-04-24 `9c4f87c`
 fix(tests): truncate cascade entre tests pour isolation forte → 9/10 tests V2.1 GREEN
 - Tests `TestSleepSessionPersistence` partageaient le testcontainer PG session-scoped → state résiduel entre tests (tests insert+read laissaient des rows, atomic test échouait sur "0 rows attendus")
