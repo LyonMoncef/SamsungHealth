@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: be17fbee6197f85733569708f3d3bd34d6778f71
-last_synced: '2026-04-24T03:44:10Z'
-loc: 327
+git_blob: 760c3f5d3f8968b6867ee3ec6f0163541cbc4405
+last_synced: '2026-04-24T04:04:56Z'
+loc: 371
 annotations: []
 imports:
 - datetime
@@ -75,7 +75,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from .encrypted import EncryptedInt, EncryptedString
+from .encrypted import EncryptedFloat, EncryptedInt, EncryptedString
 from .uuid7 import Uuid7, uuid7
 
 
@@ -109,13 +109,21 @@ class SleepSession(Uuid7PkMixin, TimestampedMixin, Base):
 
     sleep_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     sleep_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    sleep_score: Mapped[int | None] = mapped_column(Integer)
-    efficiency: Mapped[float | None] = mapped_column(Float)
-    sleep_duration_min: Mapped[int | None] = mapped_column(Integer)
-    sleep_cycle: Mapped[int | None] = mapped_column(Integer)
-    mental_recovery: Mapped[float | None] = mapped_column(Float)
-    physical_recovery: Mapped[float | None] = mapped_column(Float)
-    sleep_type: Mapped[int | None] = mapped_column(Integer)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    sleep_score: Mapped[int | None] = mapped_column(EncryptedInt)
+    efficiency: Mapped[float | None] = mapped_column(EncryptedFloat)
+    sleep_duration_min: Mapped[int | None] = mapped_column(EncryptedInt)
+    sleep_cycle: Mapped[int | None] = mapped_column(EncryptedInt)
+    mental_recovery: Mapped[float | None] = mapped_column(EncryptedFloat)
+    physical_recovery: Mapped[float | None] = mapped_column(EncryptedFloat)
+    sleep_type: Mapped[int | None] = mapped_column(EncryptedInt)
+    sleep_score_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    efficiency_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    sleep_duration_min_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    sleep_cycle_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    mental_recovery_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    physical_recovery_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    sleep_type_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
     stages: Mapped[list["SleepStage"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
@@ -169,10 +177,14 @@ class HeartRateHourly(Uuid7PkMixin, TimestampedMixin, Base):
 
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     hour: Mapped[int] = mapped_column(Integer, nullable=False)
-    min_bpm: Mapped[int] = mapped_column(Integer, nullable=False)
-    max_bpm: Mapped[int] = mapped_column(Integer, nullable=False)
-    avg_bpm: Mapped[int] = mapped_column(Integer, nullable=False)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    min_bpm: Mapped[int] = mapped_column(EncryptedInt, nullable=False)
+    max_bpm: Mapped[int] = mapped_column(EncryptedInt, nullable=False)
+    avg_bpm: Mapped[int] = mapped_column(EncryptedInt, nullable=False)
     sample_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    min_bpm_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    max_bpm_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    avg_bpm_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 # ── exercise ───────────────────────────────────────────────────────────────
@@ -204,7 +216,9 @@ class Stress(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    score: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — score Art.9 chiffré
+    score: Mapped[float | None] = mapped_column(EncryptedFloat)
+    score_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     tag_id: Mapped[int | None] = mapped_column(Integer)
 
 
@@ -217,10 +231,15 @@ class Spo2(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    spo2: Mapped[float | None] = mapped_column(Float)
-    min_spo2: Mapped[float | None] = mapped_column(Float)
-    max_spo2: Mapped[float | None] = mapped_column(Float)
-    low_duration_s: Mapped[int | None] = mapped_column(Integer)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    spo2: Mapped[float | None] = mapped_column(EncryptedFloat)
+    min_spo2: Mapped[float | None] = mapped_column(EncryptedFloat)
+    max_spo2: Mapped[float | None] = mapped_column(EncryptedFloat)
+    low_duration_s: Mapped[int | None] = mapped_column(EncryptedInt)
+    spo2_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    min_spo2_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    max_spo2_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    low_duration_s_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     tag_id: Mapped[int | None] = mapped_column(Integer)
 
 
@@ -230,9 +249,13 @@ class RespiratoryRate(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    average: Mapped[float | None] = mapped_column(Float)
-    lower_limit: Mapped[float | None] = mapped_column(Float)
-    upper_limit: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    average: Mapped[float | None] = mapped_column(EncryptedFloat)
+    lower_limit: Mapped[float | None] = mapped_column(EncryptedFloat)
+    upper_limit: Mapped[float | None] = mapped_column(EncryptedFloat)
+    average_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    lower_limit_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    upper_limit_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 class Hrv(Uuid7PkMixin, TimestampedMixin, Base):
@@ -249,9 +272,13 @@ class SkinTemperature(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    temperature: Mapped[float | None] = mapped_column(Float)
-    min_temp: Mapped[float | None] = mapped_column(Float)
-    max_temp: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    temperature: Mapped[float | None] = mapped_column(EncryptedFloat)
+    min_temp: Mapped[float | None] = mapped_column(EncryptedFloat)
+    max_temp: Mapped[float | None] = mapped_column(EncryptedFloat)
+    temperature_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    min_temp_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    max_temp_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     tag_id: Mapped[int | None] = mapped_column(Integer)
 
 
@@ -261,13 +288,21 @@ class Weight(Uuid7PkMixin, TimestampedMixin, Base):
     __table_args__ = (UniqueConstraint("start_time", name="uq_weight_time"),)
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    weight_kg: Mapped[float | None] = mapped_column(Float)
-    body_fat_pct: Mapped[float | None] = mapped_column(Float)
-    skeletal_muscle_pct: Mapped[float | None] = mapped_column(Float)
-    skeletal_muscle_mass_kg: Mapped[float | None] = mapped_column(Float)
-    fat_free_mass_kg: Mapped[float | None] = mapped_column(Float)
-    basal_metabolic_rate: Mapped[int | None] = mapped_column(Integer)
-    total_body_water_kg: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    weight_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    body_fat_pct: Mapped[float | None] = mapped_column(EncryptedFloat)
+    skeletal_muscle_pct: Mapped[float | None] = mapped_column(EncryptedFloat)
+    skeletal_muscle_mass_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    fat_free_mass_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    basal_metabolic_rate: Mapped[int | None] = mapped_column(EncryptedInt)
+    total_body_water_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    weight_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    body_fat_pct_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    skeletal_muscle_pct_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    skeletal_muscle_mass_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    fat_free_mass_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    basal_metabolic_rate_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    total_body_water_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 class Height(Uuid7PkMixin, TimestampedMixin, Base):
@@ -283,10 +318,15 @@ class BloodPressure(Uuid7PkMixin, TimestampedMixin, Base):
     __table_args__ = (UniqueConstraint("start_time", name="uq_bp_time"),)
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    systolic: Mapped[float | None] = mapped_column(Float)
-    diastolic: Mapped[float | None] = mapped_column(Float)
-    pulse: Mapped[int | None] = mapped_column(Integer)
-    mean_bp: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    systolic: Mapped[float | None] = mapped_column(EncryptedFloat)
+    diastolic: Mapped[float | None] = mapped_column(EncryptedFloat)
+    pulse: Mapped[int | None] = mapped_column(EncryptedInt)
+    mean_bp: Mapped[float | None] = mapped_column(EncryptedFloat)
+    systolic_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    diastolic_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    pulse_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    mean_bp_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 class Mood(Uuid7PkMixin, TimestampedMixin, Base):
@@ -374,10 +414,14 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    mean_heart_rate: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    mean_heart_rate: Mapped[float | None] = mapped_column(EncryptedFloat)
+    classification: Mapped[int | None] = mapped_column(EncryptedInt)
+    mean_heart_rate_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    classification_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    # Métadonnées non sensibles (échantillonnage signal, pas valeur santé)
     sample_frequency: Mapped[int | None] = mapped_column(Integer)
     sample_count: Mapped[int | None] = mapped_column(Integer)
-    classification: Mapped[int | None] = mapped_column(Integer)
 ```
 
 ---
@@ -386,33 +430,34 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
 
 ### Implements specs
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `Mood`
+- [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9]] — symbols: `SleepSession`, `Weight`, `BloodPressure`, `Stress`, `Spo2`, `HeartRateHourly`, `RespiratoryRate`, `SkinTemperature`, `Ecg`
 - [[../../specs/2026-04-24-v2-postgres-migration]] — symbols: `Base`, `SleepSession`, `SleepStage`, `HeartRateHourly`, `StepsDaily`, `StepsHourly`, `ExerciseSession`, `ActivityDaily`, `Stress`, `Spo2`, `RespiratoryRate`, `Hrv`, `SkinTemperature`, `Weight`, `Height`, `BloodPressure`, `Mood`, `WaterIntake`, `VitalityScore`, `FloorsDaily`, `ActivityLevel`, `Ecg`
 
 ### Symbols
 - `Base` (class) — lines 29-30 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 - `TimestampedMixin` (class) — lines 33-42
 - `Uuid7PkMixin` (class) — lines 45-46
-- `SleepSession` (class) — lines 50-69 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `SleepStage` (class) — lines 72-86 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `StepsHourly` (class) — lines 90-96 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `StepsDaily` (class) — lines 99-109 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `HeartRateHourly` (class) — lines 113-122 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ExerciseSession` (class) — lines 126-141 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Stress` (class) — lines 145-155 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Spo2` (class) — lines 158-171 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `RespiratoryRate` (class) — lines 174-182 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Hrv` (class) — lines 185-190 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `SkinTemperature` (class) — lines 193-202 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Weight` (class) — lines 206-217 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Height` (class) — lines 220-225 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `BloodPressure` (class) — lines 228-236 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Mood` (class) — lines 239-256 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `WaterIntake` (class) — lines 259-264 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ActivityDaily` (class) — lines 268-279 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `VitalityScore` (class) — lines 282-298 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `FloorsDaily` (class) — lines 301-306 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ActivityLevel` (class) — lines 309-314 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Ecg` (class) — lines 318-327 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SleepSession` (class) — lines 50-77 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SleepStage` (class) — lines 80-94 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `StepsHourly` (class) — lines 98-104 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `StepsDaily` (class) — lines 107-117 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `HeartRateHourly` (class) — lines 121-134 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ExerciseSession` (class) — lines 138-153 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Stress` (class) — lines 157-169 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Spo2` (class) — lines 172-190 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `RespiratoryRate` (class) — lines 193-205 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Hrv` (class) — lines 208-213 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SkinTemperature` (class) — lines 216-229 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Weight` (class) — lines 233-252 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Height` (class) — lines 255-260 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `BloodPressure` (class) — lines 263-276 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Mood` (class) — lines 279-296 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `WaterIntake` (class) — lines 299-304 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ActivityDaily` (class) — lines 308-319 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `VitalityScore` (class) — lines 322-338 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `FloorsDaily` (class) — lines 341-346 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ActivityLevel` (class) — lines 349-354 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Ecg` (class) — lines 358-371 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 
 ### Imports
 - `datetime`

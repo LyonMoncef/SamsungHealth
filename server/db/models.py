@@ -22,7 +22,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from .encrypted import EncryptedInt, EncryptedString
+from .encrypted import EncryptedFloat, EncryptedInt, EncryptedString
 from .uuid7 import Uuid7, uuid7
 
 
@@ -56,13 +56,21 @@ class SleepSession(Uuid7PkMixin, TimestampedMixin, Base):
 
     sleep_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     sleep_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    sleep_score: Mapped[int | None] = mapped_column(Integer)
-    efficiency: Mapped[float | None] = mapped_column(Float)
-    sleep_duration_min: Mapped[int | None] = mapped_column(Integer)
-    sleep_cycle: Mapped[int | None] = mapped_column(Integer)
-    mental_recovery: Mapped[float | None] = mapped_column(Float)
-    physical_recovery: Mapped[float | None] = mapped_column(Float)
-    sleep_type: Mapped[int | None] = mapped_column(Integer)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    sleep_score: Mapped[int | None] = mapped_column(EncryptedInt)
+    efficiency: Mapped[float | None] = mapped_column(EncryptedFloat)
+    sleep_duration_min: Mapped[int | None] = mapped_column(EncryptedInt)
+    sleep_cycle: Mapped[int | None] = mapped_column(EncryptedInt)
+    mental_recovery: Mapped[float | None] = mapped_column(EncryptedFloat)
+    physical_recovery: Mapped[float | None] = mapped_column(EncryptedFloat)
+    sleep_type: Mapped[int | None] = mapped_column(EncryptedInt)
+    sleep_score_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    efficiency_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    sleep_duration_min_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    sleep_cycle_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    mental_recovery_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    physical_recovery_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    sleep_type_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
     stages: Mapped[list["SleepStage"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
@@ -116,10 +124,14 @@ class HeartRateHourly(Uuid7PkMixin, TimestampedMixin, Base):
 
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     hour: Mapped[int] = mapped_column(Integer, nullable=False)
-    min_bpm: Mapped[int] = mapped_column(Integer, nullable=False)
-    max_bpm: Mapped[int] = mapped_column(Integer, nullable=False)
-    avg_bpm: Mapped[int] = mapped_column(Integer, nullable=False)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    min_bpm: Mapped[int] = mapped_column(EncryptedInt, nullable=False)
+    max_bpm: Mapped[int] = mapped_column(EncryptedInt, nullable=False)
+    avg_bpm: Mapped[int] = mapped_column(EncryptedInt, nullable=False)
     sample_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    min_bpm_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    max_bpm_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    avg_bpm_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 # ── exercise ───────────────────────────────────────────────────────────────
@@ -151,7 +163,9 @@ class Stress(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    score: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — score Art.9 chiffré
+    score: Mapped[float | None] = mapped_column(EncryptedFloat)
+    score_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     tag_id: Mapped[int | None] = mapped_column(Integer)
 
 
@@ -164,10 +178,15 @@ class Spo2(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    spo2: Mapped[float | None] = mapped_column(Float)
-    min_spo2: Mapped[float | None] = mapped_column(Float)
-    max_spo2: Mapped[float | None] = mapped_column(Float)
-    low_duration_s: Mapped[int | None] = mapped_column(Integer)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    spo2: Mapped[float | None] = mapped_column(EncryptedFloat)
+    min_spo2: Mapped[float | None] = mapped_column(EncryptedFloat)
+    max_spo2: Mapped[float | None] = mapped_column(EncryptedFloat)
+    low_duration_s: Mapped[int | None] = mapped_column(EncryptedInt)
+    spo2_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    min_spo2_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    max_spo2_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    low_duration_s_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     tag_id: Mapped[int | None] = mapped_column(Integer)
 
 
@@ -177,9 +196,13 @@ class RespiratoryRate(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    average: Mapped[float | None] = mapped_column(Float)
-    lower_limit: Mapped[float | None] = mapped_column(Float)
-    upper_limit: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    average: Mapped[float | None] = mapped_column(EncryptedFloat)
+    lower_limit: Mapped[float | None] = mapped_column(EncryptedFloat)
+    upper_limit: Mapped[float | None] = mapped_column(EncryptedFloat)
+    average_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    lower_limit_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    upper_limit_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 class Hrv(Uuid7PkMixin, TimestampedMixin, Base):
@@ -196,9 +219,13 @@ class SkinTemperature(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    temperature: Mapped[float | None] = mapped_column(Float)
-    min_temp: Mapped[float | None] = mapped_column(Float)
-    max_temp: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    temperature: Mapped[float | None] = mapped_column(EncryptedFloat)
+    min_temp: Mapped[float | None] = mapped_column(EncryptedFloat)
+    max_temp: Mapped[float | None] = mapped_column(EncryptedFloat)
+    temperature_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    min_temp_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    max_temp_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     tag_id: Mapped[int | None] = mapped_column(Integer)
 
 
@@ -208,13 +235,21 @@ class Weight(Uuid7PkMixin, TimestampedMixin, Base):
     __table_args__ = (UniqueConstraint("start_time", name="uq_weight_time"),)
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    weight_kg: Mapped[float | None] = mapped_column(Float)
-    body_fat_pct: Mapped[float | None] = mapped_column(Float)
-    skeletal_muscle_pct: Mapped[float | None] = mapped_column(Float)
-    skeletal_muscle_mass_kg: Mapped[float | None] = mapped_column(Float)
-    fat_free_mass_kg: Mapped[float | None] = mapped_column(Float)
-    basal_metabolic_rate: Mapped[int | None] = mapped_column(Integer)
-    total_body_water_kg: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    weight_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    body_fat_pct: Mapped[float | None] = mapped_column(EncryptedFloat)
+    skeletal_muscle_pct: Mapped[float | None] = mapped_column(EncryptedFloat)
+    skeletal_muscle_mass_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    fat_free_mass_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    basal_metabolic_rate: Mapped[int | None] = mapped_column(EncryptedInt)
+    total_body_water_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
+    weight_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    body_fat_pct_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    skeletal_muscle_pct_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    skeletal_muscle_mass_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    fat_free_mass_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    basal_metabolic_rate_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    total_body_water_kg_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 class Height(Uuid7PkMixin, TimestampedMixin, Base):
@@ -230,10 +265,15 @@ class BloodPressure(Uuid7PkMixin, TimestampedMixin, Base):
     __table_args__ = (UniqueConstraint("start_time", name="uq_bp_time"),)
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    systolic: Mapped[float | None] = mapped_column(Float)
-    diastolic: Mapped[float | None] = mapped_column(Float)
-    pulse: Mapped[int | None] = mapped_column(Integer)
-    mean_bp: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    systolic: Mapped[float | None] = mapped_column(EncryptedFloat)
+    diastolic: Mapped[float | None] = mapped_column(EncryptedFloat)
+    pulse: Mapped[int | None] = mapped_column(EncryptedInt)
+    mean_bp: Mapped[float | None] = mapped_column(EncryptedFloat)
+    systolic_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    diastolic_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    pulse_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    mean_bp_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
 
 class Mood(Uuid7PkMixin, TimestampedMixin, Base):
@@ -321,7 +361,11 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
 
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    mean_heart_rate: Mapped[float | None] = mapped_column(Float)
+    # V2.2.1 — colonnes Art.9 chiffrées
+    mean_heart_rate: Mapped[float | None] = mapped_column(EncryptedFloat)
+    classification: Mapped[int | None] = mapped_column(EncryptedInt)
+    mean_heart_rate_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    classification_crypto_v: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    # Métadonnées non sensibles (échantillonnage signal, pas valeur santé)
     sample_frequency: Mapped[int | None] = mapped_column(Integer)
     sample_count: Mapped[int | None] = mapped_column(Integer)
-    classification: Mapped[int | None] = mapped_column(Integer)

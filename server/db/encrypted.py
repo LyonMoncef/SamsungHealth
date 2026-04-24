@@ -62,3 +62,24 @@ class EncryptedInt(TypeDecorator):
         if value is None:
             return None
         return int(decrypt_field(bytes(value)).decode("ascii"))
+
+
+class EncryptedFloat(TypeDecorator):
+    """Stocke `float` chiffrés en BYTEA. Sérialise via repr(float).encode('ascii') (préserve IEEE 754)."""
+
+    impl = LargeBinary
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, int) and not isinstance(value, bool):
+            value = float(value)
+        if not isinstance(value, float):
+            raise TypeError(f"EncryptedFloat attend float, got {type(value).__name__}")
+        return encrypt_field(repr(value).encode("ascii"))
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return float(decrypt_field(bytes(value)).decode("ascii"))
