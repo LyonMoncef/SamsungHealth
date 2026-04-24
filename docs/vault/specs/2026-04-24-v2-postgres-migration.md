@@ -2,7 +2,7 @@
 type: spec
 title: "V2.1 — Migration SQLite → Postgres + Alembic + UUID v7"
 slug: 2026-04-24-v2-postgres-migration
-status: ready
+status: in_progress
 created: 2026-04-24
 delivered: null
 priority: high
@@ -92,7 +92,12 @@ Décrits given/when/then pour mapper directement sur les classes/méthodes de `t
 
 ## Suite naturelle
 
-Spec V2.2 (à créer après merge) : `2026-04-XX-v2-aes256-gcm-encrypted-fields` — premier endpoint chiffrant les champs santé sensibles via `cryptography` AES-GCM, exploitant le typage SQLAlchemy `Encrypted(BYTEA)` qui s'appuie sur l'infra UUID v7 + Alembic livrée ici.
+**Découpage en 2 PR** (décidé après livraison fondation, 2026-04-24) :
+
+1. **PR `feat/v2-postgres-migration` (cette spec, fondation)** — livre engine + 21 models + alembic + docker + helper UUID v7. **9/10 tests** d'acceptation GREEN. État : `in_progress` jusqu'à la PR fille mergée.
+2. **Spec fille `2026-04-24-v2-postgres-routers-cutover`** — finalise le refactor des 4 routers (`sleep`, `heart_rate`, `steps`, `exercise`) + suppression complète du code SQLite (`init_db`, `get_connection`, `_add_col`, `health.db`). Migre les 12 tests legacy SQLite vers PG (testcontainers). Fait passer le **10e test back-compat** GREEN. Quand mergée → spec V2.1 passe `delivered`.
+
+Spec V2.2 (à créer après V2.1.1) : `2026-04-XX-v2-aes256-gcm-encrypted-fields` — premier endpoint chiffrant les champs santé sensibles via `cryptography` AES-GCM, exploitant le typage SQLAlchemy `Encrypted(BYTEA)` qui s'appuie sur l'infra UUID v7 + Alembic livrée ici.
 
 ## Out of scope V2.1 (à ne PAS faire dans cette PR)
 
