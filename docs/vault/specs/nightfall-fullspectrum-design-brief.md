@@ -1,8 +1,11 @@
 ---
 type: spec
-tags: [samsunghealth, design, nightfall, claude-design]
+tags: [samsunghealth, design, nightfall, claude-design, superseded]
 created: 2026-04-21
-status: ready
+status: superseded
+superseded_by: 2026-04-26-nightfall-rebrand-data-saillance
+superseded_on: 2026-04-26
+superseded_reason: "Charte graphique Data Saillance adoptée — voir 2026-04-26-nightfall-rebrand-data-saillance pour palette/typo/logos canoniques. Le présent brief reste consultable pour l'historique du concept design pré-rebrand."
 ---
 
 # Nightfall Health — Full-Spectrum Dashboard Design Brief
