@@ -26,3 +26,6 @@ testcontainers[postgres]>=4.0
 
 # V2.2 — chiffrement at-rest AES-256-GCM applicatif (champs Art.9 RGPD)
 cryptography>=42.0
+
+# V2.0.5 — observability foundation (logs JSON structurés, request_id corrélation)
+structlog>=24.1

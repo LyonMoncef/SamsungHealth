@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/heartrate.py
-git_blob: 0350085825b384c1671a9dcff09b343a097860b6
-last_synced: '2026-04-24T02:28:09Z'
-loc: 62
+git_blob: 60cf780912e79aa60ea4587975e3631a3abf790c
+last_synced: '2026-04-26T14:46:49Z'
+loc: 65
 annotations: []
 imports:
 - fastapi
@@ -13,6 +13,7 @@ imports:
 - sqlalchemy.orm
 - server.database
 - server.db.models
+- server.logging_config
 - server.models
 exports: []
 tags:
@@ -36,7 +37,10 @@ from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import HeartRateHourly
+from server.logging_config import get_logger
 from server.models import HeartRateBulkIn, HeartRateHourlyOut
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/heartrate", tags=["heartrate"])
 
@@ -107,4 +111,5 @@ def get_heartrate(
 - `sqlalchemy.orm`
 - `server.database`
 - `server.db.models`
+- `server.logging_config`
 - `server.models`

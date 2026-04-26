@@ -8,8 +8,11 @@ from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import Mood
+from server.logging_config import get_logger
 from server.models import MoodBulkIn, MoodOut
 from server.security.crypto import DecryptionError
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/mood", tags=["mood"])
 

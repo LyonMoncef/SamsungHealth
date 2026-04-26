@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: a2f0ec110dc074fb6d72f617ae102e02ccdfa4a4
-last_synced: '2026-04-24T03:44:10Z'
-loc: 36
+git_blob: a14c382065d9c20ef6a99b7221c984b7e8df38ea
+last_synced: '2026-04-26T14:46:49Z'
+loc: 41
 annotations: []
 imports:
 - contextlib
@@ -12,6 +12,8 @@ imports:
 - fastapi
 - fastapi.responses
 - fastapi.staticfiles
+- server.logging_config
+- server.middleware.request_context
 - server.routers
 exports:
 - _validate_encryption_at_boot
@@ -36,6 +38,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from server.logging_config import configure_logging
+from server.middleware.request_context import RequestContextMiddleware
+
 
 def _validate_encryption_at_boot() -> None:
     """V2.2 fail-fast — appelée au lifespan startup. Le test_boot_validation l'invoque directement."""
@@ -45,6 +50,7 @@ def _validate_encryption_at_boot() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configure_logging()
     _validate_encryption_at_boot()
     yield
 
@@ -52,6 +58,7 @@ async def lifespan(app: FastAPI):
 from server.routers import exercise, heartrate, mood, sleep, steps  # noqa: E402
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
+app.add_middleware(RequestContextMiddleware)
 app.include_router(sleep.router)
 app.include_router(steps.router)
 app.include_router(heartrate.router)
@@ -74,9 +81,10 @@ def index():
 ### Implements specs
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `app`, `_validate_encryption_at_boot`
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `app`, `startup`
+- [[../../specs/2026-04-26-v2-structlog-observability]] — symbols: `app`, `lifespan`
 
 ### Symbols
-- `_validate_encryption_at_boot` (function) — lines 9-12 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `_validate_encryption_at_boot` (function) — lines 12-15 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
 
 ### Imports
 - `contextlib`
@@ -84,6 +92,8 @@ def index():
 - `fastapi`
 - `fastapi.responses`
 - `fastapi.staticfiles`
+- `server.logging_config`
+- `server.middleware.request_context`
 - `server.routers`
 
 ### Exports

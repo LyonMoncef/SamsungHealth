@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session, selectinload
 
 from server.database import get_session
 from server.db.models import SleepSession, SleepStage
+from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/sleep", tags=["sleep"])
 
