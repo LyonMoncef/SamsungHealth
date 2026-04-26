@@ -6,9 +6,10 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from server.database import get_session
-from server.db.models import ExerciseSession
+from server.db.models import ExerciseSession, User
 from server.logging_config import get_logger
 from server.models import ExerciseBulkIn, ExerciseSessionOut
+from server.security.auth import get_current_user
 
 _log = get_logger(__name__)
 
@@ -29,19 +30,26 @@ def _iso(dt: datetime | None) -> str:
 
 
 @router.post("", status_code=201)
-def create_exercise(body: ExerciseBulkIn, db: Session = Depends(get_session)) -> dict:
+def create_exercise(
+    body: ExerciseBulkIn,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
     inserted = 0
     skipped = 0
     for s in body.sessions:
         stmt = (
             pg_insert(ExerciseSession)
             .values(
+                user_id=current_user.id,
                 exercise_type=s.exercise_type,
                 exercise_start=_to_dt(s.exercise_start),
                 exercise_end=_to_dt(s.exercise_end),
                 duration_minutes=s.duration_minutes,
             )
-            .on_conflict_do_nothing(index_elements=["exercise_start", "exercise_end"])
+            .on_conflict_do_nothing(
+                index_elements=["user_id", "exercise_start", "exercise_end"]
+            )
             .returning(ExerciseSession.id)
         )
         if db.execute(stmt).first() is not None:
@@ -57,8 +65,9 @@ def get_exercise(
     from_date: str | None = Query(None, alias="from"),
     to_date: str | None = Query(None, alias="to"),
     db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[ExerciseSessionOut]:
-    stmt = select(ExerciseSession)
+    stmt = select(ExerciseSession).where(ExerciseSession.user_id == current_user.id)
     if from_date:
         d_from = datetime.fromisoformat(from_date).replace(tzinfo=timezone.utc)
         stmt = stmt.where(ExerciseSession.exercise_start >= d_from)

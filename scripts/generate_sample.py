@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -78,7 +79,10 @@ def _upsert_steps(db: Session, base_date: datetime, num_days: int) -> int:  # ba
             stmt = (
                 pg_insert(StepsHourly)
                 .values(date=date_str, hour=hour, step_count=steps)
-                .on_conflict_do_nothing(index_elements=["date", "hour"])
+                .on_conflict_do_nothing(
+                    index_elements=["date", "hour"],
+                    index_where=text("user_id IS NULL"),
+                )
                 .returning(StepsHourly.id)
             )
             if db.execute(stmt).first() is not None:
@@ -114,7 +118,10 @@ def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
                     avg_bpm=avg,
                     sample_count=random.randint(5, 30),
                 )
-                .on_conflict_do_nothing(index_elements=["date", "hour"])
+                .on_conflict_do_nothing(
+                    index_elements=["date", "hour"],
+                    index_where=text("user_id IS NULL"),
+                )
                 .returning(HeartRateHourly.id)
             )
             if db.execute(stmt).first() is not None:
@@ -142,7 +149,10 @@ def _upsert_exercise(db: Session, base_date: datetime, num_days: int) -> int:
                 exercise_end=ex_end,
                 duration_minutes=float(duration),
             )
-            .on_conflict_do_nothing(index_elements=["exercise_start", "exercise_end"])
+            .on_conflict_do_nothing(
+                index_elements=["exercise_start", "exercise_end"],
+                index_where=text("user_id IS NULL"),
+            )
             .returning(ExerciseSession.id)
         )
         if db.execute(stmt).first() is not None:
@@ -188,7 +198,10 @@ def main():
         stmt = (
             pg_insert(SleepSession)
             .values(id=new_uuid, sleep_start=sleep_start, sleep_end=sleep_end)
-            .on_conflict_do_nothing(index_elements=["sleep_start", "sleep_end"])
+            .on_conflict_do_nothing(
+                index_elements=["sleep_start", "sleep_end"],
+                index_where=text("user_id IS NULL"),
+            )
             .returning(SleepSession.id)
         )
         result = db.execute(stmt).first()
@@ -205,7 +218,10 @@ def main():
                     stage_start=st["start"],
                     stage_end=st["end"],
                 )
-                .on_conflict_do_nothing(index_elements=["stage_start", "stage_end"])
+                .on_conflict_do_nothing(
+                    index_elements=["stage_start", "stage_end"],
+                    index_where=text("user_id IS NULL"),
+                )
             )
             db.execute(stage_stmt)
 

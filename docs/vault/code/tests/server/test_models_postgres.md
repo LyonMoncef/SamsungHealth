@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_models_postgres.py
-git_blob: dd707e7520ad5665d648bfe09c02362bc21e815f
-last_synced: '2026-04-24T02:26:12Z'
-loc: 148
+git_blob: 08dcaf812620afa0b787ce67fdae0bcf6e10e392
+last_synced: '2026-04-26T16:48:28Z'
+loc: 157
 annotations: []
 imports:
 - os
@@ -120,17 +120,25 @@ class TestSleepSessionPersistence:
 
 
 class TestApiBackCompat:
-    def test_get_sleep_response_shape_unchanged(self, schema_ready, client_pg, db_session):
+    def test_get_sleep_response_shape_unchanged(self, client_pg_ready, db_session):
         # spec V2.1.1 — §Tests d'acceptation #1 : back-compat shape JSON sur params réels Nightfall
         # Le frontend appelle GET /api/sleep?from=YYYY-MM-DD&to=YYYY-MM-DD&include_stages=true
         # (params adaptés depuis l'ancien `period=6m` qui n'existait pas dans le frontend réel)
         from datetime import date, timedelta
+        from sqlalchemy import select
 
-        from server.db.models import SleepSession, SleepStage
+        from server.db.models import SleepSession, SleepStage, User
+
+        client_pg = client_pg_ready
+        # V2.3 — récupérer l'user par défaut auto-créé par client_pg_ready
+        default_user = db_session.execute(
+            select(User).where(User.email == "default-test-user@samsunghealth.local")
+        ).scalar_one()
 
         d_start = date.today() - timedelta(days=2)
         base = datetime.combine(d_start, datetime.min.time(), tzinfo=timezone.utc)
         s1 = SleepSession(
+            user_id=default_user.id,
             sleep_start=base.replace(hour=22),
             sleep_end=base.replace(hour=6) + timedelta(days=1),
         )
@@ -138,6 +146,7 @@ class TestApiBackCompat:
         db_session.flush()
         db_session.add(
             SleepStage(
+                user_id=default_user.id,
                 session_id=s1.id,
                 stage_type="deep",
                 stage_start=base.replace(hour=23),
@@ -184,7 +193,7 @@ class TestApiBackCompat:
 
 ### Symbols
 - `TestSleepSessionPersistence` (class) — lines 23-89
-- `TestApiBackCompat` (class) — lines 92-148
+- `TestApiBackCompat` (class) — lines 92-157
 
 ### Imports
 - `os`

@@ -90,17 +90,25 @@ class TestSleepSessionPersistence:
 
 
 class TestApiBackCompat:
-    def test_get_sleep_response_shape_unchanged(self, schema_ready, client_pg, db_session):
+    def test_get_sleep_response_shape_unchanged(self, client_pg_ready, db_session):
         # spec V2.1.1 — §Tests d'acceptation #1 : back-compat shape JSON sur params réels Nightfall
         # Le frontend appelle GET /api/sleep?from=YYYY-MM-DD&to=YYYY-MM-DD&include_stages=true
         # (params adaptés depuis l'ancien `period=6m` qui n'existait pas dans le frontend réel)
         from datetime import date, timedelta
+        from sqlalchemy import select
 
-        from server.db.models import SleepSession, SleepStage
+        from server.db.models import SleepSession, SleepStage, User
+
+        client_pg = client_pg_ready
+        # V2.3 — récupérer l'user par défaut auto-créé par client_pg_ready
+        default_user = db_session.execute(
+            select(User).where(User.email == "default-test-user@samsunghealth.local")
+        ).scalar_one()
 
         d_start = date.today() - timedelta(days=2)
         base = datetime.combine(d_start, datetime.min.time(), tzinfo=timezone.utc)
         s1 = SleepSession(
+            user_id=default_user.id,
             sleep_start=base.replace(hour=22),
             sleep_end=base.replace(hour=6) + timedelta(days=1),
         )
@@ -108,6 +116,7 @@ class TestApiBackCompat:
         db_session.flush()
         db_session.add(
             SleepStage(
+                user_id=default_user.id,
                 session_id=s1.id,
                 stage_type="deep",
                 stage_start=base.replace(hour=23),

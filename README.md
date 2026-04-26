@@ -59,6 +59,44 @@ Variables d'environnement :
 - `APP_ENV` — `dev` (ConsoleRenderer humain) ou `prod` (JSON stdout). Défaut : `prod`.
 - `LOG_LEVEL` — `DEBUG | INFO | WARNING | ERROR | CRITICAL`. Défaut : `INFO`.
 
+## Auth setup (V2.3)
+
+Multi-utilisateur avec JWT HS256 + argon2id password hashing. Toutes les routes santé (`/api/*`) exigent `Authorization: Bearer <access_token>`.
+
+Variables d'environnement requises :
+
+```bash
+# Génère un secret 256-bit base64 :
+python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
+SAMSUNGHEALTH_JWT_SECRET=<256-bit-base64-secret>
+
+# Optionnel — secret précédent (decode-only) pour rotation sans logout global.
+SAMSUNGHEALTH_JWT_SECRET_PREVIOUS=
+
+# Token statique pour gating de POST /auth/register (header X-Registration-Token).
+# Sans ce token l'endpoint répond 403 (registration_disabled).
+SAMSUNGHEALTH_REGISTRATION_TOKEN=<32-chars-random>
+```
+
+### Endpoints
+
+```
+POST /auth/register   headers: X-Registration-Token, body: {email, password}
+                      201 → {id, email}    409 → email_already_exists    403 → registration_disabled
+POST /auth/login      body: {email, password}
+                      200 → {access_token, refresh_token, token_type, expires_in}
+                      401 → invalid_credentials  (identique sur user inconnu OU password faux)
+POST /auth/refresh    body: {refresh_token}
+                      200 → {access_token, refresh_token, ...}  (NOUVEAU refresh, ancien révoqué)
+                      401 → invalid_refresh
+POST /auth/logout     Authorization: Bearer <access>, body: {refresh_token}
+                      204 (idempotent)
+```
+
+### Post-migration legacy user
+
+Lors de la première migration alembic vers V2.3, si la table `users` est vide ET les tables santé contiennent déjà des données, un utilisateur `legacy@samsunghealth.local` (`is_active=false`, password aléatoire impossible-to-login) est auto-créé pour absorber les rows existantes via `user_id` FK. Action admin post-migration : créer un vrai user via `/auth/register` puis migrer manuellement les rows si désiré.
+
 ## Logs
 
 Pipeline de logs structurés via `structlog` (V2.0.5).

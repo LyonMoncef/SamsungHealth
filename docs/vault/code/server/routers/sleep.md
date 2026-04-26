@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/sleep.py
-git_blob: 5d00cfdd1ad1548dd075f7287ae62845c3bdbcff
-last_synced: '2026-04-26T14:46:49Z'
-loc: 104
+git_blob: 66005bbe5a93a6511be0a0ef66a533a5b8ca1158
+last_synced: '2026-04-26T16:48:27Z'
+loc: 116
 annotations: []
 imports:
 - datetime
@@ -15,6 +15,7 @@ imports:
 - server.db.models
 - server.logging_config
 - server.models
+- server.security.auth
 exports:
 - _parse_day
 - _to_iso
@@ -40,9 +41,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from server.database import get_session
-from server.db.models import SleepSession, SleepStage
+from server.db.models import SleepSession, SleepStage, User
 from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
+from server.security.auth import get_current_user
 
 _log = get_logger(__name__)
 
@@ -54,12 +56,17 @@ def _parse_day(s: str) -> date:
 
 
 @router.post("", status_code=201)
-def create_sleep_sessions(body: SleepBulkIn, db: Session = Depends(get_session)) -> dict:
+def create_sleep_sessions(
+    body: SleepBulkIn,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
     inserted = 0
     skipped = 0
     for s in body.sessions:
         existing = db.execute(
             select(SleepSession).where(
+                SleepSession.user_id == current_user.id,
                 SleepSession.sleep_start == s.sleep_start,
                 SleepSession.sleep_end == s.sleep_end,
             )
@@ -67,13 +74,18 @@ def create_sleep_sessions(body: SleepBulkIn, db: Session = Depends(get_session))
         if existing is not None:
             skipped += 1
             continue
-        new_session = SleepSession(sleep_start=s.sleep_start, sleep_end=s.sleep_end)
+        new_session = SleepSession(
+            user_id=current_user.id,
+            sleep_start=s.sleep_start,
+            sleep_end=s.sleep_end,
+        )
         db.add(new_session)
         db.flush()
         if s.stages:
             for st in s.stages:
                 db.add(
                     SleepStage(
+                        user_id=current_user.id,
                         session_id=new_session.id,
                         stage_type=st.stage_type,
                         stage_start=st.stage_start,
@@ -120,8 +132,9 @@ def get_sleep_sessions(
     to_date: str | None = Query(None, alias="to"),
     include_stages: bool = Query(False),
     db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[SleepSessionOut]:
-    stmt = select(SleepSession)
+    stmt = select(SleepSession).where(SleepSession.user_id == current_user.id)
     if include_stages:
         stmt = stmt.options(selectinload(SleepSession.stages))
 
@@ -145,11 +158,12 @@ def get_sleep_sessions(
 
 ### Implements specs
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`, `create_sleep_sessions`, `get_sleep_sessions`
+- [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`, `list_sleep`, `get_sleep_session`
 
 ### Symbols
-- `_parse_day` (function) — lines 17-18
-- `_to_iso` (function) — lines 53-58
-- `_serialize` (function) — lines 61-79
+- `_parse_day` (function) — lines 18-19
+- `_to_iso` (function) — lines 64-69
+- `_serialize` (function) — lines 72-90
 
 ### Imports
 - `datetime`
@@ -160,6 +174,7 @@ def get_sleep_sessions(
 - `server.db.models`
 - `server.logging_config`
 - `server.models`
+- `server.security.auth`
 
 ### Exports
 - `_parse_day`

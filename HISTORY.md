@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`PENDING`](#2026-04-26-PENDING) |
 | V2.0.5 — structlog observability foundation (JSONL + request_id middleware) | `server/logging_config.py`, `server/middleware/request_context.py`, `server/main.py`, `requirements.txt` | [`f2c8cb2`](#2026-04-26-f2c8cb2) |
 | Samsung Health CSV import — full DB schema (21 tables) | `server/database.py`, `scripts/import_samsung_csv.py`, `scripts/explore_samsung_export.py` | [`d032741`](#2026-04-21-d032741) |
 | Dev mobile — WSL2 port forwarding + Android cleartext | `scripts/dev-mobile.ps1`, `Makefile`, `android-app/` | [`646aeaa`](#2026-04-21-646aeaa) |
@@ -53,6 +54,24 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-04-26 `PENDING`
+feat(V2.3): auth foundation atomique — users + JWT access+refresh + multi-user FK + redaction + audit
+- **Atomique non-splittable** (imposé audit pentester) : 50 tests RED → GREEN dans une seule PR pour éviter brèche Art.9 RGPD entre split partiel
+- `server/security/auth.py` : argon2id RFC 9106 profile #2 (m=46MB, t=2, p=1), PyJWT HS256 (`kid: "v1"`, `algorithms=["HS256"]` strict, `require=[exp,iat,sub,iss,aud,typ]`, validation iss/aud, `_DUMMY_HASH` pour timing equalization, `SAMSUNGHEALTH_JWT_SECRET_PREVIOUS` decode-only pour rotation), `get_current_user` dependency
+- `server/security/redaction.py` : structlog processor `redact_sensitive_keys` (password, token, authorization, jwt, secret, cookie + nested + case-insensitive)
+- `server/routers/auth.py` : `POST /auth/{register,login,refresh,logout}` — register admin-gated via `X-Registration-Token` (constant-time compare), refresh rotation avec détection replay (log `auth.refresh.replay_attempt` ERROR), logout idempotent, audit table `auth_events` (sha256 email_hash, jamais email plain)
+- `server/db/models.py` : nouveaux models `User` (CITEXT email, failed_login_count, locked_until, last_login_at/ip, password_changed_at, is_active, email_verified_at TIMESTAMPTZ), `RefreshToken` (jti UNIQUE, replaced_by FK, revoked_at), `AuthEvent` ; `user_id UUID NULL FK` ajouté sur 21 tables santé
+- `alembic/versions/0004_auth_foundation.py` : `CREATE EXTENSION citext`, schémas auth, partial unique index `WHERE user_id IS NULL` pour back-compat scripts CSV legacy + nouveau unique sur `(user_id, ...)` pour multi-user, backfill conditionnel d'un user `legacy@samsunghealth.local` (is_active=false) si données legacy détectées
+- `server/routers/{sleep,heartrate,steps,exercise,mood}.py` : `Depends(get_current_user)` partout, filtering `where(<Model>.user_id == current_user.id)` sur SELECT, injection serveur `user_id=current_user.id` sur INSERT (jamais accepté du body)
+- `server/main.py` : validation JWT secret au boot (présence + 256 bits + reject "changeme/secret/test/password/default" + Shannon entropy ≥ 4.0), bench argon2 au boot (`auth.argon2.bench` info)
+- `server/logging_config.py` : plug `redact_sensitive_keys` après `merge_contextvars`
+- `tests/server/conftest.py` : `_set_auth_env_defaults` autouse pour env vars JWT/registration ; `client_pg_ready` enrichi pour auto-auth des tests existants (avec opt-out par fichier pour les tests V2.3 auth nus)
+- `scripts/{import_samsung_csv,generate_sample}.py` : `index_where=text("user_id IS NULL")` ajouté aux ON CONFLICT pour préserver idempotence avec partial index
+- 50 tests RED → GREEN dans 6 fichiers (`test_password_hashing`, `test_jwt`, `test_auth_routes`, `test_health_routes_auth`, `test_redaction`, `test_auth_events`) — total **298/298 GREEN**, 0 régression
+- Dépendances : `argon2-cffi>=23.1`, `PyJWT>=2.8.0`
+- Spec : `docs/vault/specs/2026-04-26-v2-auth-foundation.md` (status delivered)
+- Hors scope V2.3 (différés) : V2.3.0.1 `user_id NOT NULL`, V2.3.1 reset password + email verification, V2.3.2 Google OAuth, V2.3.3 rate limiting + lockout enforcement + frontend Nightfall login
 
 ### 2026-04-26 `f2c8cb2`
 feat(V2.0.5): structlog observability foundation — JSONL logs + request_id middleware

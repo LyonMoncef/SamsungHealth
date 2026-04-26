@@ -2,14 +2,15 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: 760c3f5d3f8968b6867ee3ec6f0163541cbc4405
-last_synced: '2026-04-24T04:04:56Z'
-loc: 371
+git_blob: 4bb63fbd5f3040deffbf1cc166407db7538bb5f1
+last_synced: '2026-04-26T16:48:27Z'
+loc: 555
 annotations: []
 imports:
 - datetime
 - uuid
 - sqlalchemy
+- sqlalchemy.dialects.postgresql
 - sqlalchemy.orm
 - .encrypted
 - .uuid7
@@ -38,6 +39,9 @@ exports:
 - FloorsDaily
 - ActivityLevel
 - Ecg
+- User
+- RefreshToken
+- AuthEvent
 tags:
 - code
 - python
@@ -58,11 +62,13 @@ Mirror du schéma SQLite legacy (server/database.py::init_db) avec :
 - FK INTEGER → UUID v7
 - Ajout systématique created_at/updated_at (timestamptz, server_default)
 - Contraintes UNIQUE conservées pour idempotence d'import CSV
+- V2.3 — colonne `user_id UUID NULL` + index sur les 22 tables santé (FK users)
 """
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -73,6 +79,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.postgresql import CITEXT, INET
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from .encrypted import EncryptedFloat, EncryptedInt, EncryptedString
@@ -103,10 +110,14 @@ class Uuid7PkMixin:
 class SleepSession(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "sleep_sessions"
     __table_args__ = (
-        UniqueConstraint("sleep_start", "sleep_end", name="uq_sleep_sessions_window"),
+        UniqueConstraint("user_id", "sleep_start", "sleep_end", name="uq_sleep_sessions_window"),
         Index("idx_sleep_start", "sleep_start"),
+        Index("idx_sleep_sessions_user_id", "user_id"),
     )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     sleep_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     sleep_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -133,10 +144,14 @@ class SleepSession(Uuid7PkMixin, TimestampedMixin, Base):
 class SleepStage(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "sleep_stages"
     __table_args__ = (
-        UniqueConstraint("stage_start", "stage_end", name="uq_sleep_stages_window"),
+        UniqueConstraint("user_id", "stage_start", "stage_end", name="uq_sleep_stages_window"),
         Index("idx_stages_session", "session_id"),
+        Index("idx_sleep_stages_user_id", "user_id"),
     )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     session_id: Mapped[UUID] = mapped_column(
         Uuid7(), ForeignKey("sleep_sessions.id", ondelete="CASCADE"), nullable=False
     )
@@ -150,8 +165,14 @@ class SleepStage(Uuid7PkMixin, TimestampedMixin, Base):
 # ── steps ──────────────────────────────────────────────────────────────────
 class StepsHourly(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "steps_hourly"
-    __table_args__ = (UniqueConstraint("date", "hour", name="uq_steps_hourly_slot"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", "hour", name="uq_steps_hourly_slot"),
+        Index("idx_steps_hourly_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     hour: Mapped[int] = mapped_column(Integer, nullable=False)
     step_count: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -159,8 +180,14 @@ class StepsHourly(Uuid7PkMixin, TimestampedMixin, Base):
 
 class StepsDaily(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "steps_daily"
-    __table_args__ = (UniqueConstraint("day_date", name="uq_steps_daily_day"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "day_date", name="uq_steps_daily_day"),
+        Index("idx_steps_daily_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     step_count: Mapped[int | None] = mapped_column(Integer)
     walk_step_count: Mapped[int | None] = mapped_column(Integer)
@@ -173,8 +200,14 @@ class StepsDaily(Uuid7PkMixin, TimestampedMixin, Base):
 # ── heart rate ─────────────────────────────────────────────────────────────
 class HeartRateHourly(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "heart_rate_hourly"
-    __table_args__ = (UniqueConstraint("date", "hour", name="uq_hr_hourly_slot"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", "hour", name="uq_hr_hourly_slot"),
+        Index("idx_heart_rate_hourly_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     hour: Mapped[int] = mapped_column(Integer, nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -191,9 +224,13 @@ class HeartRateHourly(Uuid7PkMixin, TimestampedMixin, Base):
 class ExerciseSession(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "exercise_sessions"
     __table_args__ = (
-        UniqueConstraint("exercise_start", "exercise_end", name="uq_exercise_window"),
+        UniqueConstraint("user_id", "exercise_start", "exercise_end", name="uq_exercise_window"),
+        Index("idx_exercise_sessions_user_id", "user_id"),
     )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     exercise_type: Mapped[str] = mapped_column(String(64), nullable=False)
     exercise_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     exercise_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -210,10 +247,14 @@ class ExerciseSession(Uuid7PkMixin, TimestampedMixin, Base):
 class Stress(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "stress"
     __table_args__ = (
-        UniqueConstraint("start_time", "end_time", name="uq_stress_window"),
+        UniqueConstraint("user_id", "start_time", "end_time", name="uq_stress_window"),
         Index("idx_stress_start", "start_time"),
+        Index("idx_stress_user_id", "user_id"),
     )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — score Art.9 chiffré
@@ -225,10 +266,14 @@ class Stress(Uuid7PkMixin, TimestampedMixin, Base):
 class Spo2(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "spo2"
     __table_args__ = (
-        UniqueConstraint("start_time", "end_time", name="uq_spo2_window"),
+        UniqueConstraint("user_id", "start_time", "end_time", name="uq_spo2_window"),
         Index("idx_spo2_start", "start_time"),
+        Index("idx_spo2_user_id", "user_id"),
     )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -245,8 +290,14 @@ class Spo2(Uuid7PkMixin, TimestampedMixin, Base):
 
 class RespiratoryRate(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "respiratory_rate"
-    __table_args__ = (UniqueConstraint("start_time", "end_time", name="uq_respi_window"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", "end_time", name="uq_respi_window"),
+        Index("idx_respiratory_rate_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -260,16 +311,28 @@ class RespiratoryRate(Uuid7PkMixin, TimestampedMixin, Base):
 
 class Hrv(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "hrv"
-    __table_args__ = (UniqueConstraint("start_time", "end_time", name="uq_hrv_window"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", "end_time", name="uq_hrv_window"),
+        Index("idx_hrv_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class SkinTemperature(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "skin_temperature"
-    __table_args__ = (UniqueConstraint("start_time", "end_time", name="uq_skin_temp_window"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", "end_time", name="uq_skin_temp_window"),
+        Index("idx_skin_temperature_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -285,8 +348,14 @@ class SkinTemperature(Uuid7PkMixin, TimestampedMixin, Base):
 # ── weight / height / bp / mood / water ────────────────────────────────────
 class Weight(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "weight"
-    __table_args__ = (UniqueConstraint("start_time", name="uq_weight_time"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", name="uq_weight_time"),
+        Index("idx_weight_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
     weight_kg: Mapped[float | None] = mapped_column(EncryptedFloat)
@@ -307,16 +376,28 @@ class Weight(Uuid7PkMixin, TimestampedMixin, Base):
 
 class Height(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "height"
-    __table_args__ = (UniqueConstraint("start_time", name="uq_height_time"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", name="uq_height_time"),
+        Index("idx_height_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     height_cm: Mapped[float | None] = mapped_column(Float)
 
 
 class BloodPressure(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "blood_pressure"
-    __table_args__ = (UniqueConstraint("start_time", name="uq_bp_time"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", name="uq_bp_time"),
+        Index("idx_blood_pressure_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
     systolic: Mapped[float | None] = mapped_column(EncryptedFloat)
@@ -331,8 +412,14 @@ class BloodPressure(Uuid7PkMixin, TimestampedMixin, Base):
 
 class Mood(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "mood"
-    __table_args__ = (UniqueConstraint("start_time", name="uq_mood_time"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", name="uq_mood_time"),
+        Index("idx_mood_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2 — colonnes Art.9 chiffrées AES-256-GCM (BYTEA en DB, str/int en Python)
     mood_type: Mapped[int | None] = mapped_column(EncryptedInt)
@@ -351,8 +438,14 @@ class Mood(Uuid7PkMixin, TimestampedMixin, Base):
 
 class WaterIntake(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "water_intake"
-    __table_args__ = (UniqueConstraint("start_time", name="uq_water_time"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", name="uq_water_time"),
+        Index("idx_water_intake_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     amount_ml: Mapped[float | None] = mapped_column(Float)
 
@@ -360,8 +453,14 @@ class WaterIntake(Uuid7PkMixin, TimestampedMixin, Base):
 # ── daily composites ───────────────────────────────────────────────────────
 class ActivityDaily(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "activity_daily"
-    __table_args__ = (UniqueConstraint("day_date", name="uq_activity_daily_day"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "day_date", name="uq_activity_daily_day"),
+        Index("idx_activity_daily_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     step_count: Mapped[int | None] = mapped_column(Integer)
     distance_m: Mapped[float | None] = mapped_column(Float)
@@ -374,8 +473,14 @@ class ActivityDaily(Uuid7PkMixin, TimestampedMixin, Base):
 
 class VitalityScore(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "vitality_score"
-    __table_args__ = (UniqueConstraint("day_date", name="uq_vitality_day"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "day_date", name="uq_vitality_day"),
+        Index("idx_vitality_score_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     total_score: Mapped[float | None] = mapped_column(Float)
     sleep_score: Mapped[float | None] = mapped_column(Float)
@@ -393,16 +498,28 @@ class VitalityScore(Uuid7PkMixin, TimestampedMixin, Base):
 
 class FloorsDaily(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "floors_daily"
-    __table_args__ = (UniqueConstraint("day_date", name="uq_floors_day"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "day_date", name="uq_floors_day"),
+        Index("idx_floors_daily_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     floor_count: Mapped[int | None] = mapped_column(Integer)
 
 
 class ActivityLevel(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "activity_level"
-    __table_args__ = (UniqueConstraint("start_time", name="uq_activity_level_time"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", name="uq_activity_level_time"),
+        Index("idx_activity_level_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     activity_level: Mapped[int | None] = mapped_column(Integer)
 
@@ -410,8 +527,14 @@ class ActivityLevel(Uuid7PkMixin, TimestampedMixin, Base):
 # ── ECG ────────────────────────────────────────────────────────────────────
 class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
     __tablename__ = "ecg"
-    __table_args__ = (UniqueConstraint("start_time", "end_time", name="uq_ecg_window"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "start_time", "end_time", name="uq_ecg_window"),
+        Index("idx_ecg_user_id", "user_id"),
+    )
 
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=True
+    )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -422,6 +545,71 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
     # Métadonnées non sensibles (échantillonnage signal, pas valeur santé)
     sample_frequency: Mapped[int | None] = mapped_column(Integer)
     sample_count: Mapped[int | None] = mapped_column(Integer)
+
+
+# ── V2.3 auth foundation ───────────────────────────────────────────────────
+class User(Uuid7PkMixin, TimestampedMixin, Base):
+    __tablename__ = "users"
+
+    email: Mapped[str] = mapped_column(CITEXT(), nullable=False, unique=True)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failed_login_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_login_ip: Mapped[str | None] = mapped_column(INET)
+    password_changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+
+
+class RefreshToken(Uuid7PkMixin, Base):
+    __tablename__ = "refresh_tokens"
+    __table_args__ = (
+        Index("idx_refresh_tokens_user_id", "user_id"),
+        Index("idx_refresh_tokens_jti", "jti", unique=True),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    jti: Mapped[UUID] = mapped_column(Uuid7(), nullable=False, unique=True)
+    issued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    replaced_by: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("refresh_tokens.id"), nullable=True
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    user_agent: Mapped[str | None] = mapped_column(Text)
+    ip: Mapped[str | None] = mapped_column(INET)
+
+
+class AuthEvent(Uuid7PkMixin, Base):
+    __tablename__ = "auth_events"
+    __table_args__ = (
+        Index("idx_auth_events_user_id", "user_id"),
+        Index("idx_auth_events_event_type", "event_type"),
+    )
+
+    event_type: Mapped[str] = mapped_column(Text, nullable=False)
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid7(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    email_hash: Mapped[str | None] = mapped_column(Text)
+    ip: Mapped[str | None] = mapped_column(INET)
+    user_agent: Mapped[str | None] = mapped_column(Text)
+    request_id: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 ```
 
 ---
@@ -432,37 +620,42 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `Mood`
 - [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9]] — symbols: `SleepSession`, `Weight`, `BloodPressure`, `Stress`, `Spo2`, `HeartRateHourly`, `RespiratoryRate`, `SkinTemperature`, `Ecg`
 - [[../../specs/2026-04-24-v2-postgres-migration]] — symbols: `Base`, `SleepSession`, `SleepStage`, `HeartRateHourly`, `StepsDaily`, `StepsHourly`, `ExerciseSession`, `ActivityDaily`, `Stress`, `Spo2`, `RespiratoryRate`, `Hrv`, `SkinTemperature`, `Weight`, `Height`, `BloodPressure`, `Mood`, `WaterIntake`, `VitalityScore`, `FloorsDaily`, `ActivityLevel`, `Ecg`
+- [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `User`, `RefreshToken`, `AuthEvent`
 
 ### Symbols
-- `Base` (class) — lines 29-30 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `TimestampedMixin` (class) — lines 33-42
-- `Uuid7PkMixin` (class) — lines 45-46
-- `SleepSession` (class) — lines 50-77 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `SleepStage` (class) — lines 80-94 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `StepsHourly` (class) — lines 98-104 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `StepsDaily` (class) — lines 107-117 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `HeartRateHourly` (class) — lines 121-134 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ExerciseSession` (class) — lines 138-153 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Stress` (class) — lines 157-169 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Spo2` (class) — lines 172-190 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `RespiratoryRate` (class) — lines 193-205 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Hrv` (class) — lines 208-213 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `SkinTemperature` (class) — lines 216-229 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Weight` (class) — lines 233-252 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Height` (class) — lines 255-260 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `BloodPressure` (class) — lines 263-276 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Mood` (class) — lines 279-296 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `WaterIntake` (class) — lines 299-304 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ActivityDaily` (class) — lines 308-319 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `VitalityScore` (class) — lines 322-338 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `FloorsDaily` (class) — lines 341-346 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `ActivityLevel` (class) — lines 349-354 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `Ecg` (class) — lines 358-371 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Base` (class) — lines 32-33 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `TimestampedMixin` (class) — lines 36-45
+- `Uuid7PkMixin` (class) — lines 48-49
+- `SleepSession` (class) — lines 53-84 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SleepStage` (class) — lines 87-105 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `StepsHourly` (class) — lines 109-121 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `StepsDaily` (class) — lines 124-140 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `HeartRateHourly` (class) — lines 144-163 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ExerciseSession` (class) — lines 167-186 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Stress` (class) — lines 190-206 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Spo2` (class) — lines 209-231 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `RespiratoryRate` (class) — lines 234-252 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Hrv` (class) — lines 255-266 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `SkinTemperature` (class) — lines 269-288 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Weight` (class) — lines 292-317 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Height` (class) — lines 320-331 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `BloodPressure` (class) — lines 334-353 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Mood` (class) — lines 356-379 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `WaterIntake` (class) — lines 382-393 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ActivityDaily` (class) — lines 397-414 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `VitalityScore` (class) — lines 417-439 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `FloorsDaily` (class) — lines 442-453 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `ActivityLevel` (class) — lines 456-467 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `Ecg` (class) — lines 471-490 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
+- `User` (class) — lines 494-511 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `RefreshToken` (class) — lines 514-535 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `AuthEvent` (class) — lines 538-555 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
 
 ### Imports
 - `datetime`
 - `uuid`
 - `sqlalchemy`
+- `sqlalchemy.dialects.postgresql`
 - `sqlalchemy.orm`
 - `.encrypted`
 - `.uuid7`
@@ -492,3 +685,6 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
 - `FloorsDaily`
 - `ActivityLevel`
 - `Ecg`
+- `User`
+- `RefreshToken`
+- `AuthEvent`

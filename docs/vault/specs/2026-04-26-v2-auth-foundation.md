@@ -2,9 +2,9 @@
 type: spec
 title: "V2.3 — Auth foundation atomique (users + JWT + multi-user FK)"
 slug: 2026-04-26-v2-auth-foundation
-status: ready
+status: delivered
 created: 2026-04-26
-delivered: null
+delivered: 2026-04-26
 priority: high
 related_plans:
   - 2026-04-23-plan-v2-refactor-master

@@ -5,12 +5,30 @@ Requiert testcontainers[postgres] et Docker. Si l'un des deux manque,
 les tests dépendant de `pg_url` sont skip avec message clair.
 """
 import base64
+import os
 import secrets
 
 import pytest
 
 
 _TEST_KEY_B64 = base64.b64encode(b"v2_2_test_key_32_bytes_exactly__")[:44].decode("ascii")
+
+# V2.3 — JWT + registration token defaults for tests.
+_TEST_JWT_SECRET = "dGVzdC1qd3Qtc2VjcmV0LXdpdGgtMzItYnl0ZXMtbWluLW9rITE="
+_TEST_REGISTRATION_TOKEN = "registration-token-32-chars-or-more-test1234"
+
+# Test files where `client_pg_ready` should NOT auto-inject a default user
+# Authorization header (those test the auth flow itself, or test 401-without-token).
+_NO_AUTO_AUTH_FILES = frozenset(
+    {
+        "test_auth_routes.py",
+        "test_auth_events.py",
+        "test_health_routes_auth.py",
+        "test_password_hashing.py",
+        "test_jwt.py",
+        "test_redaction.py",
+    }
+)
 
 
 @pytest.fixture(autouse=True)
@@ -24,6 +42,16 @@ def _set_test_encryption_key(monkeypatch):
         reset_key_cache()
     except ImportError:
         yield  # pas encore implémenté, OK pour les tests RED de la fondation
+
+
+@pytest.fixture(autouse=True)
+def _set_auth_env_defaults(monkeypatch):
+    """V2.3 — set JWT + registration env to test values for ALL tests in tests/server/."""
+    if not os.environ.get("SAMSUNGHEALTH_JWT_SECRET"):
+        monkeypatch.setenv("SAMSUNGHEALTH_JWT_SECRET", _TEST_JWT_SECRET)
+    if not os.environ.get("SAMSUNGHEALTH_REGISTRATION_TOKEN"):
+        monkeypatch.setenv("SAMSUNGHEALTH_REGISTRATION_TOKEN", _TEST_REGISTRATION_TOKEN)
+    yield
 
 
 @pytest.fixture(scope="session")
@@ -110,9 +138,45 @@ def schema_ready(pg_url):
     yield pg_url
 
 
+def _register_default_user(client) -> str | None:
+    """V2.3 — register + login a default test user, return access_token (None on failure)."""
+    email = "default-test-user@samsunghealth.local"
+    password = "default-test-password-1234"
+    reg = client.post(
+        "/auth/register",
+        headers={"X-Registration-Token": _TEST_REGISTRATION_TOKEN},
+        json={"email": email, "password": password},
+    )
+    if reg.status_code not in (201, 409):
+        return None
+    log = client.post("/auth/login", json={"email": email, "password": password})
+    if log.status_code != 200:
+        return None
+    return log.json().get("access_token")
+
+
 @pytest.fixture
-def client_pg_ready(schema_ready, client_pg):
-    """TestClient + schema PG migré (combine schema_ready + client_pg)."""
+def client_pg_ready(request, schema_ready, client_pg):
+    """TestClient + schema PG migré.
+
+    V2.3 — pour les tests pré-V2.3 (sleep/heartrate/steps/exercise/mood routers,
+    encryption tests), on register/login un user par défaut et on injecte
+    automatiquement le header `Authorization: Bearer <access>` sur toutes les
+    requêtes. Les tests V2.3 (auth_routes, health_routes_auth, auth_events,
+    password_hashing, jwt, redaction) ne reçoivent PAS ce header (ils
+    construisent leur propre flow ou testent le 401-sans-token).
+
+    Détection : par basename du fichier de test (cf. `_NO_AUTO_AUTH_FILES`).
+    """
+    test_file = os.path.basename(str(request.node.fspath))
+    if test_file in _NO_AUTO_AUTH_FILES:
+        return client_pg
+
+    access = _register_default_user(client_pg)
+    if access is None:
+        # No-op fallback — leaves client_pg as-is (tests will fail loudly).
+        return client_pg
+    client_pg.headers.update({"Authorization": f"Bearer {access}"})
     return client_pg
 
 
