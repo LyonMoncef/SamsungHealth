@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: 4bb63fbd5f3040deffbf1cc166407db7538bb5f1
-last_synced: '2026-04-26T16:48:27Z'
+git_blob: 03ebaf9a7bfca035751c5c3ea6a0fb2b4571f2e5
+last_synced: '2026-04-26T18:27:45Z'
 loc: 555
 annotations: []
 imports:
@@ -115,8 +115,8 @@ class SleepSession(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_sleep_sessions_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     sleep_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     sleep_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -149,8 +149,8 @@ class SleepStage(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_sleep_stages_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     session_id: Mapped[UUID] = mapped_column(
         Uuid7(), ForeignKey("sleep_sessions.id", ondelete="CASCADE"), nullable=False
@@ -170,8 +170,8 @@ class StepsHourly(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_steps_hourly_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     hour: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -185,8 +185,8 @@ class StepsDaily(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_steps_daily_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     step_count: Mapped[int | None] = mapped_column(Integer)
@@ -205,8 +205,8 @@ class HeartRateHourly(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_heart_rate_hourly_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     hour: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -228,8 +228,8 @@ class ExerciseSession(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_exercise_sessions_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     exercise_type: Mapped[str] = mapped_column(String(64), nullable=False)
     exercise_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -252,8 +252,8 @@ class Stress(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_stress_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -271,8 +271,8 @@ class Spo2(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_spo2_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -295,8 +295,8 @@ class RespiratoryRate(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_respiratory_rate_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -316,8 +316,8 @@ class Hrv(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_hrv_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -330,8 +330,8 @@ class SkinTemperature(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_skin_temperature_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -353,8 +353,8 @@ class Weight(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_weight_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -381,8 +381,8 @@ class Height(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_height_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     height_cm: Mapped[float | None] = mapped_column(Float)
@@ -395,8 +395,8 @@ class BloodPressure(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_blood_pressure_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2.1 — colonnes Art.9 chiffrées
@@ -417,8 +417,8 @@ class Mood(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_mood_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # V2.2 — colonnes Art.9 chiffrées AES-256-GCM (BYTEA en DB, str/int en Python)
@@ -443,8 +443,8 @@ class WaterIntake(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_water_intake_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     amount_ml: Mapped[float | None] = mapped_column(Float)
@@ -458,8 +458,8 @@ class ActivityDaily(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_activity_daily_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     step_count: Mapped[int | None] = mapped_column(Integer)
@@ -478,8 +478,8 @@ class VitalityScore(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_vitality_score_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     total_score: Mapped[float | None] = mapped_column(Float)
@@ -503,8 +503,8 @@ class FloorsDaily(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_floors_daily_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     day_date: Mapped[str] = mapped_column(String(10), nullable=False)
     floor_count: Mapped[int | None] = mapped_column(Integer)
@@ -517,8 +517,8 @@ class ActivityLevel(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_activity_level_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     activity_level: Mapped[int | None] = mapped_column(Integer)
@@ -532,8 +532,8 @@ class Ecg(Uuid7PkMixin, TimestampedMixin, Base):
         Index("idx_ecg_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid7(), ForeignKey("users.id"), nullable=True
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

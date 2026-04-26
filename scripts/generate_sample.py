@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""Generate ~30 days of realistic sample health data into Postgres (V2.1.2 SQLAlchemy)."""
+"""Generate ~30 days of realistic sample health data into Postgres (V2.1.2 SQLAlchemy).
 
+Usage:
+    python3 scripts/generate_sample.py [--user-email <email>]
+
+Default user_email: legacy@samsunghealth.local (créé par alembic 0004 backfill).
+"""
+
+import argparse
 import random
 import sys
 from datetime import datetime, timedelta, timezone
@@ -8,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import text
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -19,7 +26,11 @@ from server.db.models import (
     SleepSession,
     SleepStage,
     StepsHourly,
+    User,
 )
+
+
+DEFAULT_LEGACY_EMAIL = "legacy@samsunghealth.local"
 
 
 STAGE_TYPES = ["light", "deep", "rem", "awake"]
@@ -56,7 +67,7 @@ def generate_stages(sleep_start: datetime, sleep_end: datetime) -> list[dict]:
     return stages
 
 
-def _upsert_steps(db: Session, base_date: datetime, num_days: int) -> int:  # base_date timezone-aware
+def _upsert_steps(db: Session, base_date: datetime, num_days: int, user_id: str) -> int:  # base_date timezone-aware
     inserted = 0
     for day_offset in range(num_days):
         date = base_date + timedelta(days=day_offset)
@@ -78,10 +89,9 @@ def _upsert_steps(db: Session, base_date: datetime, num_days: int) -> int:  # ba
                 steps = random.randint(20, 150)
             stmt = (
                 pg_insert(StepsHourly)
-                .values(date=date_str, hour=hour, step_count=steps)
+                .values(user_id=user_id, date=date_str, hour=hour, step_count=steps)
                 .on_conflict_do_nothing(
-                    index_elements=["date", "hour"],
-                    index_where=text("user_id IS NULL"),
+                    index_elements=["user_id", "date", "hour"],
                 )
                 .returning(StepsHourly.id)
             )
@@ -90,7 +100,7 @@ def _upsert_steps(db: Session, base_date: datetime, num_days: int) -> int:  # ba
     return inserted
 
 
-def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
+def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int, user_id: str) -> int:
     inserted = 0
     for day_offset in range(num_days):
         date = base_date + timedelta(days=day_offset)
@@ -111,6 +121,7 @@ def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
             stmt = (
                 pg_insert(HeartRateHourly)
                 .values(
+                    user_id=user_id,
                     date=date_str,
                     hour=hour,
                     min_bpm=min_bpm,
@@ -119,8 +130,7 @@ def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
                     sample_count=random.randint(5, 30),
                 )
                 .on_conflict_do_nothing(
-                    index_elements=["date", "hour"],
-                    index_where=text("user_id IS NULL"),
+                    index_elements=["user_id", "date", "hour"],
                 )
                 .returning(HeartRateHourly.id)
             )
@@ -129,7 +139,7 @@ def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
     return inserted
 
 
-def _upsert_exercise(db: Session, base_date: datetime, num_days: int) -> int:
+def _upsert_exercise(db: Session, base_date: datetime, num_days: int, user_id: str) -> int:
     inserted = 0
     num_sessions = random.randint(10, 15)
     used_days = random.sample(range(num_days), min(num_sessions, num_days))
@@ -144,14 +154,14 @@ def _upsert_exercise(db: Session, base_date: datetime, num_days: int) -> int:
         stmt = (
             pg_insert(ExerciseSession)
             .values(
+                user_id=user_id,
                 exercise_type=ex_type,
                 exercise_start=ex_start,
                 exercise_end=ex_end,
                 duration_minutes=float(duration),
             )
             .on_conflict_do_nothing(
-                index_elements=["exercise_start", "exercise_end"],
-                index_where=text("user_id IS NULL"),
+                index_elements=["user_id", "exercise_start", "exercise_end"],
             )
             .returning(ExerciseSession.id)
         )
@@ -160,10 +170,30 @@ def _upsert_exercise(db: Session, base_date: datetime, num_days: int) -> int:
     return inserted
 
 
+def _resolve_target_user_id(db: Session, email: str) -> str:
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if user is None:
+        raise SystemExit(
+            f"ERROR: user '{email}' introuvable. Crée-le via /auth/register "
+            f"(ou attends que la migration 0004 ait backfill le legacy user)."
+        )
+    return str(user.id)
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--user-email",
+        default=DEFAULT_LEGACY_EMAIL,
+        help=f"Email of the target user (default: {DEFAULT_LEGACY_EMAIL})",
+    )
+    args = parser.parse_args()
+
     # Seed déterministe : permet l'idempotence (2 runs = mêmes timestamps → ON CONFLICT skip)
     random.seed(42)
     db = get_session()
+    user_id = _resolve_target_user_id(db, args.user_email)
+    print(f"Target user: {args.user_email} ({user_id})")
     base_date = datetime(2026, 1, 15, tzinfo=timezone.utc)
     num_days = 30
 
@@ -197,10 +227,9 @@ def main():
         new_uuid = uuid7()
         stmt = (
             pg_insert(SleepSession)
-            .values(id=new_uuid, sleep_start=sleep_start, sleep_end=sleep_end)
+            .values(id=new_uuid, user_id=user_id, sleep_start=sleep_start, sleep_end=sleep_end)
             .on_conflict_do_nothing(
-                index_elements=["sleep_start", "sleep_end"],
-                index_where=text("user_id IS NULL"),
+                index_elements=["user_id", "sleep_start", "sleep_end"],
             )
             .returning(SleepSession.id)
         )
@@ -213,21 +242,21 @@ def main():
             stage_stmt = (
                 pg_insert(SleepStage)
                 .values(
+                    user_id=user_id,
                     session_id=session_id,
                     stage_type=st["stage_type"],
                     stage_start=st["start"],
                     stage_end=st["end"],
                 )
                 .on_conflict_do_nothing(
-                    index_elements=["stage_start", "stage_end"],
-                    index_where=text("user_id IS NULL"),
+                    index_elements=["user_id", "stage_start", "stage_end"],
                 )
             )
             db.execute(stage_stmt)
 
-    steps_inserted = _upsert_steps(db, base_date, num_days)
-    hr_inserted = _upsert_heart_rate(db, base_date, num_days)
-    ex_inserted = _upsert_exercise(db, base_date, num_days)
+    steps_inserted = _upsert_steps(db, base_date, num_days, user_id)
+    hr_inserted = _upsert_heart_rate(db, base_date, num_days, user_id)
+    ex_inserted = _upsert_exercise(db, base_date, num_days, user_id)
     db.commit()
 
     print("Inserted into Postgres :")

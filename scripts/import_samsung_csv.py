@@ -4,11 +4,13 @@ Import Samsung Health CSV export into Postgres (V2.1.2 SQLAlchemy refactor).
 Idempotent — toutes les insertions utilisent `ON CONFLICT DO NOTHING`.
 
 Usage:
-    python3 scripts/import_samsung_csv.py [export_dir]
+    python3 scripts/import_samsung_csv.py [export_dir] [--user-email <email>]
 
 Default export_dir: /mnt/c/Users/idsmf/Desktop/SamsungHealth
+Default user_email: legacy@samsunghealth.local (créé par alembic 0004 backfill)
 """
 
+import argparse
 import csv
 import sys
 from collections import defaultdict
@@ -41,12 +43,19 @@ from server.db.models import (
     StepsDaily,
     StepsHourly,
     Stress,
+    User,
     VitalityScore,
     WaterIntake,
     Weight,
 )
 
-EXPORT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/mnt/c/Users/idsmf/Desktop/SamsungHealth")
+DEFAULT_LEGACY_EMAIL = "legacy@samsunghealth.local"
+DEFAULT_EXPORT_DIR = Path("/mnt/c/Users/idsmf/Desktop/SamsungHealth")
+
+# Réinjectés par main() via argparse, exposés en module-global pour ne pas
+# avoir à propager un user_id à chaque signature import_*(db).
+EXPORT_DIR: Path = DEFAULT_EXPORT_DIR
+TARGET_USER_ID: str | None = None
 
 # Samsung shealth CSV stage codes (different from Health Connect 1-4)
 SLEEP_STAGE_MAP = {40001: "awake", 40002: "light", 40003: "deep", 40004: "rem"}
@@ -130,23 +139,31 @@ def report(label: str, ins: int, skp: int) -> None:
 def _upsert(db: Session, model, values: dict, conflict_cols: list[str]) -> bool:
     """Insert via ON CONFLICT DO NOTHING. Returns True si insert effectif, False si skip.
 
-    V2.3 — legacy import scripts ne gèrent pas user_id (NULL). Les nouvelles unique
-    constraints sont sur (user_id, ...cols). On utilise donc un index partiel
-    (`uq_<table>_<...>` WHERE user_id IS NULL) créé en alembic 0004 — d'où le
-    `index_where=text("user_id IS NULL")` ajouté ici pour matcher l'arbiter.
+    V2.3.0.1 — l'unique constraint matche `(user_id, ...cols)` pour permettre
+    le multi-user. Le helper injecte `user_id=TARGET_USER_ID` côté serveur.
     """
-    from sqlalchemy import text
+    if TARGET_USER_ID is None:
+        raise RuntimeError("TARGET_USER_ID not initialized — call main() first")
 
     stmt = (
         pg_insert(model)
-        .values(**values)
+        .values(user_id=TARGET_USER_ID, **values)
         .on_conflict_do_nothing(
-            index_elements=conflict_cols,
-            index_where=text("user_id IS NULL"),
+            index_elements=["user_id", *conflict_cols],
         )
         .returning(model.id)
     )
     return db.execute(stmt).first() is not None
+
+
+def _resolve_target_user_id(db: Session, email: str) -> str:
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if user is None:
+        raise SystemExit(
+            f"ERROR: user '{email}' introuvable. Crée-le via /auth/register "
+            f"(ou attends que la migration 0004 ait backfill le legacy user)."
+        )
+    return str(user.id)
 
 
 # ── importers ────────────────────────────────────────────────────────────────
@@ -634,6 +651,24 @@ def import_ecg(db: Session) -> None:
 
 
 def main() -> None:
+    global EXPORT_DIR, TARGET_USER_ID
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "export_dir",
+        nargs="?",
+        type=Path,
+        default=DEFAULT_EXPORT_DIR,
+        help=f"Samsung Health export directory (default: {DEFAULT_EXPORT_DIR})",
+    )
+    parser.add_argument(
+        "--user-email",
+        default=DEFAULT_LEGACY_EMAIL,
+        help=f"Email of the target user (default: {DEFAULT_LEGACY_EMAIL})",
+    )
+    args = parser.parse_args()
+    EXPORT_DIR = args.export_dir
+
     if not EXPORT_DIR.exists():
         print(f"ERROR: export dir not found: {EXPORT_DIR}", file=sys.stderr)
         sys.exit(1)
@@ -641,6 +676,8 @@ def main() -> None:
     print(f"Export: {EXPORT_DIR}")
     print("Importing into Postgres (alembic schema déjà appliqué via `make db-migrate`) …")
     db = get_session()
+    TARGET_USER_ID = _resolve_target_user_id(db, args.user_email)
+    print(f"Target user: {args.user_email} ({TARGET_USER_ID})")
 
     uuid_map = import_sleep(db)
     import_sleep_stages(db, uuid_map)

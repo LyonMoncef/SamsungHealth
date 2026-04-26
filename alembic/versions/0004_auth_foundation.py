@@ -241,8 +241,11 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Reverse the unique/index/column changes on health tables.
+    # NB: l'upgrade a remplacé `uq_<table>` par un INDEX partiel (pas un constraint),
+    # donc on drop l'index puis on recrée le constraint d'origine.
     for table_name, uq_name, uq_cols in HEALTH_TABLES_UNIQUE:
-        op.drop_constraint(uq_name, table_name, type_="unique")
+        op.drop_constraint(f"uq_{table_name}_user_window", table_name, type_="unique")
+        op.execute(f'DROP INDEX IF EXISTS {uq_name}')
         op.create_unique_constraint(uq_name, table_name, uq_cols)
         op.drop_index(f"idx_{table_name}_user_id", table_name=table_name)
         op.drop_constraint(f"fk_{table_name}_user_id", table_name, type_="foreignkey")

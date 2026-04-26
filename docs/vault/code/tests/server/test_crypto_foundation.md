@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_crypto_foundation.py
-git_blob: dea8a32c87401116d49bb433f3be5b91345b3ac8
-last_synced: '2026-04-24T03:32:00Z'
-loc: 122
+git_blob: 3329ef2f1a8e44fc79cff41365f519abd9131e06
+last_synced: '2026-04-26T18:27:45Z'
+loc: 123
 annotations: []
 imports:
 - base64
@@ -116,13 +116,14 @@ class TestEncryptDecryptField:
 
 
 class TestEncryptedTypeDecorator:
-    def test_typedecorator_transparent_on_orm(self, schema_ready, db_session):
-        # spec V2.2 §9
+    def test_typedecorator_transparent_on_orm(self, schema_ready, db_session, default_user_db):
+        # spec V2.2 §9 — user_id obligatoire depuis V2.3.0.1
         from datetime import datetime, timezone
 
         from server.db.models import Mood
 
         m = Mood(
+            user_id=default_user_db.id,
             start_time=datetime(2026, 4, 24, 9, 30, tzinfo=timezone.utc),
             mood_type=3,
             notes="weekend cool",
@@ -162,8 +163,8 @@ class TestBootValidation:
 - `_b64` (function) — lines 14-15
 - `TestLoadEncryptionKey` (class) — lines 18-52
 - `TestEncryptDecryptField` (class) — lines 55-83
-- `TestEncryptedTypeDecorator` (class) — lines 86-111
-- `TestBootValidation` (class) — lines 114-122
+- `TestEncryptedTypeDecorator` (class) — lines 86-112
+- `TestBootValidation` (class) — lines 115-123
 
 ### Imports
 - `base64`
