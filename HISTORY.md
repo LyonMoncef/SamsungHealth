@@ -4,7 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`d361bd5`](#2026-04-26-d361bd5) |
+| V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`e32801a`](#2026-04-26-e32801a) |
 | V2.0.5 — structlog observability foundation (JSONL + request_id middleware) | `server/logging_config.py`, `server/middleware/request_context.py`, `server/main.py`, `requirements.txt` | [`f2c8cb2`](#2026-04-26-f2c8cb2) |
 | Samsung Health CSV import — full DB schema (21 tables) | `server/database.py`, `scripts/import_samsung_csv.py`, `scripts/explore_samsung_export.py` | [`d032741`](#2026-04-21-d032741) |
 | Dev mobile — WSL2 port forwarding + Android cleartext | `scripts/dev-mobile.ps1`, `Makefile`, `android-app/` | [`646aeaa`](#2026-04-21-646aeaa) |
@@ -55,7 +55,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-26 `d361bd5`
+### 2026-04-26 `e32801a`
 feat(V2.3): auth foundation atomique — users + JWT access+refresh + multi-user FK + redaction + audit
 - **Atomique non-splittable** (imposé audit pentester) : 50 tests RED → GREEN dans une seule PR pour éviter brèche Art.9 RGPD entre split partiel
 - `server/security/auth.py` : argon2id RFC 9106 profile #2 (m=46MB, t=2, p=1), PyJWT HS256 (`kid: "v1"`, `algorithms=["HS256"]` strict, `require=[exp,iat,sub,iss,aud,typ]`, validation iss/aud, `_DUMMY_HASH` pour timing equalization, `SAMSUNGHEALTH_JWT_SECRET_PREVIOUS` decode-only pour rotation), `get_current_user` dependency
