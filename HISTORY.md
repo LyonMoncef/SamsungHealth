@@ -55,7 +55,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-26 `PENDING`
+### 2026-04-26 `2beb3c7`
 chore(design): référence rebrand Data Saillance (palette + typo + logos, dark + light) pour le produit Nightfall
 - `docs/vault/specs/2026-04-26-nightfall-rebrand-data-saillance.md` créé (type=reference) — palette canonique HEX, type scale Playfair Display + Inter, 5 variantes logo, double-stroke "halo plat" dark, tokens CSS vars `--ds-*`, convention `MaterialTheme` Compose, règles d'usage. Source of truth externe : `~/MyPersonalProjects/Vectorizer/`. Light mode obligatoire (Nightfall v1 était dark-only)
 - `docs/vault/specs/nightfall-fullspectrum-design-brief.md` : `status: ready → superseded`, `superseded_by: 2026-04-26-nightfall-rebrand-data-saillance`, `superseded_on: 2026-04-26`
