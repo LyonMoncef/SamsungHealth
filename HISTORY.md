@@ -4,7 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`PENDING`](#2026-04-26-PENDING) |
+| V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`08101d1`](#2026-04-26-08101d1) |
 | V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`e32801a`](#2026-04-26-e32801a) |
 | V2.0.5 — structlog observability foundation (JSONL + request_id middleware) | `server/logging_config.py`, `server/middleware/request_context.py`, `server/main.py`, `requirements.txt` | [`f2c8cb2`](#2026-04-26-f2c8cb2) |
 | Samsung Health CSV import — full DB schema (21 tables) | `server/database.py`, `scripts/import_samsung_csv.py`, `scripts/explore_samsung_export.py` | [`d032741`](#2026-04-21-d032741) |
@@ -56,7 +56,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-26 `PENDING`
+### 2026-04-26 `08101d1`
 chore(V2.3.0.1): user_id NOT NULL sur 21 tables santé + scripts CSV multi-user
 - `alembic/versions/0005_user_id_not_null.py` créé (revision `8c1d2e4f5a90`, parent `7a3b9c0e1d24`) — safety check raise si rows orphelines, ALTER COLUMN SET NOT NULL sur 21 tables, drop des index partiels `WHERE user_id IS NULL`. Downgrade restaure l'état nullable + index partiel.
 - `server/db/models.py` — 21 occurrences de `user_id: Mapped[UUID | None]` + `nullable=True` → `Mapped[UUID]` + `nullable=False`. RefreshToken déjà NOT NULL, AuthEvent reste nullable (login_failure sur email inexistant).
