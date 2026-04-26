@@ -39,10 +39,15 @@ def _write_sleep_csv(tmp_path: Path, rows: list[dict]) -> Path:
 
 
 @pytest.fixture
-def csv_export_dir(tmp_path, monkeypatch):
-    """Pointe le script import_samsung_csv vers tmp_path et reload le module."""
+def csv_export_dir(tmp_path, monkeypatch, db_session):
+    """Pointe le script import_samsung_csv vers tmp_path + injecte TARGET_USER_ID."""
     import scripts.import_samsung_csv as mod
+    from tests.server.conftest import _ensure_orm_default_user
+
     monkeypatch.setattr(mod, "EXPORT_DIR", tmp_path)
+    user_id = _ensure_orm_default_user(db_session.connection())
+    db_session.commit()
+    monkeypatch.setattr(mod, "TARGET_USER_ID", str(user_id))
     return tmp_path
 
 
@@ -123,8 +128,14 @@ class TestGenerateSample:
         from server.db.models import HeartRateHourly, SleepSession, StepsHourly
 
         # Override get_session du script pour pointer vers le testcontainer
+        import sys
         import scripts.generate_sample as mod
+        from tests.server.conftest import _ensure_orm_default_user, _ORM_DEFAULT_USER_EMAIL
+
+        _ensure_orm_default_user(db_session.connection())
+        db_session.commit()
         monkeypatch.setattr(mod, "get_session", lambda: db_session)
+        monkeypatch.setattr(sys, "argv", ["generate_sample.py", "--user-email", _ORM_DEFAULT_USER_EMAIL])
 
         mod.main()
 
@@ -140,8 +151,14 @@ class TestGenerateSample:
         # spec V2.1.2 §Tests d'acceptation #4
         from server.db.models import SleepSession
 
+        import sys
         import scripts.generate_sample as mod
+        from tests.server.conftest import _ensure_orm_default_user, _ORM_DEFAULT_USER_EMAIL
+
+        _ensure_orm_default_user(db_session.connection())
+        db_session.commit()
         monkeypatch.setattr(mod, "get_session", lambda: db_session)
+        monkeypatch.setattr(sys, "argv", ["generate_sample.py", "--user-email", _ORM_DEFAULT_USER_EMAIL])
 
         mod.main()
         count_first = len(db_session.execute(select(SleepSession)).scalars().all())

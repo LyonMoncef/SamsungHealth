@@ -138,6 +138,85 @@ def schema_ready(pg_url):
     yield pg_url
 
 
+_ORM_DEFAULT_USER_EMAIL = "default-orm-user@samsunghealth.local"
+_ORM_DEFAULT_USER_HASH = "$argon2id$v=19$m=46080,t=2,p=1$ORMTESTUSERNOLOGINPOSSIBLE"
+
+
+def _ensure_orm_default_user(connection):
+    """Crée (ou récupère) le user par défaut pour les inserts ORM-only en test."""
+    from sqlalchemy import text
+
+    connection.execute(
+        text(
+            """
+            INSERT INTO users (id, email, password_hash, is_active, password_changed_at)
+            VALUES (gen_random_uuid(), :email, :hash, false, now())
+            ON CONFLICT (email) DO NOTHING
+            """
+        ),
+        {"email": _ORM_DEFAULT_USER_EMAIL, "hash": _ORM_DEFAULT_USER_HASH},
+    )
+    row = connection.execute(
+        text("SELECT id FROM users WHERE email = :email"),
+        {"email": _ORM_DEFAULT_USER_EMAIL},
+    ).fetchone()
+    return row[0]
+
+
+@pytest.fixture
+def default_user_db(db_session):
+    """V2.3.0.1 — user d'ancrage pour les tests ORM-only (sans booter le client HTTP).
+
+    Tous les inserts ORM de tables santé peuvent assigner `user_id=default_user_db.id`.
+    Le hook `_auto_inject_user_id_for_health_inserts` (autouse) fait l'injection
+    automatique pour les tests qui ne définissent pas `user_id`.
+    """
+    from sqlalchemy import select
+
+    from server.db.models import User
+
+    user_id = _ensure_orm_default_user(db_session.connection())
+    db_session.commit()
+    return db_session.execute(select(User).where(User.id == user_id)).scalar_one()
+
+
+@pytest.fixture(autouse=True)
+def _auto_inject_user_id_for_health_inserts(request):
+    """V2.3.0.1 — auto-injection user_id sur inserts ORM des tables santé.
+
+    Évite de patcher chaque test ORM-only qui ferait `db_session.add(SleepSession(...))`
+    sans user_id. Hook désactivé pour les tests qui ne touchent pas Postgres.
+    """
+    if "pg_container" not in request.fixturenames and "schema_ready" not in request.fixturenames:
+        yield
+        return
+
+    from sqlalchemy import event
+
+    try:
+        from server.db.models import Base
+    except ImportError:
+        yield
+        return
+
+    cached_user_id: list[str | None] = [None]
+
+    def _inject(mapper, connection, target):
+        if not hasattr(target, "user_id"):
+            return
+        if getattr(target, "user_id", None) is not None:
+            return
+        if "user_id" not in {c.name for c in mapper.columns}:
+            return
+        if cached_user_id[0] is None:
+            cached_user_id[0] = _ensure_orm_default_user(connection)
+        target.user_id = cached_user_id[0]
+
+    event.listen(Base, "before_insert", _inject, propagate=True)
+    yield
+    event.remove(Base, "before_insert", _inject)
+
+
 def _register_default_user(client) -> str | None:
     """V2.3 — register + login a default test user, return access_token (None on failure)."""
     email = "default-test-user@samsunghealth.local"

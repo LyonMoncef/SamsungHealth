@@ -84,13 +84,14 @@ class TestEncryptDecryptField:
 
 
 class TestEncryptedTypeDecorator:
-    def test_typedecorator_transparent_on_orm(self, schema_ready, db_session):
-        # spec V2.2 §9
+    def test_typedecorator_transparent_on_orm(self, schema_ready, db_session, default_user_db):
+        # spec V2.2 §9 — user_id obligatoire depuis V2.3.0.1
         from datetime import datetime, timezone
 
         from server.db.models import Mood
 
         m = Mood(
+            user_id=default_user_db.id,
             start_time=datetime(2026, 4, 24, 9, 30, tzinfo=timezone.utc),
             mood_type=3,
             notes="weekend cool",

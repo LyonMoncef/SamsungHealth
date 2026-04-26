@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: alembic/versions/0004_auth_foundation.py
-git_blob: e87bbd6f7fc56e63cbeb9b19df632ac0e38029d5
-last_synced: '2026-04-26T16:48:27Z'
-loc: 260
+git_blob: be9ad46e4903555a58be466d39dcaab144b9df58
+last_synced: '2026-04-26T18:27:44Z'
+loc: 263
 annotations: []
 imports:
 - typing
@@ -270,8 +270,11 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Reverse the unique/index/column changes on health tables.
+    # NB: l'upgrade a remplacé `uq_<table>` par un INDEX partiel (pas un constraint),
+    # donc on drop l'index puis on recrée le constraint d'origine.
     for table_name, uq_name, uq_cols in HEALTH_TABLES_UNIQUE:
-        op.drop_constraint(uq_name, table_name, type_="unique")
+        op.drop_constraint(f"uq_{table_name}_user_window", table_name, type_="unique")
+        op.execute(f'DROP INDEX IF EXISTS {uq_name}')
         op.create_unique_constraint(uq_name, table_name, uq_cols)
         op.drop_index(f"idx_{table_name}_user_id", table_name=table_name)
         op.drop_constraint(f"fk_{table_name}_user_id", table_name, type_="foreignkey")
@@ -298,7 +301,7 @@ def downgrade() -> None:
 
 ### Symbols
 - `upgrade` (function) — lines 51-239 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `downgrade` (function) — lines 242-260 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `downgrade` (function) — lines 242-263 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
 
 ### Imports
 - `typing`
