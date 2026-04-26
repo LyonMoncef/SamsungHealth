@@ -53,6 +53,12 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-26 `7135a5f`
+chore(audit): snapshot V2 progress 2026-04-26 + fix V2.1.1 status delivered
+- `docs/vault/audits/2026-04-26-v2-progress-audit.md` créé (nouveau dossier `audits/` pour les snapshots roadmap, distincts des `specs/`)
+- Bilan : 11 PRs mergées, 235/235 tests GREEN, **3 phases V2 entamées** (P0 ~70%, P2 ~50%, Phase A 100%), 4 phases à 0% (P1 auth, P3 RGPD, P4 Android, P5 Compose Canvas)
+- Anomalie corrigée : spec `2026-04-24-v2-postgres-routers-cutover.md` `status: ready → delivered`, `delivered: null → 2026-04-24` (PR #8 mergée le 2026-04-24, statut frontmatter pas mis à jour à l'époque)
+
 ### 2026-04-24 V2.2.1 — étendre chiffrement aux 9 tables Art.9 restantes
 
 `729c3b1` spec V2.2.1 (12 tests d'acceptation, 9 sentinelles BYTEA + 2 round-trip critiques + 1 sentinelle _crypto_v default).
