@@ -55,6 +55,14 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-26 `2beb3c7`
+chore(design): référence rebrand Data Saillance (palette + typo + logos, dark + light) pour le produit Nightfall
+- `docs/vault/specs/2026-04-26-nightfall-rebrand-data-saillance.md` créé (type=reference) — palette canonique HEX, type scale Playfair Display + Inter, 5 variantes logo, double-stroke "halo plat" dark, tokens CSS vars `--ds-*`, convention `MaterialTheme` Compose, règles d'usage. Source of truth externe : `~/MyPersonalProjects/Vectorizer/`. Light mode obligatoire (Nightfall v1 était dark-only)
+- `docs/vault/specs/nightfall-fullspectrum-design-brief.md` : `status: ready → superseded`, `superseded_by: 2026-04-26-nightfall-rebrand-data-saillance`, `superseded_on: 2026-04-26`
+- `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md` : Phase 4 + Phase 5 patchées avec note "voir spec rebrand Data Saillance, référencement obligatoire dans frontmatter `related_specs:` des futures specs frontend"
+- Convention : `code-cartographer` rendra le link automatique ; `plan-keeper` flaggera comme déviation toute spec frontend qui ne référence pas cette ref
+- Aucun changement code : pure documentation/référence design
+
 ### 2026-04-26 `e32801a`
 feat(V2.3): auth foundation atomique — users + JWT access+refresh + multi-user FK + redaction + audit
 - **Atomique non-splittable** (imposé audit pentester) : 50 tests RED → GREEN dans une seule PR pour éviter brèche Art.9 RGPD entre split partiel

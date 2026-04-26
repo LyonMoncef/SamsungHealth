@@ -139,6 +139,8 @@ Routers SQLAlchemy async, `Depends(get_current_user)`, multi-user, chiffrement A
 
 Build flavors : `webview` (dev) + `native` (prod).
 
+**Design system** : voir `2026-04-26-nightfall-rebrand-data-saillance` (palette + typo + logos Data Saillance, dark + light mode). Toute spec frontend de cette phase **doit** référencer cette ref dans son frontmatter `related_specs:`.
+
 ### Phase 5 — Compose Canvas natif dashboard (10-15j)
 
 5 specs UI par viz : `spec-p5-dashboard-{hypnogram,radial,timeline,cards,metrics}.md`
@@ -146,6 +148,8 @@ Build flavors : `webview` (dev) + `native` (prod).
 Chaque viz : spec → test parité (Playwright vs Paparazzi) → impl Compose Canvas → tolerance < 2% diff.
 
 Ordre : night cards → hypnogram → timeline → radial clock → metrics cards.
+
+**Design system** : voir `2026-04-26-nightfall-rebrand-data-saillance`. Tokens couleur Compose mappent les CSS vars `--ds-*` ; viz dataviz utilisent les flat tokens (pas le halo plat dark — réservé aux logos SVG).
 
 ### Phase 6 — CI/CD multi-env (2-3j)
 
