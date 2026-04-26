@@ -128,11 +128,22 @@ def report(label: str, ins: int, skp: int) -> None:
 
 
 def _upsert(db: Session, model, values: dict, conflict_cols: list[str]) -> bool:
-    """Insert via ON CONFLICT DO NOTHING. Returns True si insert effectif, False si skip."""
+    """Insert via ON CONFLICT DO NOTHING. Returns True si insert effectif, False si skip.
+
+    V2.3 — legacy import scripts ne gèrent pas user_id (NULL). Les nouvelles unique
+    constraints sont sur (user_id, ...cols). On utilise donc un index partiel
+    (`uq_<table>_<...>` WHERE user_id IS NULL) créé en alembic 0004 — d'où le
+    `index_where=text("user_id IS NULL")` ajouté ici pour matcher l'arbiter.
+    """
+    from sqlalchemy import text
+
     stmt = (
         pg_insert(model)
         .values(**values)
-        .on_conflict_do_nothing(index_elements=conflict_cols)
+        .on_conflict_do_nothing(
+            index_elements=conflict_cols,
+            index_where=text("user_id IS NULL"),
+        )
         .returning(model.id)
     )
     return db.execute(stmt).first() is not None

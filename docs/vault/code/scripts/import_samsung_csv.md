@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: scripts/import_samsung_csv.py
-git_blob: bafabbf2a8bc941be73e8a31a12cad0b9615c301
-last_synced: '2026-04-24T03:05:51Z'
-loc: 661
+git_blob: 7cd534dc9b55b34d643f9431e992407ff0504765
+last_synced: '2026-04-26T16:48:27Z'
+loc: 672
 annotations: []
 imports:
 - csv
@@ -194,11 +194,22 @@ def report(label: str, ins: int, skp: int) -> None:
 
 
 def _upsert(db: Session, model, values: dict, conflict_cols: list[str]) -> bool:
-    """Insert via ON CONFLICT DO NOTHING. Returns True si insert effectif, False si skip."""
+    """Insert via ON CONFLICT DO NOTHING. Returns True si insert effectif, False si skip.
+
+    V2.3 — legacy import scripts ne gèrent pas user_id (NULL). Les nouvelles unique
+    constraints sont sur (user_id, ...cols). On utilise donc un index partiel
+    (`uq_<table>_<...>` WHERE user_id IS NULL) créé en alembic 0004 — d'où le
+    `index_where=text("user_id IS NULL")` ajouté ici pour matcher l'arbiter.
+    """
+    from sqlalchemy import text
+
     stmt = (
         pg_insert(model)
         .values(**values)
-        .on_conflict_do_nothing(index_elements=conflict_cols)
+        .on_conflict_do_nothing(
+            index_elements=conflict_cols,
+            index_where=text("user_id IS NULL"),
+        )
         .returning(model.id)
     )
     return db.execute(stmt).first() is not None
@@ -744,29 +755,29 @@ if __name__ == "__main__":
 - `to_float` (function) — lines 112-116 · ⚠️ no test
 - `to_int` (function) — lines 119-123 · ⚠️ no test
 - `report` (function) — lines 126-127 · ⚠️ no test
-- `_upsert` (function) — lines 130-138
-- `import_sleep` (function) — lines 144-174 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_sleep_stages` (function) — lines 177-211 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_steps_hourly` (function) — lines 214-229 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_steps_daily` (function) — lines 232-252 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_heart_rate_hourly` (function) — lines 255-279 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_exercise` (function) — lines 282-310 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_stress` (function) — lines 313-331 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_spo2` (function) — lines 334-356 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_respiratory_rate` (function) — lines 359-378 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_hrv` (function) — lines 381-393 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_skin_temperature` (function) — lines 396-416 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_weight` (function) — lines 419-440 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_height` (function) — lines 443-455 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_blood_pressure` (function) — lines 458-477 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_mood` (function) — lines 480-500 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_water_intake` (function) — lines 503-515 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_activity_daily` (function) — lines 518-539 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_vitality_score` (function) — lines 542-568 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_floors_daily` (function) — lines 571-582 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_activity_level` (function) — lines 585-596 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `import_ecg` (function) — lines 599-619 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
-- `main` (function) — lines 625-657 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `_upsert` (function) — lines 130-149
+- `import_sleep` (function) — lines 155-185 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_sleep_stages` (function) — lines 188-222 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_steps_hourly` (function) — lines 225-240 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_steps_daily` (function) — lines 243-263 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_heart_rate_hourly` (function) — lines 266-290 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_exercise` (function) — lines 293-321 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_stress` (function) — lines 324-342 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_spo2` (function) — lines 345-367 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_respiratory_rate` (function) — lines 370-389 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_hrv` (function) — lines 392-404 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_skin_temperature` (function) — lines 407-427 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_weight` (function) — lines 430-451 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_height` (function) — lines 454-466 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_blood_pressure` (function) — lines 469-488 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_mood` (function) — lines 491-511 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_water_intake` (function) — lines 514-526 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_activity_daily` (function) — lines 529-550 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_vitality_score` (function) — lines 553-579 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_floors_daily` (function) — lines 582-593 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_activity_level` (function) — lines 596-607 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `import_ecg` (function) — lines 610-630 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `main` (function) — lines 636-668 · ⚠️ no test · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
 
 ### Imports
 - `csv`

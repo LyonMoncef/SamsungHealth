@@ -22,3 +22,20 @@
   Convention humaine pour l'instant : ne pas mettre de PII dans `event`/extras. À reconsidérer
   quand V2.3 ajoute l'auth (events `login_*`, `password_reset`) et qu'on a un risque réel de
   fuite via stack traces ou kwargs accidentels.
+
+---
+
+## V2.3.1 checklist (différé post-V2.3)
+
+V2.3 ship l'auth foundation atomique (users + JWT + multi-user FK + redaction + audit).
+Reste hors-scope V2.3, prévu pour V2.3.1+ :
+
+- **V2.3.0.1 (clean-up immédiat post-merge V2.3, ~30min)** : migration alembic 0005
+  passant `user_id NOT NULL` sur les 22 tables santé, après backfill validé.
+- **V2.3.1** : reset password flow + email verification (table `verification_tokens`,
+  email = log structlog uniquement en attendant SMTP).
+- **V2.3.2** : Google OAuth (provider abstraction `AuthProvider`).
+- **V2.3.3** : rate limiting login (slowapi + redis OR in-memory bucket) + lockout
+  enforcement automatique sur `failed_login_count > N` + frontend Nightfall login form.
+- **CAPTCHA register** (différé V2.3.3+).
+- **2FA / TOTP** (non scopé pour l'instant).

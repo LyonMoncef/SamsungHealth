@@ -2,15 +2,16 @@
 type: code-source
 language: python
 file_path: scripts/generate_sample.py
-git_blob: 7269e02d41926d3b2f101a7175d29f6d16d26543
-last_synced: '2026-04-24T03:01:13Z'
-loc: 225
+git_blob: 6c856c2fb2c51a691c82c1408579f9c7144a5aa7
+last_synced: '2026-04-26T16:48:27Z'
+loc: 241
 annotations: []
 imports:
 - random
 - sys
 - datetime
 - pathlib
+- sqlalchemy
 - sqlalchemy.dialects.postgresql
 - sqlalchemy.orm
 - server.database
@@ -45,6 +46,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -115,7 +117,10 @@ def _upsert_steps(db: Session, base_date: datetime, num_days: int) -> int:  # ba
             stmt = (
                 pg_insert(StepsHourly)
                 .values(date=date_str, hour=hour, step_count=steps)
-                .on_conflict_do_nothing(index_elements=["date", "hour"])
+                .on_conflict_do_nothing(
+                    index_elements=["date", "hour"],
+                    index_where=text("user_id IS NULL"),
+                )
                 .returning(StepsHourly.id)
             )
             if db.execute(stmt).first() is not None:
@@ -151,7 +156,10 @@ def _upsert_heart_rate(db: Session, base_date: datetime, num_days: int) -> int:
                     avg_bpm=avg,
                     sample_count=random.randint(5, 30),
                 )
-                .on_conflict_do_nothing(index_elements=["date", "hour"])
+                .on_conflict_do_nothing(
+                    index_elements=["date", "hour"],
+                    index_where=text("user_id IS NULL"),
+                )
                 .returning(HeartRateHourly.id)
             )
             if db.execute(stmt).first() is not None:
@@ -179,7 +187,10 @@ def _upsert_exercise(db: Session, base_date: datetime, num_days: int) -> int:
                 exercise_end=ex_end,
                 duration_minutes=float(duration),
             )
-            .on_conflict_do_nothing(index_elements=["exercise_start", "exercise_end"])
+            .on_conflict_do_nothing(
+                index_elements=["exercise_start", "exercise_end"],
+                index_where=text("user_id IS NULL"),
+            )
             .returning(ExerciseSession.id)
         )
         if db.execute(stmt).first() is not None:
@@ -225,7 +236,10 @@ def main():
         stmt = (
             pg_insert(SleepSession)
             .values(id=new_uuid, sleep_start=sleep_start, sleep_end=sleep_end)
-            .on_conflict_do_nothing(index_elements=["sleep_start", "sleep_end"])
+            .on_conflict_do_nothing(
+                index_elements=["sleep_start", "sleep_end"],
+                index_where=text("user_id IS NULL"),
+            )
             .returning(SleepSession.id)
         )
         result = db.execute(stmt).first()
@@ -242,7 +256,10 @@ def main():
                     stage_start=st["start"],
                     stage_end=st["end"],
                 )
-                .on_conflict_do_nothing(index_elements=["stage_start", "stage_end"])
+                .on_conflict_do_nothing(
+                    index_elements=["stage_start", "stage_end"],
+                    index_where=text("user_id IS NULL"),
+                )
             )
             db.execute(stage_stmt)
 
@@ -270,17 +287,18 @@ if __name__ == "__main__":
 - [[../../specs/2026-04-24-v2-csv-import-sqlalchemy]] — symbols: `main`, `generate_sleep_sessions`, `generate_steps_hourly`, `generate_heart_rate_hourly`, `generate_exercise_sessions`
 
 ### Symbols
-- `generate_stages` (function) — lines 28-55 · ⚠️ no test
-- `_upsert_steps` (function) — lines 58-86
-- `_upsert_heart_rate` (function) — lines 89-122
-- `_upsert_exercise` (function) — lines 125-150
-- `main` (function) — lines 153-221 · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
+- `generate_stages` (function) — lines 29-56 · ⚠️ no test
+- `_upsert_steps` (function) — lines 59-90
+- `_upsert_heart_rate` (function) — lines 93-129
+- `_upsert_exercise` (function) — lines 132-160
+- `main` (function) — lines 163-237 · **Specs**: [[../../specs/2026-04-24-v2-csv-import-sqlalchemy|2026-04-24-v2-csv-import-sqlalchemy]]
 
 ### Imports
 - `random`
 - `sys`
 - `datetime`
 - `pathlib`
+- `sqlalchemy`
 - `sqlalchemy.dialects.postgresql`
 - `sqlalchemy.orm`
 - `server.database`

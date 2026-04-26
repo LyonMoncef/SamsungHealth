@@ -34,8 +34,11 @@ def _resolve_level(level: str | None) -> int:
 
 def _build_processors(env: str) -> list:
     """Compose la chaîne de processors structlog. Ordre = important."""
+    from server.security.redaction import redact_sensitive_keys
+
     shared: list = [
         structlog.contextvars.merge_contextvars,
+        redact_sensitive_keys,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True, key="timestamp"),
         structlog.processors.StackInfoRenderer(),

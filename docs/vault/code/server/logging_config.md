@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/logging_config.py
-git_blob: f8eab5110198064041899bb935e15942a2ea25b7
-last_synced: '2026-04-26T14:46:49Z'
-loc: 80
+git_blob: a7814357c79d4db57ed89c77fcf65992d6eaf81e
+last_synced: '2026-04-26T16:48:27Z'
+loc: 83
 annotations: []
 imports:
 - logging
@@ -66,8 +66,11 @@ def _resolve_level(level: str | None) -> int:
 
 def _build_processors(env: str) -> list:
     """Compose la chaîne de processors structlog. Ordre = important."""
+    from server.security.redaction import redact_sensitive_keys
+
     shared: list = [
         structlog.contextvars.merge_contextvars,
+        redact_sensitive_keys,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True, key="timestamp"),
         structlog.processors.StackInfoRenderer(),
@@ -117,14 +120,15 @@ def get_logger(name: str) -> structlog.stdlib.BoundLogger:
 ## Appendix — symbols & navigation *(auto)*
 
 ### Implements specs
+- [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `_build_processors`
 - [[../../specs/2026-04-26-v2-structlog-observability]] — symbols: `configure_logging`, `get_logger`, `_processors`
 
 ### Symbols
 - `_resolve_env` (function) — lines 19-22
 - `_resolve_level` (function) — lines 25-32
-- `_build_processors` (function) — lines 35-48
-- `configure_logging` (function) — lines 51-75 · **Specs**: [[../../specs/2026-04-26-v2-structlog-observability|2026-04-26-v2-structlog-observability]]
-- `get_logger` (function) — lines 78-80 · **Specs**: [[../../specs/2026-04-26-v2-structlog-observability|2026-04-26-v2-structlog-observability]]
+- `_build_processors` (function) — lines 35-51 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `configure_logging` (function) — lines 54-78 · **Specs**: [[../../specs/2026-04-26-v2-structlog-observability|2026-04-26-v2-structlog-observability]]
+- `get_logger` (function) — lines 81-83 · **Specs**: [[../../specs/2026-04-26-v2-structlog-observability|2026-04-26-v2-structlog-observability]]
 
 ### Imports
 - `logging`

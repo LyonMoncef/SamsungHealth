@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_mood_encryption.py
-git_blob: 3bc22e7b60f61184e3902b9615ccdabb77b27076
-last_synced: '2026-04-24T03:44:10Z'
-loc: 150
+git_blob: 58fc36f5f1fce1c988b18dceedbf58fb1ff44c5f
+last_synced: '2026-04-26T16:48:28Z'
+loc: 161
 annotations: []
 imports:
 - datetime
@@ -98,8 +98,9 @@ class TestMoodPersistenceEncrypted:
 
 
 class TestMoodApiBackCompat:
-    def test_post_get_mood_round_trip(self, schema_ready, client_pg):
+    def test_post_get_mood_round_trip(self, client_pg_ready):
         # spec V2.2 §14
+        client_pg = client_pg_ready
         payload = {
             "entries": [
                 {
@@ -136,8 +137,9 @@ class TestMoodApiBackCompat:
         assert first["emotions"] == "sérénité"
         assert first["factors"] == "météo"
 
-    def test_mood_response_shape_unchanged(self, schema_ready, client_pg):
+    def test_mood_response_shape_unchanged(self, client_pg_ready):
         # spec V2.2 §15
+        client_pg = client_pg_ready
         client_pg.post("/api/mood", json={"entries": [{
             "start_time": "2026-04-24T14:00:00+00:00",
             "mood_type": 2,
@@ -155,14 +157,23 @@ class TestMoodApiBackCompat:
 
 
 class TestMoodErrorSanitization:
-    def test_decrypt_failure_returns_500_generic(self, schema_ready, client_pg, db_session):
+    def test_decrypt_failure_returns_500_generic(self, client_pg_ready, db_session):
         # spec V2.2 §16
-        from sqlalchemy import text
+        from sqlalchemy import select, text
 
-        from server.db.models import Mood
+        from server.db.models import Mood, User
 
-        # Insert valide via ORM
-        db_session.add(Mood(start_time=datetime(2026, 4, 24, 15, 0, tzinfo=timezone.utc), notes="legit"))
+        client_pg = client_pg_ready
+        # Récupérer l'user par défaut auto-créé par client_pg_ready (V2.3)
+        default_user = db_session.execute(
+            select(User).where(User.email == "default-test-user@samsunghealth.local")
+        ).scalar_one()
+        # Insert valide via ORM (avec user_id pour matcher le filtering V2.3)
+        db_session.add(Mood(
+            user_id=default_user.id,
+            start_time=datetime(2026, 4, 24, 15, 0, tzinfo=timezone.utc),
+            notes="legit",
+        ))
         db_session.commit()
 
         # Tamper : flip un byte dans le ciphertext stocké
@@ -184,8 +195,8 @@ class TestMoodErrorSanitization:
 
 ### Symbols
 - `TestMoodPersistenceEncrypted` (class) — lines 12-69
-- `TestMoodApiBackCompat` (class) — lines 72-126
-- `TestMoodErrorSanitization` (class) — lines 129-150
+- `TestMoodApiBackCompat` (class) — lines 72-128
+- `TestMoodErrorSanitization` (class) — lines 131-161
 
 ### Imports
 - `datetime`

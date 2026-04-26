@@ -2,11 +2,12 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: a14c382065d9c20ef6a99b7221c984b7e8df38ea
-last_synced: '2026-04-26T14:46:49Z'
-loc: 41
+git_blob: b8a28404e0f438df175f3d84d06d60aad5f04a7b
+last_synced: '2026-04-26T16:48:27Z'
+loc: 60
 annotations: []
 imports:
+- time
 - contextlib
 - pathlib
 - fastapi
@@ -17,6 +18,7 @@ imports:
 - server.routers
 exports:
 - _validate_encryption_at_boot
+- _bench_argon2
 tags:
 - code
 - python
@@ -31,6 +33,7 @@ coverage_pct: 94.73684210526316
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -38,7 +41,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from server.logging_config import configure_logging
+from server.logging_config import configure_logging, get_logger
 from server.middleware.request_context import RequestContextMiddleware
 
 
@@ -48,17 +51,35 @@ def _validate_encryption_at_boot() -> None:
     load_encryption_key()
 
 
+def _bench_argon2() -> float:
+    """V2.3 — bench argon2 wall-clock at boot (info log only, no fail)."""
+    from server.security.auth import hash_password
+    t0 = time.perf_counter()
+    hash_password("____boot_bench_unused____")
+    return (time.perf_counter() - t0) * 1000.0
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
     _validate_encryption_at_boot()
+    # V2.3 — validate JWT secret + registration token (warning if reg absent).
+    from server.security.auth import (
+        _validate_jwt_secret_at_boot,
+        _validate_registration_token,
+    )
+    _validate_jwt_secret_at_boot()
+    _validate_registration_token()
+    wall_ms = _bench_argon2()
+    get_logger("server.main").info("auth.argon2.bench", wall_ms=round(wall_ms, 1))
     yield
 
 
-from server.routers import exercise, heartrate, mood, sleep, steps  # noqa: E402
+from server.routers import auth, exercise, heartrate, mood, sleep, steps  # noqa: E402
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
+app.include_router(auth.router)
 app.include_router(sleep.router)
 app.include_router(steps.router)
 app.include_router(heartrate.router)
@@ -81,12 +102,15 @@ def index():
 ### Implements specs
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `app`, `_validate_encryption_at_boot`
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `app`, `startup`
+- [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `app`, `lifespan`
 - [[../../specs/2026-04-26-v2-structlog-observability]] — symbols: `app`, `lifespan`
 
 ### Symbols
-- `_validate_encryption_at_boot` (function) — lines 12-15 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `_validate_encryption_at_boot` (function) — lines 13-16 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `_bench_argon2` (function) — lines 19-24
 
 ### Imports
+- `time`
 - `contextlib`
 - `pathlib`
 - `fastapi`
@@ -98,3 +122,4 @@ def index():
 
 ### Exports
 - `_validate_encryption_at_boot`
+- `_bench_argon2`

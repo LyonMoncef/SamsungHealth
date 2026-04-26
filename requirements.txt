@@ -29,3 +29,7 @@ cryptography>=42.0
 
 # V2.0.5 — observability foundation (logs JSON structurés, request_id corrélation)
 structlog>=24.1
+
+# V2.3 — auth foundation (argon2id password hashing + JWT HS256 access/refresh)
+argon2-cffi>=23.1
+PyJWT>=2.8.0

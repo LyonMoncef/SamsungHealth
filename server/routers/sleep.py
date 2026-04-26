@@ -5,9 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from server.database import get_session
-from server.db.models import SleepSession, SleepStage
+from server.db.models import SleepSession, SleepStage, User
 from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
+from server.security.auth import get_current_user
 
 _log = get_logger(__name__)
 
@@ -19,12 +20,17 @@ def _parse_day(s: str) -> date:
 
 
 @router.post("", status_code=201)
-def create_sleep_sessions(body: SleepBulkIn, db: Session = Depends(get_session)) -> dict:
+def create_sleep_sessions(
+    body: SleepBulkIn,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
     inserted = 0
     skipped = 0
     for s in body.sessions:
         existing = db.execute(
             select(SleepSession).where(
+                SleepSession.user_id == current_user.id,
                 SleepSession.sleep_start == s.sleep_start,
                 SleepSession.sleep_end == s.sleep_end,
             )
@@ -32,13 +38,18 @@ def create_sleep_sessions(body: SleepBulkIn, db: Session = Depends(get_session))
         if existing is not None:
             skipped += 1
             continue
-        new_session = SleepSession(sleep_start=s.sleep_start, sleep_end=s.sleep_end)
+        new_session = SleepSession(
+            user_id=current_user.id,
+            sleep_start=s.sleep_start,
+            sleep_end=s.sleep_end,
+        )
         db.add(new_session)
         db.flush()
         if s.stages:
             for st in s.stages:
                 db.add(
                     SleepStage(
+                        user_id=current_user.id,
                         session_id=new_session.id,
                         stage_type=st.stage_type,
                         stage_start=st.stage_start,
@@ -85,8 +96,9 @@ def get_sleep_sessions(
     to_date: str | None = Query(None, alias="to"),
     include_stages: bool = Query(False),
     db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[SleepSessionOut]:
-    stmt = select(SleepSession)
+    stmt = select(SleepSession).where(SleepSession.user_id == current_user.id)
     if include_stages:
         stmt = stmt.options(selectinload(SleepSession.stages))
 

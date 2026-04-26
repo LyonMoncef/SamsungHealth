@@ -2,13 +2,15 @@
 type: code-source
 language: python
 file_path: server/routers/mood.py
-git_blob: e232e4a20f2a80b5ea78c40bf67febc9d73ca257
-last_synced: '2026-04-26T14:46:49Z'
-loc: 89
+git_blob: 2d43354c708c826a3b44bcefb77dfaadfeefa1d0
+last_synced: '2026-04-26T16:48:27Z'
+loc: 128
 annotations: []
 imports:
 - datetime
+- typing
 - fastapi
+- pydantic
 - sqlalchemy
 - sqlalchemy.dialects.postgresql
 - sqlalchemy.orm
@@ -16,10 +18,12 @@ imports:
 - server.db.models
 - server.logging_config
 - server.models
+- server.security.auth
 - server.security.crypto
 exports:
 - _to_dt
 - _iso
+- _normalize_payload
 tags:
 - code
 - python
@@ -35,16 +39,19 @@ tags:
 ```python
 """V2.2 — router /api/mood avec champs Art.9 chiffrés transparent via TypeDecorator."""
 from datetime import datetime, timezone
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from server.database import get_session
-from server.db.models import Mood
+from server.db.models import Mood, User
 from server.logging_config import get_logger
-from server.models import MoodBulkIn, MoodOut
+from server.models import MoodBulkIn, MoodIn, MoodOut
+from server.security.auth import get_current_user
 from server.security.crypto import DecryptionError
 
 _log = get_logger(__name__)
@@ -63,14 +70,49 @@ def _iso(dt: datetime | None) -> str | None:
     return dt.isoformat() if dt is not None else None
 
 
+def _normalize_payload(raw: dict) -> list[MoodIn]:
+    """Accept legacy {"entries": [MoodIn]} OR alt {"moods": [{recorded_at, mood_score, tags}]}.
+
+    The "moods" form is a forward-compat schema used by V2.3 isolation tests.
+    """
+    if "entries" in raw:
+        try:
+            parsed = MoodBulkIn(entries=raw["entries"])
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
+        return list(parsed.entries)
+    if "moods" in raw:
+        out: list[MoodIn] = []
+        for m in raw["moods"]:
+            start = m.get("recorded_at") or m.get("start_time")
+            if not start:
+                raise HTTPException(status_code=422, detail="missing recorded_at/start_time")
+            out.append(
+                MoodIn(
+                    start_time=start,
+                    mood_type=m.get("mood_score") if isinstance(m.get("mood_score"), int) else None,
+                    notes=m.get("notes"),
+                )
+            )
+        return out
+    raise HTTPException(status_code=422, detail="missing entries or moods")
+
+
 @router.post("", status_code=201)
-def create_mood_entries(body: MoodBulkIn, db: Session = Depends(get_session)) -> dict:
+async def create_mood_entries(
+    request: Request,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    raw = await request.json()
+    entries = _normalize_payload(raw)
     inserted = 0
     skipped = 0
-    for entry in body.entries:
+    for entry in entries:
         stmt = (
             pg_insert(Mood)
             .values(
+                user_id=current_user.id,
                 start_time=_to_dt(entry.start_time),
                 mood_type=entry.mood_type,
                 emotions=entry.emotions,
@@ -79,7 +121,7 @@ def create_mood_entries(body: MoodBulkIn, db: Session = Depends(get_session)) ->
                 place=entry.place,
                 company=entry.company,
             )
-            .on_conflict_do_nothing(index_elements=["start_time"])
+            .on_conflict_do_nothing(index_elements=["user_id", "start_time"])
             .returning(Mood.id)
         )
         if db.execute(stmt).first() is not None:
@@ -95,8 +137,9 @@ def get_mood_entries(
     from_date: str | None = Query(None, alias="from"),
     to_date: str | None = Query(None, alias="to"),
     db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[MoodOut]:
-    stmt = select(Mood)
+    stmt = select(Mood).where(Mood.user_id == current_user.id)
     if from_date:
         d_from = _to_dt(from_date)
         stmt = stmt.where(Mood.start_time >= d_from)
@@ -130,14 +173,18 @@ def get_mood_entries(
 
 ### Implements specs
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `router`, `create_mood_entry`, `get_mood_entries`
+- [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`
 
 ### Symbols
-- `_to_dt` (function) — lines 20-24
-- `_iso` (function) — lines 27-28
+- `_to_dt` (function) — lines 23-27
+- `_iso` (function) — lines 30-31
+- `_normalize_payload` (function) — lines 34-59
 
 ### Imports
 - `datetime`
+- `typing`
 - `fastapi`
+- `pydantic`
 - `sqlalchemy`
 - `sqlalchemy.dialects.postgresql`
 - `sqlalchemy.orm`
@@ -145,8 +192,10 @@ def get_mood_entries(
 - `server.db.models`
 - `server.logging_config`
 - `server.models`
+- `server.security.auth`
 - `server.security.crypto`
 
 ### Exports
 - `_to_dt`
 - `_iso`
+- `_normalize_payload`
