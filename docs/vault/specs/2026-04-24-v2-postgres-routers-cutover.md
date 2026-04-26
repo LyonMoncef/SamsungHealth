@@ -2,9 +2,9 @@
 type: spec
 title: "V2.1.1 — Cutover routers SQLite → SQLAlchemy + suppression code SQLite"
 slug: 2026-04-24-v2-postgres-routers-cutover
-status: ready
+status: delivered
 created: 2026-04-24
-delivered: null
+delivered: 2026-04-24
 priority: high
 related_plans:
   - 2026-04-23-plan-v2-refactor-master
