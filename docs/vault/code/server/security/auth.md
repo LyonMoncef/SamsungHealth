@@ -2,16 +2,18 @@
 type: code-source
 language: python
 file_path: server/security/auth.py
-git_blob: 9333edb1a3cdc760b360d2c54b24a7328a5c8d2e
-last_synced: '2026-04-26T16:48:28Z'
-loc: 351
+git_blob: 2b169e3ac1f16570e806eb947a15a060a70a814e
+last_synced: '2026-04-26T22:07:14Z'
+loc: 438
 annotations: []
 imports:
+- hashlib
 - math
 - os
 - secrets
 - time
 - collections
+- datetime
 - jwt
 - argon2
 - argon2.exceptions
@@ -40,6 +42,12 @@ exports:
 - rotate_refresh_token
 - get_current_user
 - check_registration_token
+- VerificationConfigError
+- _validate_public_base_url_at_boot
+- _validate_email_hash_salt_at_boot
+- generate_verification_token
+- hash_verification_token
+- verify_verification_token
 tags:
 - code
 - python
@@ -65,12 +73,14 @@ Modules-level responsibilities:
 """
 from __future__ import annotations
 
+import hashlib
 import math
 import os
 import secrets
 import time
 import uuid as _uuid
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from argon2 import PasswordHasher
@@ -404,6 +414,91 @@ def check_registration_token(provided: str | None) -> None:
         raise HTTPException(status_code=403, detail="registration_disabled")
     if not secrets.compare_digest(provided, expected):
         raise HTTPException(status_code=403, detail="registration_disabled")
+
+
+# ── V2.3.1 verification token primitives ──────────────────────────────────
+PUBLIC_BASE_URL_ENV = "SAMSUNGHEALTH_PUBLIC_BASE_URL"
+EMAIL_HASH_SALT_ENV = "SAMSUNGHEALTH_EMAIL_HASH_SALT"
+REQUIRE_EMAIL_VERIFICATION_ENV = "SAMSUNGHEALTH_REQUIRE_EMAIL_VERIFICATION"
+
+TTL_PASSWORD_RESET = timedelta(hours=1)
+TTL_EMAIL_VERIFICATION = timedelta(hours=24)
+
+
+class VerificationConfigError(RuntimeError):
+    """Raised when V2.3.1 boot env vars are absent or invalid."""
+
+
+def _validate_public_base_url_at_boot() -> str:
+    """Validate `SAMSUNGHEALTH_PUBLIC_BASE_URL`. Must be https:// or http://localhost.
+
+    Raise VerificationConfigError if absent / wrong scheme. Returns the URL.
+    """
+    raw = os.environ.get(PUBLIC_BASE_URL_ENV)
+    if not raw:
+        raise VerificationConfigError(
+            f"Env var {PUBLIC_BASE_URL_ENV} absente. "
+            "Doit commencer par https:// (prod) ou http://localhost (dev)."
+        )
+    if not (raw.startswith("https://") or raw.startswith("http://localhost")):
+        raise VerificationConfigError(
+            f"{PUBLIC_BASE_URL_ENV}={raw!r} invalide : "
+            "doit commencer par https:// ou http://localhost"
+        )
+    return raw
+
+
+def _validate_email_hash_salt_at_boot() -> str:
+    """Validate `SAMSUNGHEALTH_EMAIL_HASH_SALT` (≥ 32 bytes, raw or base64-decoded)."""
+    raw = os.environ.get(EMAIL_HASH_SALT_ENV)
+    if not raw:
+        raise VerificationConfigError(f"Env var {EMAIL_HASH_SALT_ENV} absente (≥ 32 bytes attendus)")
+    # Accept either raw utf-8 ≥ 32 bytes OR base64-decoded ≥ 32 bytes.
+    if len(raw.encode("utf-8")) >= 32:
+        return raw
+    try:
+        import base64
+
+        decoded = base64.b64decode(raw, validate=True)
+        if len(decoded) >= 32:
+            return raw
+    except Exception:
+        pass
+    raise VerificationConfigError(
+        f"{EMAIL_HASH_SALT_ENV} doit être ≥ 32 bytes (raw ou base64-decoded), got {len(raw)} chars"
+    )
+
+
+def generate_verification_token() -> tuple[str, str]:
+    """Return (raw, hashed) — 32 bytes URL-safe-base64 (43 chars) + sha256 hex (64 chars)."""
+    raw = secrets.token_urlsafe(32)
+    hashed = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return raw, hashed
+
+
+def hash_verification_token(raw: str) -> str:
+    """sha256 hex of `raw`. Used for DB lookup (token_hash UNIQUE)."""
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def verify_verification_token(db: Session, raw: str, purpose: str):
+    """Lookup verification_token by hash + purpose. Returns row or None.
+
+    Returns None if hash not found, purpose mismatch, already consumed, or expired.
+    """
+    from server.db.models import VerificationToken
+
+    hashed = hash_verification_token(raw)
+    now = datetime.now(timezone.utc)
+    row = db.execute(
+        select(VerificationToken).where(
+            VerificationToken.token_hash == hashed,
+            VerificationToken.purpose == purpose,
+            VerificationToken.consumed_at.is_(None),
+            VerificationToken.expires_at > now,
+        )
+    ).scalar_one_or_none()
+    return row
 ```
 
 ---
@@ -412,34 +507,43 @@ def check_registration_token(provided: str | None) -> None:
 
 ### Implements specs
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `hash_password`, `verify_password`, `_DUMMY_HASH`, `create_access_token`, `create_refresh_token`, `decode_access_token`, `rotate_refresh_token`, `revoke_refresh_token`, `get_current_user`, `_validate_jwt_secret_at_boot`, `_validate_registration_token`
+- [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `generate_verification_token`, `hash_verification_token`, `verify_verification_token`, `TTL_PASSWORD_RESET`, `TTL_EMAIL_VERIFICATION`, `_validate_public_base_url_at_boot`, `_validate_email_hash_salt_at_boot`
 
 ### Symbols
-- `JwtConfigError` (class) — lines 63-64
-- `hash_password` (function) — lines 68-70 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `verify_password` (function) — lines 73-78 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `_shannon_entropy` (function) — lines 87-92
-- `_validate_jwt_secret_at_boot` (function) — lines 95-138 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `_validate_registration_token` (function) — lines 141-150 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `_current_secret` (function) — lines 154-158
-- `_previous_secret` (function) — lines 161-163
-- `_encode` (function) — lines 166-169
-- `_decode_with_secret` (function) — lines 172-188
-- `_decode_try_both` (function) — lines 191-200
-- `create_access_token` (function) — lines 203-214 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `create_refresh_token` (function) — lines 217-229 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `decode_access_token` (function) — lines 232-236 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `decode_refresh_token` (function) — lines 239-244
-- `revoke_refresh_token` (function) — lines 248-261 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `rotate_refresh_token` (function) — lines 264-296 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `get_current_user` (function) — lines 300-336 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `check_registration_token` (function) — lines 340-351
+- `JwtConfigError` (class) — lines 65-66
+- `hash_password` (function) — lines 70-72 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `verify_password` (function) — lines 75-80 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `_shannon_entropy` (function) — lines 89-94
+- `_validate_jwt_secret_at_boot` (function) — lines 97-140 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `_validate_registration_token` (function) — lines 143-152 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `_current_secret` (function) — lines 156-160
+- `_previous_secret` (function) — lines 163-165
+- `_encode` (function) — lines 168-171
+- `_decode_with_secret` (function) — lines 174-190
+- `_decode_try_both` (function) — lines 193-202
+- `create_access_token` (function) — lines 205-216 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `create_refresh_token` (function) — lines 219-231 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `decode_access_token` (function) — lines 234-238 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `decode_refresh_token` (function) — lines 241-246
+- `revoke_refresh_token` (function) — lines 250-263 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `rotate_refresh_token` (function) — lines 266-298 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `get_current_user` (function) — lines 302-338 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `check_registration_token` (function) — lines 342-353
+- `VerificationConfigError` (class) — lines 365-366
+- `_validate_public_base_url_at_boot` (function) — lines 369-385 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `_validate_email_hash_salt_at_boot` (function) — lines 388-406 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `generate_verification_token` (function) — lines 409-413 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `hash_verification_token` (function) — lines 416-418 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `verify_verification_token` (function) — lines 421-438 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
 
 ### Imports
+- `hashlib`
 - `math`
 - `os`
 - `secrets`
 - `time`
 - `collections`
+- `datetime`
 - `jwt`
 - `argon2`
 - `argon2.exceptions`
@@ -469,3 +573,9 @@ def check_registration_token(provided: str | None) -> None:
 - `rotate_refresh_token`
 - `get_current_user`
 - `check_registration_token`
+- `VerificationConfigError`
+- `_validate_public_base_url_at_boot`
+- `_validate_email_hash_salt_at_boot`
+- `generate_verification_token`
+- `hash_verification_token`
+- `verify_verification_token`

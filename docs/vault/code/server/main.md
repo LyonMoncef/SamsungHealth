@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: b8a28404e0f438df175f3d84d06d60aad5f04a7b
-last_synced: '2026-04-26T16:48:27Z'
-loc: 60
+git_blob: c47ec6d533cadd0612a3eef9ff86cc5050ae5974
+last_synced: '2026-04-26T22:07:14Z'
+loc: 66
 annotations: []
 imports:
 - time
@@ -65,21 +65,27 @@ async def lifespan(app: FastAPI):
     _validate_encryption_at_boot()
     # V2.3 — validate JWT secret + registration token (warning if reg absent).
     from server.security.auth import (
+        _validate_email_hash_salt_at_boot,
         _validate_jwt_secret_at_boot,
+        _validate_public_base_url_at_boot,
         _validate_registration_token,
     )
     _validate_jwt_secret_at_boot()
     _validate_registration_token()
+    # V2.3.1 — validate the two new env vars (PUBLIC_BASE_URL + EMAIL_HASH_SALT).
+    _validate_public_base_url_at_boot()
+    _validate_email_hash_salt_at_boot()
     wall_ms = _bench_argon2()
     get_logger("server.main").info("auth.argon2.bench", wall_ms=round(wall_ms, 1))
     yield
 
 
-from server.routers import auth, exercise, heartrate, mood, sleep, steps  # noqa: E402
+from server.routers import admin, auth, exercise, heartrate, mood, sleep, steps  # noqa: E402
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(sleep.router)
 app.include_router(steps.router)
 app.include_router(heartrate.router)
@@ -104,6 +110,7 @@ def index():
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `app`, `startup`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `app`, `lifespan`
 - [[../../specs/2026-04-26-v2-structlog-observability]] — symbols: `app`, `lifespan`
+- [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `lifespan`
 
 ### Symbols
 - `_validate_encryption_at_boot` (function) — lines 13-16 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]

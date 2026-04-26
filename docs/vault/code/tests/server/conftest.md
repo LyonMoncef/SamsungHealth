@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 17fc28ebfc8c2c1de88c702c44a5a55e1de8e981
-last_synced: '2026-04-26T18:27:45Z'
-loc: 286
+git_blob: 7858dafd77358688f02881253c01bd7b84d6ee2d
+last_synced: '2026-04-26T22:07:14Z'
+loc: 348
 annotations: []
 imports:
 - base64
@@ -56,6 +56,16 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_password_hashing.py",
         "test_jwt.py",
         "test_redaction.py",
+        # V2.3.1 — reset password + email verification (flows nus, sans Bearer)
+        "test_verification_tokens.py",
+        "test_email_verify_routes.py",
+        "test_password_reset_routes.py",
+        "test_admin_pending_verifications.py",
+        "test_password_blocklist.py",
+        "test_alembic_0006.py",
+        "test_host_header_injection.py",
+        "test_email_hash_salt.py",
+        "test_login_email_verification_gate.py",
     }
 )
 
@@ -73,13 +83,26 @@ def _set_test_encryption_key(monkeypatch):
         yield  # pas encore implémenté, OK pour les tests RED de la fondation
 
 
+_TEST_PUBLIC_BASE_URL = "http://localhost:8000"
+_TEST_EMAIL_HASH_SALT = (
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+)
+
+
 @pytest.fixture(autouse=True)
 def _set_auth_env_defaults(monkeypatch):
-    """V2.3 — set JWT + registration env to test values for ALL tests in tests/server/."""
+    """V2.3 — set JWT + registration env to test values for ALL tests in tests/server/.
+
+    V2.3.1 — also seed PUBLIC_BASE_URL + EMAIL_HASH_SALT defaults (lifespan validates these).
+    """
     if not os.environ.get("SAMSUNGHEALTH_JWT_SECRET"):
         monkeypatch.setenv("SAMSUNGHEALTH_JWT_SECRET", _TEST_JWT_SECRET)
     if not os.environ.get("SAMSUNGHEALTH_REGISTRATION_TOKEN"):
         monkeypatch.setenv("SAMSUNGHEALTH_REGISTRATION_TOKEN", _TEST_REGISTRATION_TOKEN)
+    if not os.environ.get("SAMSUNGHEALTH_PUBLIC_BASE_URL"):
+        monkeypatch.setenv("SAMSUNGHEALTH_PUBLIC_BASE_URL", _TEST_PUBLIC_BASE_URL)
+    if not os.environ.get("SAMSUNGHEALTH_EMAIL_HASH_SALT"):
+        monkeypatch.setenv("SAMSUNGHEALTH_EMAIL_HASH_SALT", _TEST_EMAIL_HASH_SALT)
     yield
 
 
@@ -288,6 +311,45 @@ def client_pg_ready(request, schema_ready, client_pg):
     return client_pg
 
 
+@pytest.fixture(autouse=True)
+def _expire_sibling_sessions_on_commit():
+    """V2.3.1 — Cross-session identity-map coherence for tests.
+
+    `db_session` and the API session (via `get_session` override) are different
+    SA Session instances bound to the same engine. With `expire_on_commit=False`,
+    a commit in one session leaves entities cached in the other one — re-querying
+    returns stale state. Tests can call `expire_all()` manually but several
+    new tests don't. We register an `after_commit` listener that expires
+    entities in all *other* tracked sessions, mirroring single-session semantics.
+    """
+    import weakref
+
+    from sqlalchemy import event
+    from sqlalchemy.orm import Session
+
+    active: "weakref.WeakSet[Session]" = weakref.WeakSet()
+
+    def _track(session, transaction, connection):
+        active.add(session)
+
+    def _expire_others(session):
+        for s in list(active):
+            if s is session:
+                continue
+            try:
+                s.expire_all()
+            except Exception:
+                pass
+
+    event.listen(Session, "after_begin", _track)
+    event.listen(Session, "after_commit", _expire_others)
+    try:
+        yield
+    finally:
+        event.remove(Session, "after_commit", _expire_others)
+        event.remove(Session, "after_begin", _track)
+
+
 @pytest.fixture
 def client_pg(pg_url, engine):
     """TestClient FastAPI avec dependency_override sur get_session vers le testcontainer PG.
@@ -320,8 +382,8 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_ensure_orm_default_user` (function) — lines 145-163
-- `_register_default_user` (function) — lines 220-234
+- `_ensure_orm_default_user` (function) — lines 168-186
+- `_register_default_user` (function) — lines 243-257
 
 ### Imports
 - `base64`
