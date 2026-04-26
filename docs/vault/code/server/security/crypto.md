@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/security/crypto.py
-git_blob: abf742e73249b54e4dda1f5c2a52e9196274125c
-last_synced: '2026-04-24T03:44:01Z'
-loc: 79
+git_blob: bc96720463c14f1043dcd3e47a4469b5ac8e6ac5
+last_synced: '2026-04-26T14:46:49Z'
+loc: 83
 annotations: []
 imports:
 - base64
@@ -13,6 +13,7 @@ imports:
 - functools
 - cryptography.exceptions
 - cryptography.hazmat.primitives.ciphers.aead
+- server.logging_config
 exports:
 - EncryptionConfigError
 - DecryptionError
@@ -48,6 +49,10 @@ from functools import lru_cache
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from server.logging_config import get_logger
+
+
+_log = get_logger(__name__)
 
 KEY_ENV_VAR = "SAMSUNGHEALTH_ENCRYPTION_KEY"
 NONCE_BYTES = 12
@@ -122,12 +127,12 @@ def reset_key_cache() -> None:
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `load_encryption_key`, `encrypt_field`, `decrypt_field`, `EncryptionConfigError`, `DecryptionError`
 
 ### Symbols
-- `EncryptionConfigError` (class) — lines 23-24 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `DecryptionError` (class) — lines 27-28 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `load_encryption_key` (function) — lines 31-51 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `encrypt_field` (function) — lines 59-63 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `decrypt_field` (function) — lines 66-74 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `reset_key_cache` (function) — lines 77-79
+- `EncryptionConfigError` (class) — lines 27-28 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `DecryptionError` (class) — lines 31-32 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `load_encryption_key` (function) — lines 35-55 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `encrypt_field` (function) — lines 63-67 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `decrypt_field` (function) — lines 70-78 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `reset_key_cache` (function) — lines 81-83
 
 ### Imports
 - `base64`
@@ -136,6 +141,7 @@ def reset_key_cache() -> None:
 - `functools`
 - `cryptography.exceptions`
 - `cryptography.hazmat.primitives.ciphers.aead`
+- `server.logging_config`
 
 ### Exports
 - `EncryptionConfigError`

@@ -4,6 +4,11 @@ from functools import lru_cache
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from server.logging_config import get_logger
+
+
+_log = get_logger(__name__)
+
 _DEFAULT_PG_URL = "postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth"
 
 

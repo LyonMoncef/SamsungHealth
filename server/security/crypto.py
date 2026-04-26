@@ -13,6 +13,10 @@ from functools import lru_cache
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from server.logging_config import get_logger
+
+
+_log = get_logger(__name__)
 
 KEY_ENV_VAR = "SAMSUNGHEALTH_ENCRYPTION_KEY"
 NONCE_BYTES = 12

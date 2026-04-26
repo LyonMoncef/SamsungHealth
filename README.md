@@ -56,6 +56,22 @@ make db-migrate
 
 Variables d'environnement :
 - `DATABASE_URL` — URL SQLAlchemy (défaut : `postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth`)
+- `APP_ENV` — `dev` (ConsoleRenderer humain) ou `prod` (JSON stdout). Défaut : `prod`.
+- `LOG_LEVEL` — `DEBUG | INFO | WARNING | ERROR | CRITICAL`. Défaut : `INFO`.
+
+## Logs
+
+Pipeline de logs structurés via `structlog` (V2.0.5).
+
+- **Format prod** : 1 ligne JSON par event sur stdout, capture/rotation déléguée au runtime (docker compose, systemd).
+- **Format dev** : `ConsoleRenderer` lisible humain (couleurs).
+- **Champs standards** : `timestamp` (ISO8601 UTC), `level`, `logger` (scope), `event`, `request_id`, `user_id`, `route`, `latency_ms`.
+- **Corrélation** : chaque request HTTP reçoit un `X-Request-ID` (généré ou propagé depuis le client) bindé via `contextvars` à tous les logs émis pendant son traitement. Le middleware émet `event: "request.complete"` à la fin avec `latency_ms` et `route` (template FastAPI).
+
+Exemple ligne :
+```json
+{"event":"request.complete","logger":"server.middleware.request_context","route":"/api/sleep","method":"GET","status":200,"latency_ms":12.345,"request_id":"a1b2…","user_id":null,"level":"info","timestamp":"2026-04-26T10:00:00.000Z"}
+```
 
 ## Usage
 

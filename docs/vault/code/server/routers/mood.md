@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/mood.py
-git_blob: 5875e4040ea3a241cf5f5128405c90d919766b27
-last_synced: '2026-04-24T03:44:10Z'
-loc: 86
+git_blob: e232e4a20f2a80b5ea78c40bf67febc9d73ca257
+last_synced: '2026-04-26T14:46:49Z'
+loc: 89
 annotations: []
 imports:
 - datetime
@@ -14,6 +14,7 @@ imports:
 - sqlalchemy.orm
 - server.database
 - server.db.models
+- server.logging_config
 - server.models
 - server.security.crypto
 exports:
@@ -42,8 +43,11 @@ from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import Mood
+from server.logging_config import get_logger
 from server.models import MoodBulkIn, MoodOut
 from server.security.crypto import DecryptionError
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/mood", tags=["mood"])
 
@@ -128,8 +132,8 @@ def get_mood_entries(
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `router`, `create_mood_entry`, `get_mood_entries`
 
 ### Symbols
-- `_to_dt` (function) — lines 17-21
-- `_iso` (function) — lines 24-25
+- `_to_dt` (function) — lines 20-24
+- `_iso` (function) — lines 27-28
 
 ### Imports
 - `datetime`
@@ -139,6 +143,7 @@ def get_mood_entries(
 - `sqlalchemy.orm`
 - `server.database`
 - `server.db.models`
+- `server.logging_config`
 - `server.models`
 - `server.security.crypto`
 

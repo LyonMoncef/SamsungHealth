@@ -5,6 +5,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from server.logging_config import configure_logging
+from server.middleware.request_context import RequestContextMiddleware
+
 
 def _validate_encryption_at_boot() -> None:
     """V2.2 fail-fast — appelée au lifespan startup. Le test_boot_validation l'invoque directement."""
@@ -14,6 +17,7 @@ def _validate_encryption_at_boot() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configure_logging()
     _validate_encryption_at_boot()
     yield
 
@@ -21,6 +25,7 @@ async def lifespan(app: FastAPI):
 from server.routers import exercise, heartrate, mood, sleep, steps  # noqa: E402
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
+app.add_middleware(RequestContextMiddleware)
 app.include_router(sleep.router)
 app.include_router(steps.router)
 app.include_router(heartrate.router)

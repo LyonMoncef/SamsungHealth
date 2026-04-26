@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| V2.0.5 — structlog observability foundation (JSONL + request_id middleware) | `server/logging_config.py`, `server/middleware/request_context.py`, `server/main.py`, `requirements.txt` | [`f2c8cb2`](#2026-04-26-f2c8cb2) |
 | Samsung Health CSV import — full DB schema (21 tables) | `server/database.py`, `scripts/import_samsung_csv.py`, `scripts/explore_samsung_export.py` | [`d032741`](#2026-04-21-d032741) |
 | Dev mobile — WSL2 port forwarding + Android cleartext | `scripts/dev-mobile.ps1`, `Makefile`, `android-app/` | [`646aeaa`](#2026-04-21-646aeaa) |
 | Nightfall sleep dashboard | `static/index.html`, `static/dashboard.css`, `static/dashboard.js`, `static/api.js` | [`b5cacc7`](#2026-04-21-b5cacc7) |
@@ -52,6 +53,19 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-04-26 `f2c8cb2`
+feat(V2.0.5): structlog observability foundation — JSONL logs + request_id middleware
+- `server/logging_config.py` créé : `configure_logging()` + `get_logger()` + chaîne de processors structlog (timestamp ISO8601 UTC, level, logger scope, contextvars merger), JSONRenderer en prod / ConsoleRenderer(colors) en dev
+- `server/middleware/request_context.py` créé : ASGI pure middleware, `request_id_var` + `user_id_var` ContextVars, sanitisation X-Request-ID (alnum+tirets, max 64), header in/out, log `request.complete` avec `latency_ms` (perf_counter) + `route` template + niveau INFO/WARNING/ERROR selon status
+- `server/main.py` : `configure_logging()` dans lifespan, `RequestContextMiddleware` mounté avant routers
+- 7 fichiers `server/{database,security/crypto,routers/*}.py` : `_log = get_logger(__name__)` ajouté pour V2.3+ auth events
+- Env vars : `APP_ENV` (prod|dev) + `LOG_LEVEL` (DEBUG/INFO/WARNING/ERROR/CRITICAL avec fallback INFO si invalide)
+- 13 tests RED → GREEN (`tests/server/test_logging_config.py` 6 tests, `tests/server/test_request_context_middleware.py` 7 tests) — total 248/248 GREEN, 0 régression
+- Dépendance ajoutée : `structlog>=24.1`
+- README section "Logs" + NOTES.md tech debt "PII scrubber automatique (V2.3+)"
+- Spec : `docs/vault/specs/2026-04-26-v2-structlog-observability.md` (status delivered)
+- Hors scope V2.0.5 : Caddy reverse proxy, CLI logq, OpenTelemetry, PII scrubber auto, migration scripts/* (différés V2.0.6+)
 
 ### 2026-04-26 `7135a5f`
 chore(audit): snapshot V2 progress 2026-04-26 + fix V2.1.1 status delivered

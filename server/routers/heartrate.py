@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import HeartRateHourly
+from server.logging_config import get_logger
 from server.models import HeartRateBulkIn, HeartRateHourlyOut
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/heartrate", tags=["heartrate"])
 

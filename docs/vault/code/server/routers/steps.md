@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/steps.py
-git_blob: f0d6906726af0d195eb944d4c205906ba5aba7df
-last_synced: '2026-04-24T02:28:09Z'
-loc: 45
+git_blob: 67caaba1cc823d02a53a5f7901d85a39e7510334
+last_synced: '2026-04-26T14:46:49Z'
+loc: 48
 annotations: []
 imports:
 - fastapi
@@ -13,6 +13,7 @@ imports:
 - sqlalchemy.orm
 - server.database
 - server.db.models
+- server.logging_config
 - server.models
 exports: []
 tags:
@@ -36,7 +37,10 @@ from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import StepsHourly
+from server.logging_config import get_logger
 from server.models import StepsBulkIn, StepsHourlyOut
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/steps", tags=["steps"])
 
@@ -90,4 +94,5 @@ def get_steps(
 - `sqlalchemy.orm`
 - `server.database`
 - `server.db.models`
+- `server.logging_config`
 - `server.models`

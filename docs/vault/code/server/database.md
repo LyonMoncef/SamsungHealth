@@ -2,15 +2,16 @@
 type: code-source
 language: python
 file_path: server/database.py
-git_blob: 82ba713b5b296ea5f53072aad8241981b0545d95
-last_synced: '2026-04-24T02:34:57Z'
-loc: 25
+git_blob: 484640fdb842eb5074f1c35badc07ffb9796e2e6
+last_synced: '2026-04-26T14:46:49Z'
+loc: 30
 annotations: []
 imports:
 - os
 - functools
 - sqlalchemy
 - sqlalchemy.orm
+- server.logging_config
 exports:
 - get_session
 tags:
@@ -32,6 +33,11 @@ from functools import lru_cache
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+from server.logging_config import get_logger
+
+
+_log = get_logger(__name__)
 
 _DEFAULT_PG_URL = "postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth"
 
@@ -63,13 +69,14 @@ def get_session() -> Session:
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `get_engine`, `get_session`, `SessionLocal`
 
 ### Symbols
-- `get_session` (function) — lines 24-25 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]], [[../../specs/2026-04-24-v2-postgres-routers-cutover|2026-04-24-v2-postgres-routers-cutover]]
+- `get_session` (function) — lines 29-30 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]], [[../../specs/2026-04-24-v2-postgres-routers-cutover|2026-04-24-v2-postgres-routers-cutover]]
 
 ### Imports
 - `os`
 - `functools`
 - `sqlalchemy`
 - `sqlalchemy.orm`
+- `server.logging_config`
 
 ### Exports
 - `get_session`

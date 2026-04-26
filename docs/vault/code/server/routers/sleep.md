@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/sleep.py
-git_blob: 0242450879282e3155e27ee39637b20ef1fd0a22
-last_synced: '2026-04-24T02:26:12Z'
-loc: 101
+git_blob: 5d00cfdd1ad1548dd075f7287ae62845c3bdbcff
+last_synced: '2026-04-26T14:46:49Z'
+loc: 104
 annotations: []
 imports:
 - datetime
@@ -13,6 +13,7 @@ imports:
 - sqlalchemy.orm
 - server.database
 - server.db.models
+- server.logging_config
 - server.models
 exports:
 - _parse_day
@@ -40,7 +41,10 @@ from sqlalchemy.orm import Session, selectinload
 
 from server.database import get_session
 from server.db.models import SleepSession, SleepStage
+from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/sleep", tags=["sleep"])
 
@@ -143,9 +147,9 @@ def get_sleep_sessions(
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`, `create_sleep_sessions`, `get_sleep_sessions`
 
 ### Symbols
-- `_parse_day` (function) — lines 14-15
-- `_to_iso` (function) — lines 50-55
-- `_serialize` (function) — lines 58-76
+- `_parse_day` (function) — lines 17-18
+- `_to_iso` (function) — lines 53-58
+- `_serialize` (function) — lines 61-79
 
 ### Imports
 - `datetime`
@@ -154,6 +158,7 @@ def get_sleep_sessions(
 - `sqlalchemy.orm`
 - `server.database`
 - `server.db.models`
+- `server.logging_config`
 - `server.models`
 
 ### Exports

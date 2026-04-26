@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/exercise.py
-git_blob: 1ab8769f4fd06a4be34cd32f3700965266ae9586
-last_synced: '2026-04-24T02:28:09Z'
-loc: 76
+git_blob: 9609b624f272f785270c3364c2de0c5a236803b3
+last_synced: '2026-04-26T14:46:49Z'
+loc: 79
 annotations: []
 imports:
 - datetime
@@ -14,6 +14,7 @@ imports:
 - sqlalchemy.orm
 - server.database
 - server.db.models
+- server.logging_config
 - server.models
 exports:
 - _to_dt
@@ -41,7 +42,10 @@ from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import ExerciseSession
+from server.logging_config import get_logger
 from server.models import ExerciseBulkIn, ExerciseSessionOut
+
+_log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/exercise", tags=["exercise"])
 
@@ -118,8 +122,8 @@ def get_exercise(
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`
 
 ### Symbols
-- `_to_dt` (function) — lines 15-19
-- `_iso` (function) — lines 22-25
+- `_to_dt` (function) — lines 18-22
+- `_iso` (function) — lines 25-28
 
 ### Imports
 - `datetime`
@@ -129,6 +133,7 @@ def get_exercise(
 - `sqlalchemy.orm`
 - `server.database`
 - `server.db.models`
+- `server.logging_config`
 - `server.models`
 
 ### Exports
