@@ -4,7 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`PENDING`](#2026-04-26-PENDING) |
+| V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`83f77fd`](#2026-04-26-83f77fd) |
 | V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`08101d1`](#2026-04-26-08101d1) |
 | V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`e32801a`](#2026-04-26-e32801a) |
 | V2.0.5 — structlog observability foundation (JSONL + request_id middleware) | `server/logging_config.py`, `server/middleware/request_context.py`, `server/main.py`, `requirements.txt` | [`f2c8cb2`](#2026-04-26-f2c8cb2) |
@@ -57,7 +57,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-26 `PENDING`
+### 2026-04-26 `83f77fd`
 feat(V2.3.1): password reset + email verification — dual-sink admin endpoint, TTL 1h/24h split, blocklist top-100, atomic audit
 - `docs/vault/specs/2026-04-26-v2.3.1-reset-password-email-verify.md` créé (status: ready, 25 acceptance tests, 9 test files / 46 tests). Patch post-pentester : 2 HIGH (verify_link out of logs + dual-sink admin endpoint, host header injection fix), 5 MED (TTL split, race condition + flip-back triggers, blocklist passwords, atomic audit transaction, HMAC email salt).
 - `alembic/versions/0006_verification_tokens.py` — revision `9d2e3f5a6b71`, parent `8c1d2e4f5a90`. Crée table `verification_tokens` (id UUID7 PK, user_id FK CASCADE, token_hash UNIQUE TEXT, purpose TEXT, issued_at/expires_at/consumed_at TIMESTAMPTZ, ip INET, user_agent TEXT) + check constraint `consumed_after_issued` + index unique partiel `uq_verification_tokens_active_per_purpose WHERE consumed_at IS NULL` (race condition fix) + fonction PL/pgSQL `verification_tokens_no_unconsume()` + trigger `BEFORE UPDATE` anti-flip-back.
