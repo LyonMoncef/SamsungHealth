@@ -553,3 +553,25 @@ class AuthEvent(Uuid7PkMixin, Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+# ── V2.3.1 verification tokens (email verification + password reset) ──────
+class VerificationToken(Uuid7PkMixin, Base):
+    __tablename__ = "verification_tokens"
+    __table_args__ = (
+        Index("idx_verification_tokens_user_id", "user_id"),
+        Index("idx_verification_tokens_purpose", "purpose"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ip: Mapped[str | None] = mapped_column(INET)
+    user_agent: Mapped[str | None] = mapped_column(Text)

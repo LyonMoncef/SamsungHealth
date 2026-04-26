@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: 03ebaf9a7bfca035751c5c3ea6a0fb2b4571f2e5
-last_synced: '2026-04-26T18:27:45Z'
-loc: 555
+git_blob: 89efd21935278499cabdd86000c431d945a26258
+last_synced: '2026-04-26T22:07:14Z'
+loc: 577
 annotations: []
 imports:
 - datetime
@@ -42,6 +42,7 @@ exports:
 - User
 - RefreshToken
 - AuthEvent
+- VerificationToken
 tags:
 - code
 - python
@@ -610,6 +611,28 @@ class AuthEvent(Uuid7PkMixin, Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+# ── V2.3.1 verification tokens (email verification + password reset) ──────
+class VerificationToken(Uuid7PkMixin, Base):
+    __tablename__ = "verification_tokens"
+    __table_args__ = (
+        Index("idx_verification_tokens_user_id", "user_id"),
+        Index("idx_verification_tokens_purpose", "purpose"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ip: Mapped[str | None] = mapped_column(INET)
+    user_agent: Mapped[str | None] = mapped_column(Text)
 ```
 
 ---
@@ -621,6 +644,7 @@ class AuthEvent(Uuid7PkMixin, Base):
 - [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9]] — symbols: `SleepSession`, `Weight`, `BloodPressure`, `Stress`, `Spo2`, `HeartRateHourly`, `RespiratoryRate`, `SkinTemperature`, `Ecg`
 - [[../../specs/2026-04-24-v2-postgres-migration]] — symbols: `Base`, `SleepSession`, `SleepStage`, `HeartRateHourly`, `StepsDaily`, `StepsHourly`, `ExerciseSession`, `ActivityDaily`, `Stress`, `Spo2`, `RespiratoryRate`, `Hrv`, `SkinTemperature`, `Weight`, `Height`, `BloodPressure`, `Mood`, `WaterIntake`, `VitalityScore`, `FloorsDaily`, `ActivityLevel`, `Ecg`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `User`, `RefreshToken`, `AuthEvent`
+- [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `VerificationToken`, `User`
 
 ### Symbols
 - `Base` (class) — lines 32-33 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
@@ -647,9 +671,10 @@ class AuthEvent(Uuid7PkMixin, Base):
 - `FloorsDaily` (class) — lines 442-453 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 - `ActivityLevel` (class) — lines 456-467 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 - `Ecg` (class) — lines 471-490 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `User` (class) — lines 494-511 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `User` (class) — lines 494-511 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]], [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
 - `RefreshToken` (class) — lines 514-535 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
 - `AuthEvent` (class) — lines 538-555 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `VerificationToken` (class) — lines 559-577 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
 
 ### Imports
 - `datetime`
@@ -688,3 +713,4 @@ class AuthEvent(Uuid7PkMixin, Base):
 - `User`
 - `RefreshToken`
 - `AuthEvent`
+- `VerificationToken`

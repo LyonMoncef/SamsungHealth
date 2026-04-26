@@ -10,12 +10,14 @@ Modules-level responsibilities:
 """
 from __future__ import annotations
 
+import hashlib
 import math
 import os
 import secrets
 import time
 import uuid as _uuid
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from argon2 import PasswordHasher
@@ -349,3 +351,88 @@ def check_registration_token(provided: str | None) -> None:
         raise HTTPException(status_code=403, detail="registration_disabled")
     if not secrets.compare_digest(provided, expected):
         raise HTTPException(status_code=403, detail="registration_disabled")
+
+
+# ── V2.3.1 verification token primitives ──────────────────────────────────
+PUBLIC_BASE_URL_ENV = "SAMSUNGHEALTH_PUBLIC_BASE_URL"
+EMAIL_HASH_SALT_ENV = "SAMSUNGHEALTH_EMAIL_HASH_SALT"
+REQUIRE_EMAIL_VERIFICATION_ENV = "SAMSUNGHEALTH_REQUIRE_EMAIL_VERIFICATION"
+
+TTL_PASSWORD_RESET = timedelta(hours=1)
+TTL_EMAIL_VERIFICATION = timedelta(hours=24)
+
+
+class VerificationConfigError(RuntimeError):
+    """Raised when V2.3.1 boot env vars are absent or invalid."""
+
+
+def _validate_public_base_url_at_boot() -> str:
+    """Validate `SAMSUNGHEALTH_PUBLIC_BASE_URL`. Must be https:// or http://localhost.
+
+    Raise VerificationConfigError if absent / wrong scheme. Returns the URL.
+    """
+    raw = os.environ.get(PUBLIC_BASE_URL_ENV)
+    if not raw:
+        raise VerificationConfigError(
+            f"Env var {PUBLIC_BASE_URL_ENV} absente. "
+            "Doit commencer par https:// (prod) ou http://localhost (dev)."
+        )
+    if not (raw.startswith("https://") or raw.startswith("http://localhost")):
+        raise VerificationConfigError(
+            f"{PUBLIC_BASE_URL_ENV}={raw!r} invalide : "
+            "doit commencer par https:// ou http://localhost"
+        )
+    return raw
+
+
+def _validate_email_hash_salt_at_boot() -> str:
+    """Validate `SAMSUNGHEALTH_EMAIL_HASH_SALT` (≥ 32 bytes, raw or base64-decoded)."""
+    raw = os.environ.get(EMAIL_HASH_SALT_ENV)
+    if not raw:
+        raise VerificationConfigError(f"Env var {EMAIL_HASH_SALT_ENV} absente (≥ 32 bytes attendus)")
+    # Accept either raw utf-8 ≥ 32 bytes OR base64-decoded ≥ 32 bytes.
+    if len(raw.encode("utf-8")) >= 32:
+        return raw
+    try:
+        import base64
+
+        decoded = base64.b64decode(raw, validate=True)
+        if len(decoded) >= 32:
+            return raw
+    except Exception:
+        pass
+    raise VerificationConfigError(
+        f"{EMAIL_HASH_SALT_ENV} doit être ≥ 32 bytes (raw ou base64-decoded), got {len(raw)} chars"
+    )
+
+
+def generate_verification_token() -> tuple[str, str]:
+    """Return (raw, hashed) — 32 bytes URL-safe-base64 (43 chars) + sha256 hex (64 chars)."""
+    raw = secrets.token_urlsafe(32)
+    hashed = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return raw, hashed
+
+
+def hash_verification_token(raw: str) -> str:
+    """sha256 hex of `raw`. Used for DB lookup (token_hash UNIQUE)."""
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def verify_verification_token(db: Session, raw: str, purpose: str):
+    """Lookup verification_token by hash + purpose. Returns row or None.
+
+    Returns None if hash not found, purpose mismatch, already consumed, or expired.
+    """
+    from server.db.models import VerificationToken
+
+    hashed = hash_verification_token(raw)
+    now = datetime.now(timezone.utc)
+    row = db.execute(
+        select(VerificationToken).where(
+            VerificationToken.token_hash == hashed,
+            VerificationToken.purpose == purpose,
+            VerificationToken.consumed_at.is_(None),
+            VerificationToken.expires_at > now,
+        )
+    ).scalar_one_or_none()
+    return row

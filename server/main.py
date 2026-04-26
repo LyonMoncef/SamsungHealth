@@ -30,21 +30,27 @@ async def lifespan(app: FastAPI):
     _validate_encryption_at_boot()
     # V2.3 — validate JWT secret + registration token (warning if reg absent).
     from server.security.auth import (
+        _validate_email_hash_salt_at_boot,
         _validate_jwt_secret_at_boot,
+        _validate_public_base_url_at_boot,
         _validate_registration_token,
     )
     _validate_jwt_secret_at_boot()
     _validate_registration_token()
+    # V2.3.1 — validate the two new env vars (PUBLIC_BASE_URL + EMAIL_HASH_SALT).
+    _validate_public_base_url_at_boot()
+    _validate_email_hash_salt_at_boot()
     wall_ms = _bench_argon2()
     get_logger("server.main").info("auth.argon2.bench", wall_ms=round(wall_ms, 1))
     yield
 
 
-from server.routers import auth, exercise, heartrate, mood, sleep, steps  # noqa: E402
+from server.routers import admin, auth, exercise, heartrate, mood, sleep, steps  # noqa: E402
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(sleep.router)
 app.include_router(steps.router)
 app.include_router(heartrate.router)
