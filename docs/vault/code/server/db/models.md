@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: e6d11d3c96a8e6d293211e56c921adcf09c4a8e8
-last_synced: '2026-04-27T07:34:23Z'
-loc: 609
+git_blob: 299e9a712ebefc022813937829372f172007a46c
+last_synced: '2026-04-27T17:56:06Z'
+loc: 610
 annotations: []
 imports:
 - datetime
@@ -560,6 +560,7 @@ class User(Uuid7PkMixin, TimestampedMixin, Base):
         Integer, nullable=False, default=0, server_default="0"
     )
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_failed_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_ip: Mapped[str | None] = mapped_column(INET)
     password_changed_at: Mapped[datetime] = mapped_column(
@@ -679,6 +680,7 @@ class IdentityProvider(Uuid7PkMixin, Base):
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `User`, `RefreshToken`, `AuthEvent`
 - [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `VerificationToken`, `User`
 - [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `IdentityProvider`, `VerificationToken`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `User`
 
 ### Symbols
 - `Base` (class) — lines 32-33 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
@@ -705,11 +707,11 @@ class IdentityProvider(Uuid7PkMixin, Base):
 - `FloorsDaily` (class) — lines 442-453 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 - `ActivityLevel` (class) — lines 456-467 · **Specs**: [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 - `Ecg` (class) — lines 471-490 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
-- `User` (class) — lines 494-511 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]], [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
-- `RefreshToken` (class) — lines 514-535 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `AuthEvent` (class) — lines 538-555 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `VerificationToken` (class) — lines 559-579 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]], [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
-- `IdentityProvider` (class) — lines 583-609 · **Specs**: [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
+- `User` (class) — lines 494-512 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]], [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]], [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout|2026-04-26-v2.3.3.1-rate-limit-lockout]]
+- `RefreshToken` (class) — lines 515-536 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `AuthEvent` (class) — lines 539-556 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `VerificationToken` (class) — lines 560-580 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]], [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
+- `IdentityProvider` (class) — lines 584-610 · **Specs**: [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
 
 ### Imports
 - `datetime`

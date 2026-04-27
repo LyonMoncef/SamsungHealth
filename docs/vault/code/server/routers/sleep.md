@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/sleep.py
-git_blob: 66005bbe5a93a6511be0a0ef66a533a5b8ca1158
-last_synced: '2026-04-26T16:48:27Z'
-loc: 116
+git_blob: 6bf14e38a4645b650d3b57c66c82835c8eefe38a
+last_synced: '2026-04-27T17:56:06Z'
+loc: 120
 annotations: []
 imports:
 - datetime
@@ -16,6 +16,7 @@ imports:
 - server.logging_config
 - server.models
 - server.security.auth
+- server.security.rate_limit
 exports:
 - _parse_day
 - _to_iso
@@ -36,7 +37,7 @@ coverage_pct: 87.5
 ```python
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -45,6 +46,7 @@ from server.db.models import SleepSession, SleepStage, User
 from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
 from server.security.auth import get_current_user
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -56,8 +58,11 @@ def _parse_day(s: str) -> date:
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 def create_sleep_sessions(
+    request: Request,
     body: SleepBulkIn,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
@@ -159,11 +164,12 @@ def get_sleep_sessions(
 ### Implements specs
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`, `create_sleep_sessions`, `get_sleep_sessions`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`, `list_sleep`, `get_sleep_session`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_parse_day` (function) — lines 18-19
-- `_to_iso` (function) — lines 64-69
-- `_serialize` (function) — lines 72-90
+- `_parse_day` (function) — lines 19-20
+- `_to_iso` (function) — lines 68-73
+- `_serialize` (function) — lines 76-94
 
 ### Imports
 - `datetime`
@@ -175,6 +181,7 @@ def get_sleep_sessions(
 - `server.logging_config`
 - `server.models`
 - `server.security.auth`
+- `server.security.rate_limit`
 
 ### Exports
 - `_parse_day`

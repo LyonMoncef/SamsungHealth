@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 3608def4343b948816c75f0d3de0f67b7441dddc
-last_synced: '2026-04-27T07:34:23Z'
-loc: 470
+git_blob: 70f48eaf6b034962dfaa191b5f463a85a20fe8d4
+last_synced: '2026-04-27T17:56:06Z'
+loc: 523
 annotations: []
 imports:
 - base64
@@ -75,6 +75,13 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_oauth_password_reset.py",
         "test_oauth_redaction.py",
         "test_alembic_0007.py",
+        # V2.3.3.1 — rate-limit + lockout + admin lock + IP resolution
+        "test_rate_limit.py",
+        "test_ip_resolution.py",
+        "test_lockout.py",
+        "test_admin_lock.py",
+        "test_email_global_cap.py",
+        "test_alembic_0008.py",
     }
 )
 
@@ -158,7 +165,50 @@ def _set_auth_env_defaults(monkeypatch):
         monkeypatch.setenv(
             "SAMSUNGHEALTH_OAUTH_AUTO_REGISTER", _TEST_OAUTH_AUTO_REGISTER
         )
+    # V2.3.3.1 — rate-limit + lockout test defaults.
+    if not os.environ.get("SAMSUNGHEALTH_ENV"):
+        monkeypatch.setenv("SAMSUNGHEALTH_ENV", "test")
+    if not os.environ.get("SAMSUNGHEALTH_TRUSTED_PROXIES"):
+        monkeypatch.setenv("SAMSUNGHEALTH_TRUSTED_PROXIES", "127.0.0.1,::1")
     yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limit_state():
+    """V2.3.3.1 — clear slowapi in-memory storage between tests.
+
+    Without this, a 5/min cap from test A leaks into test B and produces
+    flaky 429s. The module + storage may not exist yet during RED phase,
+    so we no-op cleanly on ImportError / AttributeError.
+    """
+    yield
+    try:
+        from server.security import rate_limit as _rl
+
+        # Limiter exposes a storage we can reset (slowapi MemoryStorage has
+        # `.storage` dict). The implementation may also expose a helper.
+        limiter = getattr(_rl, "limiter", None)
+        if limiter is not None:
+            for attr in ("reset", "_storage_reset"):
+                fn = getattr(limiter, attr, None)
+                if callable(fn):
+                    try:
+                        fn()
+                    except Exception:
+                        pass
+            storage = getattr(limiter, "_storage", None) or getattr(
+                limiter, "storage", None
+            )
+            if storage is not None:
+                for attr in ("storage", "_data", "data"):
+                    obj = getattr(storage, attr, None)
+                    if hasattr(obj, "clear"):
+                        try:
+                            obj.clear()
+                        except Exception:
+                            pass
+    except Exception:
+        pass
 
 
 # V2.3.2 — RSA keypair + JWKS helper for forging Google ID tokens in tests.
@@ -338,12 +388,15 @@ def _ensure_orm_default_user(connection):
 
 
 @pytest.fixture
-def default_user_db(db_session):
+def default_user_db(schema_ready, db_session):
     """V2.3.0.1 — user d'ancrage pour les tests ORM-only (sans booter le client HTTP).
 
     Tous les inserts ORM de tables santé peuvent assigner `user_id=default_user_db.id`.
     Le hook `_auto_inject_user_id_for_health_inserts` (autouse) fait l'injection
     automatique pour les tests qui ne définissent pas `user_id`.
+
+    V2.3.3.1 — depend on `schema_ready` so the schema is migrated before insert
+    (some test files use `default_user_db` without explicitly listing `schema_ready`).
     """
     from sqlalchemy import select
 
@@ -504,8 +557,8 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_ensure_orm_default_user` (function) — lines 290-308
-- `_register_default_user` (function) — lines 365-379
+- `_ensure_orm_default_user` (function) — lines 340-358
+- `_register_default_user` (function) — lines 418-432
 
 ### Imports
 - `base64`

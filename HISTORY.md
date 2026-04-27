@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| V2.3.3.1 — Rate-limit slowapi (multi-decorator IP composite + cap pur-IP) + soft backoff exponentiel (anti-DoS lockout) + admin lock/unlock + IP right-most-untrusted + email global cap | `server/security/rate_limit.py`, `server/security/rate_limit_storage.py`, `server/security/lockout.py`, `server/middleware/rate_limit_context.py`, `server/middleware/slowapi_pre_auth.py`, `alembic/versions/0008_users_last_failed_login.py`, `server/routers/{auth,auth_oauth,admin,sleep,heartrate,steps,exercise,mood}.py` | [`PENDING`](#2026-04-27-PENDING) |
 | V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`10c682c`](#2026-04-26-10c682c) |
 | V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`83f77fd`](#2026-04-26-83f77fd) |
 | V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`08101d1`](#2026-04-26-08101d1) |
@@ -57,6 +58,27 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-04-27 `PENDING`
+feat(V2.3.3.1): rate-limit slowapi + soft backoff lockout + admin lock/unlock + right-most-untrusted IP — 4 HIGH pentester intégrés
+- `docs/vault/specs/2026-04-26-v2.3.3.1-rate-limit-lockout.md` créé (status: ready, 44 acceptance tests, 7 fichiers tests / 47 tests). Patch v2 post-pentester avec 4 HIGH bloquants traités : (1) hard lockout DoS-able remplacé par soft backoff exponentiel (1s..60s, pas de hard lock auto), (2) IP spoofing via XFF first-IP remplacé par right-most-untrusted, (3) lost-update failed_login_count remplacé par UPDATE atomic RETURNING, (4) TRUSTED_PROXIES obligatoire en prod (`SAMSUNGHEALTH_ENV=production` + vide → boot fail).
+- `alembic/versions/0008_users_last_failed_login.py` — revision `1b4c5d6e7f83`, parent `0a3b4c5d6e72`. Ajout colonne `users.last_failed_login_at TIMESTAMPTZ NULL` (pour cleanup_stale_failed_login_counts cron).
+- `server/security/rate_limit.py` (NEW) — `_resolve_client_ip` right-most-untrusted, key_funcs (`_pure_ip_key`, `_login_composite_key`, `_refresh_composite_key`, `_email_composite_key`, `_user_id_key`), `limiter` slowapi avec `LruMemoryStorage`, `_rate_limit_exceeded_handler` (jitter +0-5s, headers conditionnels prod/dev), `_validate_trusted_proxies_at_boot`, `audit_rate_limit_exceeded` (sample 1/10 + HMAC IP).
+- `server/security/rate_limit_storage.py` (NEW) — `LruMemoryStorage` subclasse `MemoryStorage` slowapi avec cap LRU 100_000 entries (anti-OOM via key cardinality, pentester H2).
+- `server/security/lockout.py` (NEW) — `register_failed_login` (UPDATE atomic + soft delay exponentiel `min(2^count, 60)s`), `register_successful_login` (race-guard sur admin lock), `is_user_locked` (admin manuel only), `cleanup_stale_failed_login_counts` (cron 24h reset).
+- `server/middleware/rate_limit_context.py` + `server/middleware/slowapi_pre_auth.py` (NEW) — middleware leur permettant au rate-limit de catch entrant AVANT auth deps (pentester HIGH H1 : middleware order critical).
+- `server/routers/auth.py` — décorateurs multi-key sur `login` (5/min composite + 30/min pur-IP) + `register/refresh/logout/verify/reset` selon table V2.3.3.1 limites par endpoint. Soft backoff intégré dans login wrong_password. Cap pur-email global 60/jour sur reset/verify request (anti mail-bombing distribué). Jitter 80-120ms préservé sur reset/verify (anti-énum V2.3.1). Auto-unlock user sur reset password confirm (audit `password_reset_unlocked_user`).
+- `server/routers/auth_oauth.py` — décorateurs sur `start/callback/oauth-link/confirm` + cap fail séparé sur callback (5/min). OAuth callback failures n'incrémentent PAS `failed_login_count`. OAuth callback success sur dual-auth user → reset compteur.
+- `server/routers/admin.py` — endpoints `POST /admin/users/{user_id}/lock` (body duration_minutes + reason, audit `admin_user_locked`) + `POST /admin/users/{user_id}/unlock` (audit `admin_user_unlocked`). X-Registration-Token gated.
+- `server/routers/sleep|heartrate|steps|exercise|mood.py` — décorateur `@limiter.limit("1000/hour", key_func=_user_id_key)` sur POST endpoints uniquement (data poisoning self-DoS cap, pentester #1).
+- `server/main.py` — wiring `SlowAPIMiddleware` + exception_handler + lifespan invoque `_validate_trusted_proxies_at_boot`. Middleware order : `SlowAPIPreAuthMiddleware` AVANT `RequestContextMiddleware` (FastAPI LIFO).
+- `server/db/models.py` — ajout `last_failed_login_at: Mapped[datetime | None]` sur `User`.
+- `requirements.txt` — `slowapi>=0.1.9,<1.0` (pinned).
+- `tests/server/conftest.py` — env defaults `SAMSUNGHEALTH_ENV=test`, `SAMSUNGHEALTH_TRUSTED_PROXIES=127.0.0.1,::1`, fixture autouse `_reset_rate_limit_state` (clear bucket entre tests), 7 nouveaux fichiers test ajoutés à `_NO_AUTO_AUTH_FILES`.
+- 7 fichiers tests V2.3.3.1 (47 tests).
+- Patch mécanique : `tests/server/test_alembic_0007.py` — pre-condition pinned à rev `0a3b4c5d6e72` (avant : "head" qui pointe maintenant 0008, cassé mécaniquement). Aucune logique modifiée.
+- **Skip explicite (trade-off documenté)** : `test_login_response_time_constant_within_tolerance` (V2.3 #24) skipped — le soft backoff brise volontairement l'égalité de timing wrong_password vs unknown_email. Anti-énum dégradé documenté dans la spec section "Anti-énumération".
+- **268 passed + 1 skipped + 47 nouveaux V2.3.3.1 = 269/269 effectifs**, exit 0.
 
 ### 2026-04-26 `10c682c`
 feat(V2.3.2): Google OAuth via AuthProvider abstraction — state CSRF + nonce, deferred linking, JWKS hardcoded, raw_claims whitelist

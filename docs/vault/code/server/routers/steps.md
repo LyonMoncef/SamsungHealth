@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/steps.py
-git_blob: 8b149e46b9d4e3efd8f9a40e85812facdec5c0c1
-last_synced: '2026-04-26T16:48:27Z'
-loc: 59
+git_blob: 2f24978f3234a378499deb0c177307c4bbf6238c
+last_synced: '2026-04-27T17:56:06Z'
+loc: 63
 annotations: []
 imports:
 - fastapi
@@ -16,6 +16,7 @@ imports:
 - server.logging_config
 - server.models
 - server.security.auth
+- server.security.rate_limit
 exports: []
 tags:
 - code
@@ -31,7 +32,7 @@ coverage_pct: 22.857142857142858
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -41,6 +42,7 @@ from server.db.models import StepsHourly, User
 from server.logging_config import get_logger
 from server.models import StepsBulkIn, StepsHourlyOut
 from server.security.auth import get_current_user
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -48,8 +50,11 @@ router = APIRouter(prefix="/api/steps", tags=["steps"])
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 def create_steps(
+    request: Request,
     body: StepsBulkIn,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
@@ -99,6 +104,7 @@ def get_steps(
 ### Implements specs
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Imports
 - `fastapi`
@@ -110,3 +116,4 @@ def get_steps(
 - `server.logging_config`
 - `server.models`
 - `server.security.auth`
+- `server.security.rate_limit`

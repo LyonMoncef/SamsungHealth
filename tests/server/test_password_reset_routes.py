@@ -86,12 +86,17 @@ class TestRequestPasswordReset:
         assert r.status_code == 202
         assert r.json() == {"status": "pending"}
 
-    def test_request_jitter_within_80_120ms(self, client_pg_ready):
+    def test_request_jitter_within_80_120ms(self, client_pg_ready, monkeypatch):
         """given known vs unknown email, when POST request 5x each, then median latency ≥ 80ms (jitter active).
 
         spec §Anti-énumération — Jitter random.uniform(0.080, 0.120) AVANT 202.
         spec §Test d'acceptation #7 — latence ~ même ±150ms.
+        Note: V2.3.3.1 ajoute un cap composite 3/5min (IP, email) qui sinon
+        couperait la fenêtre de mesure (3 OK + 429 → médiane faussée). On
+        bumpe le cap via env-override le temps du test pour mesurer le jitter
+        sur les 6 appels par email (1 warm-up + 5 mesures).
         """
+        monkeypatch.setenv("SAMSUNGHEALTH_RL_EMAIL_COMPOSITE_CAP", "100/5minutes")
         client = client_pg_ready
         _register(client, email="jitter-reset@example.com")
 

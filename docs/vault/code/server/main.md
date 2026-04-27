@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: e46e2c83a447e2174bebbdc0bb4a5072d782de54
-last_synced: '2026-04-27T07:34:23Z'
-loc: 92
+git_blob: 022cbb69ff95996b4765e4df08fd0c8a8d6c32ee
+last_synced: '2026-04-27T17:56:06Z'
+loc: 113
 annotations: []
 imports:
 - time
@@ -13,8 +13,12 @@ imports:
 - fastapi
 - fastapi.responses
 - fastapi.staticfiles
+- slowapi.errors
 - server.logging_config
+- server.middleware.rate_limit_context
 - server.middleware.request_context
+- server.middleware.slowapi_pre_auth
+- server.security.rate_limit
 - server.routers
 exports:
 - _validate_encryption_at_boot
@@ -40,9 +44,17 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 
 from server.logging_config import configure_logging, get_logger
+from server.middleware.rate_limit_context import RateLimitContextMiddleware
 from server.middleware.request_context import RequestContextMiddleware
+from server.middleware.slowapi_pre_auth import SlowAPIPreAuthMiddleware
+from server.security.rate_limit import (
+    _rate_limit_exceeded_handler,
+    _validate_trusted_proxies_at_boot,
+    limiter,
+)
 
 
 def _validate_encryption_at_boot() -> None:
@@ -64,6 +76,8 @@ async def lifespan(app: FastAPI):
     import os as _os
 
     configure_logging()
+    # V2.3.3.1 — fail fast on rate-limit env BEFORE other validators.
+    _validate_trusted_proxies_at_boot()
     _validate_encryption_at_boot()
     # V2.3 — validate JWT secret + registration token (warning if reg absent).
     from server.security.auth import (
@@ -108,7 +122,18 @@ from server.routers import (  # noqa: E402
 )
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
-app.add_middleware(RequestContextMiddleware)
+
+# V2.3.3.1 — wire slowapi.
+# Starlette wraps middlewares: last add_middleware → outermost (runs first on request).
+# Order so that body-peek for composite keys runs OUTSIDE slowapi (so request.state
+# is set before slowapi key_func is invoked), and per-route slowapi check runs
+# BEFORE FastAPI dependency resolution (so rate-limit fires before auth — H1 / #43).
+app.state.limiter = limiter
+app.add_middleware(RequestContextMiddleware)       # innermost
+app.add_middleware(SlowAPIPreAuthMiddleware)       # middle — per-route check pre-deps
+app.add_middleware(RateLimitContextMiddleware)     # outermost — peeks body BEFORE slowapi
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.include_router(auth.router)
 app.include_router(auth_oauth.router)
 app.include_router(admin.router)
@@ -138,10 +163,11 @@ def index():
 - [[../../specs/2026-04-26-v2-structlog-observability]] — symbols: `app`, `lifespan`
 - [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `lifespan`
 - [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `lifespan`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `app`, `lifespan`
 
 ### Symbols
-- `_validate_encryption_at_boot` (function) — lines 13-16 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `_bench_argon2` (function) — lines 19-24
+- `_validate_encryption_at_boot` (function) — lines 21-24 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `_bench_argon2` (function) — lines 27-32
 
 ### Imports
 - `time`
@@ -150,8 +176,12 @@ def index():
 - `fastapi`
 - `fastapi.responses`
 - `fastapi.staticfiles`
+- `slowapi.errors`
 - `server.logging_config`
+- `server.middleware.rate_limit_context`
 - `server.middleware.request_context`
+- `server.middleware.slowapi_pre_auth`
+- `server.security.rate_limit`
 - `server.routers`
 
 ### Exports

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/heartrate.py
-git_blob: d31e04b26f8455f0b21c6b82c4290cea518da88e
-last_synced: '2026-04-26T16:48:27Z'
-loc: 72
+git_blob: 474b486f03949efc4e5211e06b3a268c971d4e79
+last_synced: '2026-04-27T17:56:06Z'
+loc: 76
 annotations: []
 imports:
 - fastapi
@@ -16,6 +16,7 @@ imports:
 - server.logging_config
 - server.models
 - server.security.auth
+- server.security.rate_limit
 exports: []
 tags:
 - code
@@ -31,7 +32,7 @@ coverage_pct: 22.857142857142858
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -41,6 +42,7 @@ from server.db.models import HeartRateHourly, User
 from server.logging_config import get_logger
 from server.models import HeartRateBulkIn, HeartRateHourlyOut
 from server.security.auth import get_current_user
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -48,8 +50,11 @@ router = APIRouter(prefix="/api/heartrate", tags=["heartrate"])
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 def create_heartrate(
+    request: Request,
     body: HeartRateBulkIn,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
@@ -112,6 +117,7 @@ def get_heartrate(
 ### Implements specs
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Imports
 - `fastapi`
@@ -123,3 +129,4 @@ def get_heartrate(
 - `server.logging_config`
 - `server.models`
 - `server.security.auth`
+- `server.security.rate_limit`

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/mood.py
-git_blob: 2d43354c708c826a3b44bcefb77dfaadfeefa1d0
-last_synced: '2026-04-26T16:48:27Z'
-loc: 128
+git_blob: 565a518206010436b81e24e27e5bf1b271a2d23e
+last_synced: '2026-04-27T17:56:06Z'
+loc: 131
 annotations: []
 imports:
 - datetime
@@ -20,6 +20,7 @@ imports:
 - server.models
 - server.security.auth
 - server.security.crypto
+- server.security.rate_limit
 exports:
 - _to_dt
 - _iso
@@ -41,7 +42,7 @@ tags:
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -53,6 +54,7 @@ from server.logging_config import get_logger
 from server.models import MoodBulkIn, MoodIn, MoodOut
 from server.security.auth import get_current_user
 from server.security.crypto import DecryptionError
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -99,8 +101,10 @@ def _normalize_payload(raw: dict) -> list[MoodIn]:
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 async def create_mood_entries(
     request: Request,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
@@ -174,11 +178,12 @@ def get_mood_entries(
 ### Implements specs
 - [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields]] — symbols: `router`, `create_mood_entry`, `get_mood_entries`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_to_dt` (function) — lines 23-27
-- `_iso` (function) — lines 30-31
-- `_normalize_payload` (function) — lines 34-59
+- `_to_dt` (function) — lines 24-28
+- `_iso` (function) — lines 31-32
+- `_normalize_payload` (function) — lines 35-60
 
 ### Imports
 - `datetime`
@@ -194,6 +199,7 @@ def get_mood_entries(
 - `server.models`
 - `server.security.auth`
 - `server.security.crypto`
+- `server.security.rate_limit`
 
 ### Exports
 - `_to_dt`

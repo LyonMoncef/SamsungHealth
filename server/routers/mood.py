@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -14,6 +14,7 @@ from server.logging_config import get_logger
 from server.models import MoodBulkIn, MoodIn, MoodOut
 from server.security.auth import get_current_user
 from server.security.crypto import DecryptionError
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -60,8 +61,10 @@ def _normalize_payload(raw: dict) -> list[MoodIn]:
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 async def create_mood_entries(
     request: Request,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:

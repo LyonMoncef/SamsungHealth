@@ -12,11 +12,25 @@ import uuid as _uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+from server.security.lockout import (
+    is_user_locked,
+    register_failed_login,
+    register_successful_login,
+)
+from server.security.rate_limit import (
+    _email_composite_key,
+    _email_request_composite_cap,
+    _login_composite_key,
+    _pure_ip_key,
+    _refresh_composite_key,
+    limiter,
+)
 
 from server.database import get_session
 from server.db.models import AuthEvent, RefreshToken, User, VerificationToken
@@ -112,7 +126,9 @@ def _record_event(
 
 # ── endpoints ──────────────────────────────────────────────────────────────
 @router.post("/register", response_model=RegisterOut, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/minute", key_func=_pure_ip_key)
 def register(
+    request: Request,
     body: RegisterIn,
     response: Response,
     x_registration_token: str | None = Header(default=None, alias="X-Registration-Token"),
@@ -153,18 +169,39 @@ def register(
 
 
 @router.post("/login", response_model=TokenPair)
-def login(body: LoginIn, db: Session = Depends(get_session)) -> TokenPair:
+@limiter.limit("30/minute", key_func=_pure_ip_key)
+@limiter.limit("5/minute", key_func=_login_composite_key)
+def login(
+    request: Request,
+    body: LoginIn,
+    response: Response,
+    db: Session = Depends(get_session),
+) -> TokenPair:
     email = str(body.email)
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
     if user is None:
-        # Run dummy hash to equalize timing.
+        # Equalize timing + jitter (anti-enum, V2.3.3.1).
         verify_password(body.password, _DUMMY_HASH)
+        time.sleep(random.uniform(0.080, 0.120))
         _record_event(
             db, event_type="login_failure", user_id=None, email_hash=_email_hash(email)
         )
         db.commit()
         _log.warning("auth.login.failure", reason="unknown_user", email_hash=_email_hash(email))
+        raise HTTPException(status_code=401, detail="invalid_credentials")
+
+    # Admin lock — 401 (anti-enum), no failed_login_count increment.
+    if is_user_locked(user):
+        verify_password(body.password, _DUMMY_HASH)
+        time.sleep(random.uniform(0.080, 0.120))
+        _record_event(
+            db,
+            event_type="login_locked_attempt",
+            user_id=user.id,
+            email_hash=_email_hash(email),
+        )
+        db.commit()
         raise HTTPException(status_code=401, detail="invalid_credentials")
 
     if not verify_password(body.password, user.password_hash):
@@ -175,6 +212,8 @@ def login(body: LoginIn, db: Session = Depends(get_session)) -> TokenPair:
             email_hash=_email_hash(email),
         )
         db.commit()
+        # Atomic increment + soft backoff sleep (V2.3.3.1).
+        register_failed_login(db, user)
         _log.warning(
             "auth.login.failure",
             reason="wrong_password",
@@ -221,8 +260,6 @@ def login(body: LoginIn, db: Session = Depends(get_session)) -> TokenPair:
     db.add(refresh_row)
     refresh_jwt = create_refresh_token(user_id=str(user.id), jti=str(new_jti))
 
-    user.last_login_at = now
-
     _record_event(
         db,
         event_type="login_success",
@@ -231,12 +268,22 @@ def login(body: LoginIn, db: Session = Depends(get_session)) -> TokenPair:
     )
     db.commit()
 
+    # Reset failed_login_count + last_login_at (race-guard preserves admin lock).
+    register_successful_login(db, user)
+
     _log.info("auth.login.success", user_id=str(user.id), email_hash=_email_hash(email))
     return TokenPair(access_token=access, refresh_token=refresh_jwt)
 
 
 @router.post("/refresh", response_model=TokenPair)
-def refresh(body: RefreshIn, db: Session = Depends(get_session)) -> TokenPair:
+@limiter.limit("60/minute", key_func=_pure_ip_key)
+@limiter.limit("30/minute", key_func=_refresh_composite_key)
+def refresh(
+    request: Request,
+    body: RefreshIn,
+    response: Response,
+    db: Session = Depends(get_session),
+) -> TokenPair:
     try:
         payload = decode_refresh_token(body.refresh_token)
     except Exception:
@@ -269,6 +316,18 @@ def refresh(body: RefreshIn, db: Session = Depends(get_session)) -> TokenPair:
     user = db.execute(select(User).where(User.id == user_uuid)).scalar_one_or_none()
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="invalid_refresh")
+
+    # V2.3.3.1 — admin-locked user: revoke ONLY this token (preserve other devices).
+    if is_user_locked(user):
+        row.revoked_at = datetime.now(timezone.utc)
+        _record_event(
+            db,
+            event_type="refresh_locked_attempt",
+            user_id=user.id,
+            email_hash=_email_hash(user.email),
+        )
+        db.commit()
+        raise HTTPException(status_code=423, detail="account_locked")
 
     # Rotate.
     now = datetime.now(timezone.utc)
@@ -306,7 +365,9 @@ def refresh(body: RefreshIn, db: Session = Depends(get_session)) -> TokenPair:
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute", key_func=_pure_ip_key)
 def logout(
+    request: Request,
     body: LogoutIn,
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_session),
@@ -371,6 +432,49 @@ def _anti_enum_jitter() -> None:
     time.sleep(random.uniform(0.080, 0.120))
 
 
+def _hmac_email_for_cap(email: str) -> str:
+    import hmac as _hmac
+
+    salt = os.environ.get("SAMSUNGHEALTH_EMAIL_HASH_SALT", "")
+    return _hmac.new(
+        salt.encode("utf-8"),
+        email.lower().encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _check_email_global_cap(
+    db: Session, email: str, event_type: str
+) -> None:
+    """V2.3.3.1 — anti mail-bombing distribué (rotation IPs bypass cap (IP,email)).
+
+    Counts auth_events for `event_type` + `email_hash` in last N hours; raises 400
+    if >= cap. Cap and window are env-overridable (test monkeypatch friendly).
+    """
+    try:
+        cap = int(os.environ.get("SAMSUNGHEALTH_EMAIL_GLOBAL_CAP", "60"))
+        window_hours = int(
+            os.environ.get("SAMSUNGHEALTH_EMAIL_GLOBAL_CAP_WINDOW_HOURS", "24")
+        )
+    except ValueError:
+        cap = 60
+        window_hours = 24
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+    eh = _hmac_email_for_cap(email)
+    count = db.execute(
+        select(func.count())
+        .select_from(AuthEvent)
+        .where(
+            AuthEvent.event_type == event_type,
+            AuthEvent.email_hash == eh,
+            AuthEvent.created_at > cutoff,
+        )
+    ).scalar_one()
+    if count >= cap:
+        raise HTTPException(status_code=400, detail="email_global_cap_exceeded")
+
+
 def _dummy_token_ops() -> None:
     """Constant-cost fake token gen + sha256 to mirror the real branch's CPU work."""
     raw, _ = generate_verification_token()
@@ -433,8 +537,12 @@ def _issue_verification_token(
 
 
 @router.post("/verify-email/request", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("10/5minutes", key_func=_pure_ip_key)
+@limiter.limit(_email_request_composite_cap, key_func=_email_composite_key)
 def request_email_verification(
+    request: Request,
     body: VerifyEmailRequestIn,
+    response: Response,
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_session),
 ) -> dict:
@@ -458,6 +566,9 @@ def request_email_verification(
     if not target_email:
         _anti_enum_jitter()
         return {"status": "pending"}
+
+    # V2.3.3.1 — anti mail-bombing distribué (cap pur-email global).
+    _check_email_global_cap(db, target_email, "email_verification_request")
 
     user = db.execute(
         select(User).where(User.email == target_email)
@@ -491,8 +602,11 @@ def request_email_verification(
 
 
 @router.post("/verify-email/confirm")
+@limiter.limit("10/minute", key_func=_pure_ip_key)
 def confirm_email_verification(
+    request: Request,
     body: VerifyEmailConfirmIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
     row = verify_verification_token(db, body.token, "email_verification")
@@ -520,11 +634,19 @@ def confirm_email_verification(
 
 
 @router.post("/password/reset/request", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("10/5minutes", key_func=_pure_ip_key)
+@limiter.limit(_email_request_composite_cap, key_func=_email_composite_key)
 def request_password_reset(
+    request: Request,
     body: PasswordResetRequestIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
     target_email = str(body.email)
+
+    # V2.3.3.1 — anti mail-bombing distribué (cap pur-email global).
+    _check_email_global_cap(db, target_email, "password_reset_request")
+
     user = db.execute(
         select(User).where(User.email == target_email)
     ).scalar_one_or_none()
@@ -563,8 +685,11 @@ def request_password_reset(
 
 
 @router.post("/password/reset/confirm")
+@limiter.limit("10/minute", key_func=_pure_ip_key)
 def confirm_password_reset(
+    request: Request,
     body: PasswordResetConfirmIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
     row = verify_verification_token(db, body.token, "password_reset")
@@ -590,6 +715,11 @@ def confirm_password_reset(
     user.password_hash = new_hash
     user.password_changed_at = now
 
+    # V2.3.3.1 — password reset confirms ownership → unlock user (clear admin lock).
+    was_locked = user.locked_until is not None and user.locked_until > now
+    user.failed_login_count = 0
+    user.locked_until = None
+
     # Revoke ALL active refresh tokens for this user.
     refresh_rows = db.execute(
         select(RefreshToken).where(
@@ -610,6 +740,14 @@ def confirm_password_reset(
             email_hash=_email_hash(user.email),
         )
     )
+    if was_locked:
+        db.add(
+            AuthEvent(
+                event_type="password_reset_unlocked_user",
+                user_id=user.id,
+                email_hash=_email_hash(user.email),
+            )
+        )
     try:
         db.commit()
     except Exception:
