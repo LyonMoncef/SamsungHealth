@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_password_reset_routes.py
-git_blob: c9301e4f20cdcec49b5933ae1948d351cb02c2ae
-last_synced: '2026-04-26T22:07:14Z'
-loc: 514
+git_blob: f8ced5e4b87500fe332993877b3d0919a65fabf0
+last_synced: '2026-04-27T17:56:06Z'
+loc: 519
 annotations: []
 imports:
 - statistics
@@ -120,12 +120,17 @@ class TestRequestPasswordReset:
         assert r.status_code == 202
         assert r.json() == {"status": "pending"}
 
-    def test_request_jitter_within_80_120ms(self, client_pg_ready):
+    def test_request_jitter_within_80_120ms(self, client_pg_ready, monkeypatch):
         """given known vs unknown email, when POST request 5x each, then median latency ≥ 80ms (jitter active).
 
         spec §Anti-énumération — Jitter random.uniform(0.080, 0.120) AVANT 202.
         spec §Test d'acceptation #7 — latence ~ même ±150ms.
+        Note: V2.3.3.1 ajoute un cap composite 3/5min (IP, email) qui sinon
+        couperait la fenêtre de mesure (3 OK + 429 → médiane faussée). On
+        bumpe le cap via env-override le temps du test pour mesurer le jitter
+        sur les 6 appels par email (1 warm-up + 5 mesures).
         """
+        monkeypatch.setenv("SAMSUNGHEALTH_RL_EMAIL_COMPOSITE_CAP", "100/5minutes")
         client = client_pg_ready
         _register(client, email="jitter-reset@example.com")
 
@@ -555,11 +560,11 @@ class TestTransactionAtomicity:
 ### Symbols
 - `_register` (function) — lines 29-34
 - `_capture_raw_token` (function) — lines 37-57
-- `TestRequestPasswordReset` (class) — lines 60-158
-- `TestRaceCondition` (class) — lines 161-223
-- `TestConfirmPasswordReset` (class) — lines 226-449
-- `TestSecuritySideEffects` (class) — lines 452-454
-- `TestTransactionAtomicity` (class) — lines 457-514
+- `TestRequestPasswordReset` (class) — lines 60-163
+- `TestRaceCondition` (class) — lines 166-228
+- `TestConfirmPasswordReset` (class) — lines 231-454
+- `TestSecuritySideEffects` (class) — lines 457-459
+- `TestTransactionAtomicity` (class) — lines 462-519
 
 ### Imports
 - `statistics`

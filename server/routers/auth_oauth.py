@@ -56,6 +56,8 @@ from server.security.email_outbound import (
     _outbound_link_cache,
     send_verification_email,
 )
+from server.security.lockout import register_successful_login
+from server.security.rate_limit import _pure_ip_key, limiter
 
 
 _log = get_logger(__name__)
@@ -182,9 +184,11 @@ def _disabled_404() -> None:
 
 # ── POST /auth/google/start ────────────────────────────────────────────────
 @router.post("/google/start", response_model=OauthStartOut)
+@limiter.limit("10/minute", key_func=_pure_ip_key)
 async def google_start(
-    body: OauthStartIn,
     request: Request,
+    body: OauthStartIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> OauthStartOut:
     if not _google_enabled():
@@ -214,8 +218,10 @@ async def google_start(
 
 # ── GET /auth/google/callback ──────────────────────────────────────────────
 @router.get("/google/callback")
+@limiter.limit("5/minute", key_func=_pure_ip_key)
 async def google_callback(
     request: Request,
+    response: Response,
     db: Session = Depends(get_session),
     code: str | None = None,
     state: str | None = None,
@@ -350,6 +356,8 @@ async def _resolve_account_linking(
             request=request,
         )
         db.commit()
+        # V2.3.3.1 — successful OAuth login on a dual-auth user resets failed_login_count.
+        register_successful_login(db, user)
         _log.info("oauth.callback.success", provider=_PROVIDER_NAME, user_id=str(user.id))
         return {
             "access_token": access,
@@ -521,9 +529,11 @@ async def _resolve_account_linking(
 
 # ── POST /auth/oauth-link/confirm ──────────────────────────────────────────
 @router.post("/oauth-link/confirm")
+@limiter.limit("10/minute", key_func=_pure_ip_key)
 def oauth_link_confirm(
-    body: OauthLinkConfirmIn,
     request: Request,
+    body: OauthLinkConfirmIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
     row = verify_verification_token(db, body.token, "oauth_link_confirm")

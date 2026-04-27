@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -9,6 +9,7 @@ from server.db.models import SleepSession, SleepStage, User
 from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
 from server.security.auth import get_current_user
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -20,8 +21,11 @@ def _parse_day(s: str) -> date:
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 def create_sleep_sessions(
+    request: Request,
     body: SleepBulkIn,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:

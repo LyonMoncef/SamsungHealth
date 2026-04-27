@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/exercise.py
-git_blob: ff128502cc82b6aad72328bb2fac04912a3cb95d
-last_synced: '2026-04-26T16:48:27Z'
-loc: 88
+git_blob: 03d845d0101b381d3d86e9ac9839024771d342d0
+last_synced: '2026-04-27T17:56:06Z'
+loc: 92
 annotations: []
 imports:
 - datetime
@@ -17,6 +17,7 @@ imports:
 - server.logging_config
 - server.models
 - server.security.auth
+- server.security.rate_limit
 exports:
 - _to_dt
 - _iso
@@ -36,7 +37,7 @@ coverage_pct: 22.857142857142858
 ```python
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -46,6 +47,7 @@ from server.db.models import ExerciseSession, User
 from server.logging_config import get_logger
 from server.models import ExerciseBulkIn, ExerciseSessionOut
 from server.security.auth import get_current_user
+from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 
 _log = get_logger(__name__)
 
@@ -66,8 +68,11 @@ def _iso(dt: datetime | None) -> str:
 
 
 @router.post("", status_code=201)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
 def create_exercise(
+    request: Request,
     body: ExerciseBulkIn,
+    response: Response,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
@@ -131,10 +136,11 @@ def get_exercise(
 ### Implements specs
 - [[../../specs/2026-04-24-v2-postgres-routers-cutover]] — symbols: `router`
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_to_dt` (function) — lines 19-23
-- `_iso` (function) — lines 26-29
+- `_to_dt` (function) — lines 20-24
+- `_iso` (function) — lines 27-30
 
 ### Imports
 - `datetime`
@@ -147,6 +153,7 @@ def get_exercise(
 - `server.logging_config`
 - `server.models`
 - `server.security.auth`
+- `server.security.rate_limit`
 
 ### Exports
 - `_to_dt`

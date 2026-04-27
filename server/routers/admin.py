@@ -1,23 +1,29 @@
-"""V2.3.1 — Admin endpoint(s) gated by X-Registration-Token (stop-gap until V2.3.2 admin role).
+"""V2.3.1 — Admin endpoints gated by X-Registration-Token (stop-gap until V2.3.2 admin role).
 
 GET /admin/pending-verifications : list active verification_tokens whose `token_raw`
 is still in the in-memory cache (TTL 60s). Reconstructs `verify_link` from
 `SAMSUNGHEALTH_PUBLIC_BASE_URL` (NEVER from request Host header).
+
+V2.3.3.1 — POST /admin/users/{user_id}/lock|unlock for manual hard-lockout.
 """
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+import secrets as _secrets
+import uuid as _uuid
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Header, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from pydantic import BaseModel, Field
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from server.database import get_session
 from server.db.models import AuthEvent, User, VerificationToken
 from server.logging_config import get_logger
-from server.security.auth import PUBLIC_BASE_URL_ENV, check_registration_token
+from server.security.auth import PUBLIC_BASE_URL_ENV
 from server.security.email_outbound import _outbound_link_cache
+from server.security.rate_limit import _pure_ip_key, limiter
 
 
 _log = get_logger(__name__)
@@ -31,24 +37,25 @@ def _purpose_path(purpose: str) -> str:
     return "/auth/verify-email/confirm"
 
 
+def _check_admin_token(provided: str | None) -> None:
+    """Constant-time check of X-Registration-Token. Raise 401 if missing/invalid.
+
+    Admin endpoints expect 401 (not 403 like /auth/register).
+    """
+    expected = os.environ.get("SAMSUNGHEALTH_REGISTRATION_TOKEN")
+    if not provided or not expected or not _secrets.compare_digest(provided, expected):
+        raise HTTPException(status_code=401, detail="admin_token_required")
+
+
 @router.get("/pending-verifications", status_code=status.HTTP_200_OK)
+@limiter.limit("60/minute", key_func=_pure_ip_key)
 def list_pending_verifications(
+    request: Request,
+    response: Response,
     x_registration_token: str | None = Header(default=None, alias="X-Registration-Token"),
     db: Session = Depends(get_session),
 ) -> list[dict]:
-    # Spec uses 401 for missing/invalid admin token (vs 403 for register endpoint).
-    if not x_registration_token:
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=401, detail="admin_token_required")
-    expected = os.environ.get("SAMSUNGHEALTH_REGISTRATION_TOKEN")
-    if not expected or x_registration_token != expected:
-        # Reuse check_registration_token would raise 403 — admin endpoint expects 401.
-        from fastapi import HTTPException
-        import secrets as _secrets
-
-        if not expected or not _secrets.compare_digest(x_registration_token, expected):
-            raise HTTPException(status_code=401, detail="admin_token_required")
+    _check_admin_token(x_registration_token)
 
     base_url = os.environ.get(PUBLIC_BASE_URL_ENV, "").rstrip("/")
 
@@ -94,3 +101,87 @@ def list_pending_verifications(
             }
         )
     return result
+
+
+# ── V2.3.3.1 admin lock / unlock ──────────────────────────────────────────
+class AdminLockBody(BaseModel):
+    duration_minutes: int = Field(ge=1, le=60 * 24 * 30)
+    reason: str = Field(min_length=1, max_length=512)
+
+
+@router.post("/users/{user_id}/lock", status_code=status.HTTP_200_OK)
+@limiter.limit("60/minute", key_func=_pure_ip_key)
+def lock_user(
+    request: Request,
+    response: Response,
+    user_id: str,
+    body: AdminLockBody,
+    x_registration_token: str | None = Header(default=None, alias="X-Registration-Token"),
+    db: Session = Depends(get_session),
+) -> dict:
+    _check_admin_token(x_registration_token)
+
+    try:
+        uid = _uuid.UUID(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="invalid_user_id")
+
+    user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="user_not_found")
+
+    locked_until = datetime.now(timezone.utc) + timedelta(minutes=body.duration_minutes)
+    db.execute(
+        update(User).where(User.id == uid).values(locked_until=locked_until)
+    )
+    db.add(
+        AuthEvent(
+            event_type="admin_user_locked",
+            user_id=uid,
+            email_hash=None,
+            request_id=f"reason:{body.reason}|duration_minutes:{body.duration_minutes}",
+        )
+    )
+    db.commit()
+    _log.info(
+        "admin.user.locked",
+        user_id=str(uid),
+        duration_minutes=body.duration_minutes,
+        reason=body.reason,
+    )
+    return {"status": "locked", "locked_until": locked_until.isoformat()}
+
+
+@router.post("/users/{user_id}/unlock", status_code=status.HTTP_200_OK)
+@limiter.limit("60/minute", key_func=_pure_ip_key)
+def unlock_user(
+    request: Request,
+    response: Response,
+    user_id: str,
+    x_registration_token: str | None = Header(default=None, alias="X-Registration-Token"),
+    db: Session = Depends(get_session),
+) -> dict:
+    _check_admin_token(x_registration_token)
+
+    try:
+        uid = _uuid.UUID(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="invalid_user_id")
+
+    user = db.execute(select(User).where(User.id == uid)).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="user_not_found")
+
+    db.execute(
+        update(User).where(User.id == uid).values(failed_login_count=0, locked_until=None)
+    )
+    db.add(
+        AuthEvent(
+            event_type="admin_user_unlocked",
+            user_id=uid,
+            email_hash=None,
+        )
+    )
+    db.commit()
+    _log.info("admin.user.unlocked", user_id=str(uid))
+    return {"status": "unlocked"}

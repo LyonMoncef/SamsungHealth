@@ -5,9 +5,17 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 
 from server.logging_config import configure_logging, get_logger
+from server.middleware.rate_limit_context import RateLimitContextMiddleware
 from server.middleware.request_context import RequestContextMiddleware
+from server.middleware.slowapi_pre_auth import SlowAPIPreAuthMiddleware
+from server.security.rate_limit import (
+    _rate_limit_exceeded_handler,
+    _validate_trusted_proxies_at_boot,
+    limiter,
+)
 
 
 def _validate_encryption_at_boot() -> None:
@@ -29,6 +37,8 @@ async def lifespan(app: FastAPI):
     import os as _os
 
     configure_logging()
+    # V2.3.3.1 — fail fast on rate-limit env BEFORE other validators.
+    _validate_trusted_proxies_at_boot()
     _validate_encryption_at_boot()
     # V2.3 — validate JWT secret + registration token (warning if reg absent).
     from server.security.auth import (
@@ -73,7 +83,18 @@ from server.routers import (  # noqa: E402
 )
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
-app.add_middleware(RequestContextMiddleware)
+
+# V2.3.3.1 — wire slowapi.
+# Starlette wraps middlewares: last add_middleware → outermost (runs first on request).
+# Order so that body-peek for composite keys runs OUTSIDE slowapi (so request.state
+# is set before slowapi key_func is invoked), and per-route slowapi check runs
+# BEFORE FastAPI dependency resolution (so rate-limit fires before auth — H1 / #43).
+app.state.limiter = limiter
+app.add_middleware(RequestContextMiddleware)       # innermost
+app.add_middleware(SlowAPIPreAuthMiddleware)       # middle — per-route check pre-deps
+app.add_middleware(RateLimitContextMiddleware)     # outermost — peeks body BEFORE slowapi
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.include_router(auth.router)
 app.include_router(auth_oauth.router)
 app.include_router(admin.router)

@@ -501,6 +501,7 @@ class User(Uuid7PkMixin, TimestampedMixin, Base):
         Integer, nullable=False, default=0, server_default="0"
     )
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_failed_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_ip: Mapped[str | None] = mapped_column(INET)
     password_changed_at: Mapped[datetime] = mapped_column(

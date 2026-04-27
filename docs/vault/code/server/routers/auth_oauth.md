@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/auth_oauth.py
-git_blob: c79008cb43a165fd8ea80ded4c9cbcb030ba497c
-last_synced: '2026-04-27T07:34:23Z'
-loc: 577
+git_blob: be00e88d163f00680a3089561e86a75248ebd499
+last_synced: '2026-04-27T17:56:06Z'
+loc: 587
 annotations: []
 imports:
 - hashlib
@@ -25,6 +25,8 @@ imports:
 - server.security.auth_providers
 - server.security.auth_providers.google
 - server.security.email_outbound
+- server.security.lockout
+- server.security.rate_limit
 exports:
 - OauthStartIn
 - OauthStartOut
@@ -109,6 +111,8 @@ from server.security.email_outbound import (
     _outbound_link_cache,
     send_verification_email,
 )
+from server.security.lockout import register_successful_login
+from server.security.rate_limit import _pure_ip_key, limiter
 
 
 _log = get_logger(__name__)
@@ -235,9 +239,11 @@ def _disabled_404() -> None:
 
 # ── POST /auth/google/start ────────────────────────────────────────────────
 @router.post("/google/start", response_model=OauthStartOut)
+@limiter.limit("10/minute", key_func=_pure_ip_key)
 async def google_start(
-    body: OauthStartIn,
     request: Request,
+    body: OauthStartIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> OauthStartOut:
     if not _google_enabled():
@@ -267,8 +273,10 @@ async def google_start(
 
 # ── GET /auth/google/callback ──────────────────────────────────────────────
 @router.get("/google/callback")
+@limiter.limit("5/minute", key_func=_pure_ip_key)
 async def google_callback(
     request: Request,
+    response: Response,
     db: Session = Depends(get_session),
     code: str | None = None,
     state: str | None = None,
@@ -403,6 +411,8 @@ async def _resolve_account_linking(
             request=request,
         )
         db.commit()
+        # V2.3.3.1 — successful OAuth login on a dual-auth user resets failed_login_count.
+        register_successful_login(db, user)
         _log.info("oauth.callback.success", provider=_PROVIDER_NAME, user_id=str(user.id))
         return {
             "access_token": access,
@@ -574,9 +584,11 @@ async def _resolve_account_linking(
 
 # ── POST /auth/oauth-link/confirm ──────────────────────────────────────────
 @router.post("/oauth-link/confirm")
+@limiter.limit("10/minute", key_func=_pure_ip_key)
 def oauth_link_confirm(
-    body: OauthLinkConfirmIn,
     request: Request,
+    body: OauthLinkConfirmIn,
+    response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
     row = verify_verification_token(db, body.token, "oauth_link_confirm")
@@ -636,20 +648,21 @@ def oauth_link_confirm(
 
 ### Implements specs
 - [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `router`, `google_start`, `google_callback`, `oauth_link_confirm`
+- [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `google_start`, `google_callback`, `oauth_link_confirm`
 
 ### Symbols
-- `OauthStartIn` (class) — lines 73-74
-- `OauthStartOut` (class) — lines 77-78
-- `OauthLinkConfirmIn` (class) — lines 81-82
-- `_email_hash` (function) — lines 86-87
-- `_safe_ip` (function) — lines 90-104
-- `_audit` (function) — lines 107-144
-- `_google_enabled` (function) — lines 147-150
-- `_redirect_uri` (function) — lines 153-155
-- `_auto_register_enabled` (function) — lines 158-159
-- `_issue_jwt_pair` (function) — lines 162-176
-- `_disabled_404` (function) — lines 179-180
-- `_resolve_account_linking` (function) — lines 322-519
+- `OauthStartIn` (class) — lines 75-76
+- `OauthStartOut` (class) — lines 79-80
+- `OauthLinkConfirmIn` (class) — lines 83-84
+- `_email_hash` (function) — lines 88-89
+- `_safe_ip` (function) — lines 92-106
+- `_audit` (function) — lines 109-146
+- `_google_enabled` (function) — lines 149-152
+- `_redirect_uri` (function) — lines 155-157
+- `_auto_register_enabled` (function) — lines 160-161
+- `_issue_jwt_pair` (function) — lines 164-178
+- `_disabled_404` (function) — lines 181-182
+- `_resolve_account_linking` (function) — lines 328-527
 
 ### Imports
 - `hashlib`
@@ -670,6 +683,8 @@ def oauth_link_confirm(
 - `server.security.auth_providers`
 - `server.security.auth_providers.google`
 - `server.security.email_outbound`
+- `server.security.lockout`
+- `server.security.rate_limit`
 
 ### Exports
 - `OauthStartIn`

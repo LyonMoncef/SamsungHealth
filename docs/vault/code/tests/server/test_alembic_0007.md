@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_alembic_0007.py
-git_blob: 9a3512c6c1b9bf09a8aef8916067f5364217989f
-last_synced: '2026-04-27T07:34:24Z'
-loc: 179
+git_blob: 4758c67390b73f68d5169a93ef082245fe3e5872
+last_synced: '2026-04-27T17:56:06Z'
+loc: 184
 annotations: []
 imports:
 - os
@@ -170,13 +170,18 @@ class TestUpgradeDowngrade:
         )
 
     def test_downgrade_drops_table_and_column_clean(self, pg_url, engine):
-        """given alembic upgrade head then downgrade -1, when inspected, then identity_providers dropped + payload column removed from verification_tokens (precondition: head is 0007).
+        """given alembic upgrade to revision 0007 then downgrade -1, when inspected, then identity_providers dropped + payload column removed from verification_tokens (precondition: head is 0007).
 
         spec §Livrables — Downgrade DROP TABLE + DROP COLUMN.
+        Updated for V2.3.3.1 (migration 0008 added on top): pin upgrade target
+        to revision 0007 instead of head so adding migrations downstream
+        does not break this test (mirrors the same pattern used in 0006).
         """
         from sqlalchemy import inspect, text
 
-        up = _run_alembic(["upgrade", "head"], pg_url)
+        # Pin to revision 0007 regardless of current state (downgrade if downstream).
+        _run_alembic(["downgrade", "base"], pg_url)
+        up = _run_alembic(["upgrade", "0a3b4c5d6e72"], pg_url)
         assert up.returncode == 0, f"upgrade failed: {up.stderr}"
 
         inspector = inspect(engine)
@@ -214,7 +219,7 @@ class TestUpgradeDowngrade:
 
 ### Symbols
 - `_run_alembic` (function) — lines 20-29
-- `TestUpgradeDowngrade` (class) — lines 32-179
+- `TestUpgradeDowngrade` (class) — lines 32-184
 
 ### Imports
 - `os`

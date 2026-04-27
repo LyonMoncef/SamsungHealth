@@ -136,10 +136,20 @@ class TestLogin:
         assert r.status_code == 401
         assert r.json() == {"detail": "invalid_credentials"}
 
+    @pytest.mark.skip(
+        reason=(
+            "V2.3.3.1 soft backoff (sleep exponentiel sur wrong password) brise "
+            "volontairement l'égalité de timing avec la branche user inexistant. "
+            "Trade-off documenté dans "
+            "docs/vault/specs/2026-04-26-v2.3.3.1-rate-limit-lockout.md "
+            "§Anti-énumération."
+        )
+    )
     def test_login_response_time_constant_within_tolerance(self, client_pg_ready):
         """given an unknown email vs a registered user with wrong-pwd, when POST /auth/login 10× each, then median ratio < 1.5.
 
-        spec #24 — timing equalization (dummy hash).
+        spec V2.3 #24 — timing equalization (dummy hash).
+        SUPERSEDED par V2.3.3.1 soft backoff.
         """
         client = client_pg_ready
         reg = self._register(client, email="timing@example.com")
