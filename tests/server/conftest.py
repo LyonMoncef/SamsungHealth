@@ -37,6 +37,15 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_host_header_injection.py",
         "test_email_hash_salt.py",
         "test_login_email_verification_gate.py",
+        # V2.3.2 — Google OAuth (callback non authentifié via Bearer)
+        "test_oauth_state.py",
+        "test_google_provider.py",
+        "test_return_to_validator.py",
+        "test_oauth_routes.py",
+        "test_oauth_link_confirm.py",
+        "test_oauth_password_reset.py",
+        "test_oauth_redaction.py",
+        "test_alembic_0007.py",
     }
 )
 
@@ -59,12 +68,42 @@ _TEST_EMAIL_HASH_SALT = (
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 )
 
+# V2.3.2 — Google OAuth env defaults (tests).
+_TEST_GOOGLE_CLIENT_ID = "test-client-id-123.apps.googleusercontent.com"
+_TEST_GOOGLE_CLIENT_SECRET = "GOCSPX-test-secret"
+_TEST_OAUTH_RETURN_TO_ALLOWED = (
+    "https://app.samsunghealth.com,http://localhost:3000"
+)
+_TEST_OAUTH_AUTO_REGISTER = "true"
+
+
+@pytest.fixture(autouse=True)
+def _reset_oauth_caches():
+    """V2.3.2 — clear in-memory OAuth state cache + JWKS cache between tests.
+
+    Both caches are module-level globals; otherwise an RSA keypair forged by
+    test #1 leaks into the JWKS resolution of test #2 (signature mismatch).
+    """
+    yield
+    try:
+        from server.security.auth_providers import google as _g
+        _g._JWKS_CACHE = None
+        _g._JWKS_CACHE_EXPIRES_AT = None
+    except ImportError:
+        pass
+    try:
+        from server.security.auth_providers import state as _s
+        _s._OAUTH_STATE_CACHE.clear()
+    except ImportError:
+        pass
+
 
 @pytest.fixture(autouse=True)
 def _set_auth_env_defaults(monkeypatch):
     """V2.3 — set JWT + registration env to test values for ALL tests in tests/server/.
 
     V2.3.1 — also seed PUBLIC_BASE_URL + EMAIL_HASH_SALT defaults (lifespan validates these).
+    V2.3.2 — also seed Google OAuth client_id/secret + return_to whitelist + auto_register.
     """
     if not os.environ.get("SAMSUNGHEALTH_JWT_SECRET"):
         monkeypatch.setenv("SAMSUNGHEALTH_JWT_SECRET", _TEST_JWT_SECRET)
@@ -74,7 +113,90 @@ def _set_auth_env_defaults(monkeypatch):
         monkeypatch.setenv("SAMSUNGHEALTH_PUBLIC_BASE_URL", _TEST_PUBLIC_BASE_URL)
     if not os.environ.get("SAMSUNGHEALTH_EMAIL_HASH_SALT"):
         monkeypatch.setenv("SAMSUNGHEALTH_EMAIL_HASH_SALT", _TEST_EMAIL_HASH_SALT)
+    if not os.environ.get("SAMSUNGHEALTH_GOOGLE_OAUTH_CLIENT_ID"):
+        monkeypatch.setenv(
+            "SAMSUNGHEALTH_GOOGLE_OAUTH_CLIENT_ID", _TEST_GOOGLE_CLIENT_ID
+        )
+    if not os.environ.get("SAMSUNGHEALTH_GOOGLE_OAUTH_CLIENT_SECRET"):
+        monkeypatch.setenv(
+            "SAMSUNGHEALTH_GOOGLE_OAUTH_CLIENT_SECRET", _TEST_GOOGLE_CLIENT_SECRET
+        )
+    if not os.environ.get("SAMSUNGHEALTH_OAUTH_RETURN_TO_ALLOWED"):
+        monkeypatch.setenv(
+            "SAMSUNGHEALTH_OAUTH_RETURN_TO_ALLOWED", _TEST_OAUTH_RETURN_TO_ALLOWED
+        )
+    if not os.environ.get("SAMSUNGHEALTH_OAUTH_AUTO_REGISTER"):
+        monkeypatch.setenv(
+            "SAMSUNGHEALTH_OAUTH_AUTO_REGISTER", _TEST_OAUTH_AUTO_REGISTER
+        )
     yield
+
+
+# V2.3.2 — RSA keypair + JWKS helper for forging Google ID tokens in tests.
+@pytest.fixture
+def google_keypair_and_jwks():
+    """Generate an RSA keypair + return helpers to sign ID tokens / mock JWKS.
+
+    Returns dict with:
+      - `private_pem`: PEM-serialized private key bytes
+      - `public_pem`: PEM-serialized public key bytes
+      - `kid`: a stable kid string ("test-kid-1")
+      - `jwks`: the JWKS dict mock (for httpx GET response)
+      - `sign(claims, headers=None)`: return a signed RS256 JWT string
+    """
+    import base64 as _b64
+    import json as _json
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    pub = priv.public_key()
+    private_pem = priv.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    public_pem = pub.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    pub_numbers = pub.public_numbers()
+
+    def _b64u(value: int) -> str:
+        b = value.to_bytes((value.bit_length() + 7) // 8, "big")
+        return _b64.urlsafe_b64encode(b).rstrip(b"=").decode("ascii")
+
+    kid = "test-kid-1"
+    jwks = {
+        "keys": [
+            {
+                "kty": "RSA",
+                "alg": "RS256",
+                "use": "sig",
+                "kid": kid,
+                "n": _b64u(pub_numbers.n),
+                "e": _b64u(pub_numbers.e),
+            }
+        ]
+    }
+
+    def _sign(claims: dict, headers: dict | None = None) -> str:
+        import jwt as _jwt
+
+        hdr = {"kid": kid}
+        if headers:
+            hdr.update(headers)
+        return _jwt.encode(claims, private_pem, algorithm="RS256", headers=hdr)
+
+    return {
+        "private_pem": private_pem,
+        "public_pem": public_pem,
+        "kid": kid,
+        "jwks": jwks,
+        "jwks_json": _json.dumps(jwks),
+        "sign": _sign,
+    }
 
 
 @pytest.fixture(scope="session")

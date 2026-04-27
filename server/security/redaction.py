@@ -20,6 +20,12 @@ _SENSITIVE_KEYS: frozenset[str] = frozenset(
         "secret",
         "cookie",
         "x-registration-token",
+        # V2.3.2 — OAuth flow secrets / opaque payloads.
+        "code",
+        "state",
+        "id_token",
+        "nonce",
+        "error_description",
     }
 )
 

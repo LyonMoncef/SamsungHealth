@@ -23,6 +23,7 @@ from server.db.models import AuthEvent, RefreshToken, User, VerificationToken
 from server.logging_config import get_logger
 from server.security.auth import (
     ACCESS_TOKEN_TTL_SECONDS,
+    OAUTH_SENTINEL,
     REFRESH_TOKEN_TTL_SECONDS,
     REQUIRE_EMAIL_VERIFICATION_ENV,
     TTL_EMAIL_VERIFICATION,
@@ -529,6 +530,13 @@ def request_password_reset(
     ).scalar_one_or_none()
 
     if user is None or not user.is_active:
+        _dummy_token_ops()
+        _anti_enum_jitter()
+        return {"status": "pending"}
+
+    # V2.3.2 — OAuth-only user has no password to reset (sentinel hash).
+    # Anti-enum: same 202 silent response, no token emitted, no mail sent.
+    if user.password_hash == OAUTH_SENTINEL:
         _dummy_token_ops()
         _anti_enum_jitter()
         return {"status": "pending"}

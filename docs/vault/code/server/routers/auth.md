@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/auth.py
-git_blob: ca7a2654c412ebbed08210a3cbb88cfaace994d3
-last_synced: '2026-04-26T22:07:14Z'
-loc: 616
+git_blob: 358662009894d451396dffea2834665725406cd7
+last_synced: '2026-04-27T07:34:23Z'
+loc: 624
 annotations: []
 imports:
 - hashlib
@@ -79,6 +79,7 @@ from server.db.models import AuthEvent, RefreshToken, User, VerificationToken
 from server.logging_config import get_logger
 from server.security.auth import (
     ACCESS_TOKEN_TTL_SECONDS,
+    OAUTH_SENTINEL,
     REFRESH_TOKEN_TTL_SECONDS,
     REQUIRE_EMAIL_VERIFICATION_ENV,
     TTL_EMAIL_VERIFICATION,
@@ -589,6 +590,13 @@ def request_password_reset(
         _anti_enum_jitter()
         return {"status": "pending"}
 
+    # V2.3.2 — OAuth-only user has no password to reset (sentinel hash).
+    # Anti-enum: same 202 silent response, no token emitted, no mail sent.
+    if user.password_hash == OAUTH_SENTINEL:
+        _dummy_token_ops()
+        _anti_enum_jitter()
+        return {"status": "pending"}
+
     raw, hashed, expires_at = _issue_verification_token(
         db, user=user, purpose="password_reset", ttl=TTL_PASSWORD_RESET
     )
@@ -679,24 +687,25 @@ def confirm_password_reset(
 ### Implements specs
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `router`, `register`, `login`, `refresh`, `logout`
 - [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `request_email_verification`, `confirm_email_verification`, `request_password_reset`, `confirm_password_reset`
+- [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `request_password_reset`
 
 ### Symbols
-- `RegisterIn` (class) — lines 56-58
-- `RegisterOut` (class) — lines 61-63
-- `LoginIn` (class) — lines 66-68
-- `TokenPair` (class) — lines 71-75
-- `RefreshIn` (class) — lines 78-79
-- `LogoutIn` (class) — lines 82-83
-- `_email_hash` (function) — lines 87-88
-- `_record_event` (function) — lines 91-109
-- `VerifyEmailRequestIn` (class) — lines 351-352
-- `VerifyEmailConfirmIn` (class) — lines 355-356
-- `PasswordResetRequestIn` (class) — lines 359-360
-- `PasswordResetConfirmIn` (class) — lines 363-365
-- `_anti_enum_jitter` (function) — lines 368-370
-- `_dummy_token_ops` (function) — lines 373-376
-- `_revoke_active_tokens_for_purpose` (function) — lines 379-392
-- `_issue_verification_token` (function) — lines 395-431
+- `RegisterIn` (class) — lines 57-59
+- `RegisterOut` (class) — lines 62-64
+- `LoginIn` (class) — lines 67-69
+- `TokenPair` (class) — lines 72-76
+- `RefreshIn` (class) — lines 79-80
+- `LogoutIn` (class) — lines 83-84
+- `_email_hash` (function) — lines 88-89
+- `_record_event` (function) — lines 92-110
+- `VerifyEmailRequestIn` (class) — lines 352-353
+- `VerifyEmailConfirmIn` (class) — lines 356-357
+- `PasswordResetRequestIn` (class) — lines 360-361
+- `PasswordResetConfirmIn` (class) — lines 364-366
+- `_anti_enum_jitter` (function) — lines 369-371
+- `_dummy_token_ops` (function) — lines 374-377
+- `_revoke_active_tokens_for_purpose` (function) — lines 380-393
+- `_issue_verification_token` (function) — lines 396-432
 
 ### Imports
 - `hashlib`

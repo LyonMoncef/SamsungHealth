@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`10c682c`](#2026-04-26-10c682c) |
 | V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`83f77fd`](#2026-04-26-83f77fd) |
 | V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`08101d1`](#2026-04-26-08101d1) |
 | V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`e32801a`](#2026-04-26-e32801a) |
@@ -56,6 +57,25 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-04-26 `10c682c`
+feat(V2.3.2): Google OAuth via AuthProvider abstraction — state CSRF + nonce, deferred linking, JWKS hardcoded, raw_claims whitelist
+- `docs/vault/specs/2026-04-26-v2.3.2-google-oauth.md` créé (status: ready, 45 acceptance tests). Patch v2 post-pentester (4 HIGH bloquants + 4 MED durcissements + 3 ajouts intégrés).
+- `alembic/versions/0007_identity_providers.py` — revision `0a3b4c5d6e72`, parent `9d2e3f5a6b71`. Crée table `identity_providers` (id UUID7 PK, user_id FK CASCADE, provider TEXT, provider_sub TEXT, provider_email TEXT lowercase, email_verified BOOL, linked_at/last_used_at TIMESTAMPTZ, raw_claims JSONB) + 2 unique constraints `(provider, provider_sub)` et `(user_id, provider)`. Ajoute aussi colonne `payload jsonb NULL` à `verification_tokens` (pour le purpose `oauth_link_confirm`).
+- `server/security/auth_providers/__init__.py` (NEW) — `AuthProvider` ABC + `ProviderProfile` Pydantic + `AuthProviderError`.
+- `server/security/auth_providers/state.py` (NEW) — state JWT HS256 self-contained + cache mémoire single-use TTL 10 min, **LRU cap 10_000** (anti-DoS), boot warning si `SAMSUNGHEALTH_DEPLOYMENT_INSTANCES > 1`.
+- `server/security/auth_providers/google.py` (NEW) — `GoogleAuthProvider`, JWKS endpoint **hardcoded** (anti-SSRF, JAMAIS dérivé du iss claim), TTL `min(Cache-Control, 4h)` (cap pentester #5), `_RAW_CLAIMS_WHITELIST = {sub, email, email_verified, iss, aud, iat, exp, jti}` (RGPD minimisation), `_GOOGLE_ERROR_MAP` table 11 codes, validation env Google au boot.
+- `server/security/auth_providers/return_to.py` (NEW) — `validate_return_to()` algo strict 7 règles (urlsplit, scheme `https|http`, refus userinfo `@`, IDN punycode, exact origin match, fragment stripped). 8 bypass classiques bloqués.
+- `server/security/auth.py` — `OAUTH_SENTINEL = "OAUTH_ONLY_NO_PASSWORD_LOGIN"` constante, `verify_password` court-circuit si stored_hash == sentinel (jitter 80-120ms, return False sans appeler argon2 qui raise sur format invalide).
+- `server/security/redaction.py` — `_SENSITIVE_KEYS` étendu avec `code`, `state`, `id_token`, `nonce`, `error_description`.
+- `server/routers/auth_oauth.py` (NEW) — `POST /auth/google/start` (CSRF protection via `Sec-Fetch-Site` check, JSON response avec `authorize_url` jamais 302), `GET /auth/google/callback` (réponse JSON avec tokens, jamais URL fragment — anti-pattern OAuth implicit éliminé), `POST /auth/oauth-link/confirm`. Account linking matrix révisée : **JAMAIS d'auto-link sur email match** → flow deferred via `verification_tokens` purpose=`oauth_link_confirm` (TTL 1h). Auto-register gated par `SAMSUNGHEALTH_OAUTH_AUTO_REGISTER` (default false). Race condition fix : transaction unique `INSERT users ON CONFLICT (LOWER(email)) DO NOTHING RETURNING id` + fallback SELECT.
+- `server/routers/auth.py` — `request_password_reset` étendu : si `user.password_hash == OAUTH_SENTINEL` → 202 silencieux, aucun token créé (les OAuth-only n'ont pas de password à reset).
+- `server/db/models.py` — `class IdentityProvider(Uuid7PkMixin, Base)` + colonne `payload: Mapped[dict | None]` ajoutée à `VerificationToken`.
+- `server/main.py` — wiring router `auth_oauth`, lifespan invoque `_validate_google_oauth_env_at_boot()` + warning `oauth.state_cache.multi_instance_unsafe` si `SAMSUNGHEALTH_DEPLOYMENT_INSTANCES > 1`.
+- `tests/server/conftest.py` — env defaults Google OAuth + `_NO_AUTO_AUTH_FILES` étendu, fixture `google_keypair_and_jwks` (RSA + JWKS + sign helper pour mock Google), autouse `_reset_oauth_caches` fixture (isolation des caches module-level state/JWKS entre tests).
+- `requirements.txt` — `httpx`, `PyJWT[crypto]` (déjà présent V2.3, juste extra crypto).
+- 8 fichiers tests V2.3.2 (53 tests). **222/222 PASS** (V2.3 + V2.3.0.1 + V2.3.1 + V2.3.2).
+- Patch mécanique : `tests/server/test_alembic_0006.py` — pre-condition pinned à rev `9d2e3f5a6b71` (avant : "head" qui pointe maintenant 0007, cassé mécaniquement par l'ajout 0007). Aucune logique modifiée.
 
 ### 2026-04-26 `83f77fd`
 feat(V2.3.1): password reset + email verification — dual-sink admin endpoint, TTL 1h/24h split, blocklist top-100, atomic audit

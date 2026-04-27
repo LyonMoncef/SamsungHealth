@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/security/redaction.py
-git_blob: 3e5217dd3b2c5cc28902f4b5073cc4df9e37de46
-last_synced: '2026-04-26T16:48:28Z'
-loc: 55
+git_blob: 915647d644cc90e9a9181d2864dd80c85e2140de
+last_synced: '2026-04-27T07:34:23Z'
+loc: 61
 annotations: []
 imports:
 - typing
@@ -47,6 +47,12 @@ _SENSITIVE_KEYS: frozenset[str] = frozenset(
         "secret",
         "cookie",
         "x-registration-token",
+        # V2.3.2 — OAuth flow secrets / opaque payloads.
+        "code",
+        "state",
+        "id_token",
+        "nonce",
+        "error_description",
     }
 )
 
@@ -88,11 +94,12 @@ def redact_sensitive_keys(logger, method_name, event_dict):
 
 ### Implements specs
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `redact_sensitive_keys`, `_SENSITIVE_KEYS`
+- [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `_SENSITIVE_KEYS`
 
 ### Symbols
-- `_recurse_redact` (function) — lines 30-33
-- `_redact_one` (function) — lines 36-41
-- `redact_sensitive_keys` (function) — lines 44-55 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `_recurse_redact` (function) — lines 36-39
+- `_redact_one` (function) — lines 42-47
+- `redact_sensitive_keys` (function) — lines 50-61 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
 
 ### Imports
 - `typing`

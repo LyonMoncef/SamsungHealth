@@ -2,14 +2,15 @@
 type: code-source
 language: python
 file_path: server/security/auth.py
-git_blob: 2b169e3ac1f16570e806eb947a15a060a70a814e
-last_synced: '2026-04-26T22:07:14Z'
-loc: 438
+git_blob: e01323a1be7a7eff5f0bccb9733f9146b0a9ce9c
+last_synced: '2026-04-27T07:34:23Z'
+loc: 453
 annotations: []
 imports:
 - hashlib
 - math
 - os
+- random
 - secrets
 - time
 - collections
@@ -76,6 +77,7 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+import random
 import secrets
 import time
 import uuid as _uuid
@@ -130,13 +132,25 @@ class JwtConfigError(RuntimeError):
 
 
 # ── password hashing ───────────────────────────────────────────────────────
+# V2.3.2 — sentinel pour les users OAuth-only (pas de password local).
+# verify_password court-circuite vers False + jitter pour éviter le argon2 raise.
+OAUTH_SENTINEL = "OAUTH_ONLY_NO_PASSWORD_LOGIN"
+
+
 def hash_password(plain: str) -> str:
     """Hash `plain` with argon2id (RFC 9106 profile #2). Returns encoded string."""
     return _hasher.hash(plain)
 
 
 def verify_password(plain: str, encoded: str) -> bool:
-    """Verify `plain` against `encoded` argon2id hash. Returns False on mismatch (no raise)."""
+    """Verify `plain` against `encoded` argon2id hash. Returns False on mismatch (no raise).
+
+    V2.3.2 — when `encoded == OAUTH_SENTINEL` (OAuth-only user), short-circuit
+    to False with a 80-120ms jitter (constant-time-ish, mimics argon2 wall-clock).
+    """
+    if encoded == OAUTH_SENTINEL:
+        time.sleep(random.uniform(0.080, 0.120))
+        return False
     try:
         return _hasher.verify(encoded, plain)
     except (VerifyMismatchError, InvalidHashError, VerificationError, Exception):
@@ -423,6 +437,8 @@ REQUIRE_EMAIL_VERIFICATION_ENV = "SAMSUNGHEALTH_REQUIRE_EMAIL_VERIFICATION"
 
 TTL_PASSWORD_RESET = timedelta(hours=1)
 TTL_EMAIL_VERIFICATION = timedelta(hours=24)
+# V2.3.2 — OAuth account linking confirmation token TTL.
+TTL_OAUTH_LINK_CONFIRM = timedelta(hours=1)
 
 
 class VerificationConfigError(RuntimeError):
@@ -508,38 +524,40 @@ def verify_verification_token(db: Session, raw: str, purpose: str):
 ### Implements specs
 - [[../../specs/2026-04-26-v2-auth-foundation]] — symbols: `hash_password`, `verify_password`, `_DUMMY_HASH`, `create_access_token`, `create_refresh_token`, `decode_access_token`, `rotate_refresh_token`, `revoke_refresh_token`, `get_current_user`, `_validate_jwt_secret_at_boot`, `_validate_registration_token`
 - [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `generate_verification_token`, `hash_verification_token`, `verify_verification_token`, `TTL_PASSWORD_RESET`, `TTL_EMAIL_VERIFICATION`, `_validate_public_base_url_at_boot`, `_validate_email_hash_salt_at_boot`
+- [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `OAUTH_SENTINEL`, `verify_password`
 
 ### Symbols
-- `JwtConfigError` (class) — lines 65-66
-- `hash_password` (function) — lines 70-72 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `verify_password` (function) — lines 75-80 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `_shannon_entropy` (function) — lines 89-94
-- `_validate_jwt_secret_at_boot` (function) — lines 97-140 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `_validate_registration_token` (function) — lines 143-152 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `_current_secret` (function) — lines 156-160
-- `_previous_secret` (function) — lines 163-165
-- `_encode` (function) — lines 168-171
-- `_decode_with_secret` (function) — lines 174-190
-- `_decode_try_both` (function) — lines 193-202
-- `create_access_token` (function) — lines 205-216 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `create_refresh_token` (function) — lines 219-231 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `decode_access_token` (function) — lines 234-238 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `decode_refresh_token` (function) — lines 241-246
-- `revoke_refresh_token` (function) — lines 250-263 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `rotate_refresh_token` (function) — lines 266-298 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `get_current_user` (function) — lines 302-338 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `check_registration_token` (function) — lines 342-353
-- `VerificationConfigError` (class) — lines 365-366
-- `_validate_public_base_url_at_boot` (function) — lines 369-385 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
-- `_validate_email_hash_salt_at_boot` (function) — lines 388-406 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
-- `generate_verification_token` (function) — lines 409-413 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
-- `hash_verification_token` (function) — lines 416-418 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
-- `verify_verification_token` (function) — lines 421-438 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `JwtConfigError` (class) — lines 66-67
+- `hash_password` (function) — lines 76-78 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `verify_password` (function) — lines 81-93 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]], [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
+- `_shannon_entropy` (function) — lines 102-107
+- `_validate_jwt_secret_at_boot` (function) — lines 110-153 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `_validate_registration_token` (function) — lines 156-165 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `_current_secret` (function) — lines 169-173
+- `_previous_secret` (function) — lines 176-178
+- `_encode` (function) — lines 181-184
+- `_decode_with_secret` (function) — lines 187-203
+- `_decode_try_both` (function) — lines 206-215
+- `create_access_token` (function) — lines 218-229 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `create_refresh_token` (function) — lines 232-244 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `decode_access_token` (function) — lines 247-251 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `decode_refresh_token` (function) — lines 254-259
+- `revoke_refresh_token` (function) — lines 263-276 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `rotate_refresh_token` (function) — lines 279-311 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `get_current_user` (function) — lines 315-351 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `check_registration_token` (function) — lines 355-366
+- `VerificationConfigError` (class) — lines 380-381
+- `_validate_public_base_url_at_boot` (function) — lines 384-400 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `_validate_email_hash_salt_at_boot` (function) — lines 403-421 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `generate_verification_token` (function) — lines 424-428 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `hash_verification_token` (function) — lines 431-433 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
+- `verify_verification_token` (function) — lines 436-453 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]]
 
 ### Imports
 - `hashlib`
 - `math`
 - `os`
+- `random`
 - `secrets`
 - `time`
 - `collections`
