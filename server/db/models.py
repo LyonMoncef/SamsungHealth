@@ -22,7 +22,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import CITEXT, INET
+from sqlalchemy.dialects.postgresql import CITEXT, INET, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from .encrypted import EncryptedFloat, EncryptedInt, EncryptedString
@@ -575,3 +575,35 @@ class VerificationToken(Uuid7PkMixin, Base):
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ip: Mapped[str | None] = mapped_column(INET)
     user_agent: Mapped[str | None] = mapped_column(Text)
+    # V2.3.2 — payload arbitraire (utilisé pour oauth_link_confirm: provider+sub+email+raw_claims).
+    payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+
+# ── V2.3.2 OAuth — identity providers (Google + futur Apple/MS) ───────────
+class IdentityProvider(Uuid7PkMixin, Base):
+    __tablename__ = "identity_providers"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider", "provider_sub", name="uq_identity_providers_provider_sub"
+        ),
+        UniqueConstraint(
+            "user_id", "provider", name="uq_identity_providers_user_provider"
+        ),
+        Index("idx_identity_providers_user_id", "user_id"),
+        Index("idx_identity_providers_provider_sub", "provider", "provider_sub"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid7(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    provider: Mapped[str] = mapped_column(Text, nullable=False)
+    provider_sub: Mapped[str] = mapped_column(Text, nullable=False)
+    provider_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    linked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    raw_claims: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

@@ -26,6 +26,8 @@ def _bench_argon2() -> float:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import os as _os
+
     configure_logging()
     _validate_encryption_at_boot()
     # V2.3 — validate JWT secret + registration token (warning if reg absent).
@@ -40,16 +42,40 @@ async def lifespan(app: FastAPI):
     # V2.3.1 — validate the two new env vars (PUBLIC_BASE_URL + EMAIL_HASH_SALT).
     _validate_public_base_url_at_boot()
     _validate_email_hash_salt_at_boot()
+    # V2.3.2 — Google OAuth boot validation (raise if partial env, ok if both/neither).
+    from server.security.auth_providers.google import (
+        _validate_google_oauth_env_at_boot,
+    )
+    _validate_google_oauth_env_at_boot()
+    # V2.3.2 — warning if multi-instance (in-memory state cache is single-instance).
+    try:
+        instances = int(_os.environ.get("SAMSUNGHEALTH_DEPLOYMENT_INSTANCES", "1"))
+    except ValueError:
+        instances = 1
+    if instances > 1:
+        get_logger("server.main").warning(
+            "oauth.state_cache.multi_instance_unsafe", instances=instances
+        )
     wall_ms = _bench_argon2()
     get_logger("server.main").info("auth.argon2.bench", wall_ms=round(wall_ms, 1))
     yield
 
 
-from server.routers import admin, auth, exercise, heartrate, mood, sleep, steps  # noqa: E402
+from server.routers import (  # noqa: E402
+    admin,
+    auth,
+    auth_oauth,
+    exercise,
+    heartrate,
+    mood,
+    sleep,
+    steps,
+)
 
 app = FastAPI(title="SamsungHealth", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
 app.include_router(auth.router)
+app.include_router(auth_oauth.router)
 app.include_router(admin.router)
 app.include_router(sleep.router)
 app.include_router(steps.router)

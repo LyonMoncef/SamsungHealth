@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_alembic_0006.py
-git_blob: 23ae02e2c3478637e33cfb968f9d60112fe20071
-last_synced: '2026-04-26T22:07:14Z'
-loc: 230
+git_blob: 7d7f85d28dd1240c94b4d09802ebb6e3fae1a2ee
+last_synced: '2026-04-27T07:34:24Z'
+loc: 235
 annotations: []
 imports:
 - os
@@ -204,20 +204,25 @@ class TestUpgradeDowngrade:
                 )
 
     def test_downgrade_drops_table_function_trigger_clean(self, pg_url, engine):
-        """given alembic upgrade head (creates 0006) then downgrade -1, when inspected, then verification_tokens table + function + trigger are removed AND HEAD revision is 0006 before downgrade.
+        """given alembic upgrade to revision 0006 (9d2e3f5a6b71) then downgrade -1, when inspected, then verification_tokens table + function + trigger are removed.
 
         spec §Livrables — Downgrade DROP TABLE + DROP FUNCTION.
+        Updated for V2.3.2 (migration 0007 added on top): pin upgrade target
+        to revision 0006 instead of head so adding migrations downstream
+        does not break this test.
         """
         from sqlalchemy import inspect, text
 
-        up = _run_alembic(["upgrade", "head"], pg_url)
+        # Pin to revision 0006 regardless of current state (downgrade if downstream).
+        _run_alembic(["downgrade", "base"], pg_url)
+        up = _run_alembic(["upgrade", "9d2e3f5a6b71"], pg_url)
         assert up.returncode == 0, f"upgrade failed: {up.stderr}"
 
-        # PRE-CONDITION: 0006 must have been applied (table exists + revision is 0006).
+        # PRE-CONDITION: 0006 applied (table exists + revision is 0006).
         inspector = inspect(engine)
         assert "verification_tokens" in inspector.get_table_names(), (
-            "PRE-CONDITION fail: verification_tokens must exist after upgrade head "
-            "(migration 0006 missing or not at head)"
+            "PRE-CONDITION fail: verification_tokens must exist after upgrade 0006 "
+            "(migration 0006 missing)"
         )
         with engine.connect() as conn:
             head_rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -265,7 +270,7 @@ class TestUpgradeDowngrade:
 
 ### Symbols
 - `_run_alembic` (function) — lines 16-25
-- `TestUpgradeDowngrade` (class) — lines 28-230
+- `TestUpgradeDowngrade` (class) — lines 28-235
 
 ### Imports
 - `os`

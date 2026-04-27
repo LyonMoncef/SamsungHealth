@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+import random
 import secrets
 import time
 import uuid as _uuid
@@ -67,13 +68,25 @@ class JwtConfigError(RuntimeError):
 
 
 # ── password hashing ───────────────────────────────────────────────────────
+# V2.3.2 — sentinel pour les users OAuth-only (pas de password local).
+# verify_password court-circuite vers False + jitter pour éviter le argon2 raise.
+OAUTH_SENTINEL = "OAUTH_ONLY_NO_PASSWORD_LOGIN"
+
+
 def hash_password(plain: str) -> str:
     """Hash `plain` with argon2id (RFC 9106 profile #2). Returns encoded string."""
     return _hasher.hash(plain)
 
 
 def verify_password(plain: str, encoded: str) -> bool:
-    """Verify `plain` against `encoded` argon2id hash. Returns False on mismatch (no raise)."""
+    """Verify `plain` against `encoded` argon2id hash. Returns False on mismatch (no raise).
+
+    V2.3.2 — when `encoded == OAUTH_SENTINEL` (OAuth-only user), short-circuit
+    to False with a 80-120ms jitter (constant-time-ish, mimics argon2 wall-clock).
+    """
+    if encoded == OAUTH_SENTINEL:
+        time.sleep(random.uniform(0.080, 0.120))
+        return False
     try:
         return _hasher.verify(encoded, plain)
     except (VerifyMismatchError, InvalidHashError, VerificationError, Exception):
@@ -360,6 +373,8 @@ REQUIRE_EMAIL_VERIFICATION_ENV = "SAMSUNGHEALTH_REQUIRE_EMAIL_VERIFICATION"
 
 TTL_PASSWORD_RESET = timedelta(hours=1)
 TTL_EMAIL_VERIFICATION = timedelta(hours=24)
+# V2.3.2 — OAuth account linking confirmation token TTL.
+TTL_OAUTH_LINK_CONFIRM = timedelta(hours=1)
 
 
 class VerificationConfigError(RuntimeError):
