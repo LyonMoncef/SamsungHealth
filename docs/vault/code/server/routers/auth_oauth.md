@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/auth_oauth.py
-git_blob: be00e88d163f00680a3089561e86a75248ebd499
-last_synced: '2026-04-27T17:56:06Z'
-loc: 587
+git_blob: 18b7895dbc45aa9d71aefc2b0cfc7adadeedc9bc
+last_synced: '2026-04-27T20:51:40Z'
+loc: 608
 annotations: []
 imports:
 - hashlib
@@ -21,6 +21,7 @@ imports:
 - server.logging_config
 - server.security.auth
 - server.security.auth_providers
+- server.security.csrf
 - server.security.auth_providers
 - server.security.auth_providers
 - server.security.auth_providers.google
@@ -37,6 +38,7 @@ exports:
 - _google_enabled
 - _redirect_uri
 - _auto_register_enabled
+- _set_oauth_refresh_cookie
 - _issue_jwt_pair
 - _disabled_404
 - _resolve_account_linking
@@ -99,6 +101,7 @@ from server.security.auth import (
     verify_verification_token,
 )
 from server.security.auth_providers import AuthProviderError
+from server.security.csrf import check_sec_fetch_site
 from server.security.auth_providers import google as google_mod
 from server.security.auth_providers import state as state_mod
 from server.security.auth_providers.google import (
@@ -216,6 +219,20 @@ def _auto_register_enabled() -> bool:
     return os.environ.get(_AUTO_REGISTER_ENV, "false").lower() == "true"
 
 
+def _set_oauth_refresh_cookie(response: Response, refresh_jwt: str) -> None:
+    """V2.3.3.2 — Set httpOnly + SameSite=Strict + Path=/auth/refresh refresh cookie."""
+    secure = os.environ.get("SAMSUNGHEALTH_ENV", "").lower() == "production"
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_jwt,
+        httponly=True,
+        secure=secure,
+        samesite="strict",
+        path="/auth/refresh",
+        max_age=REFRESH_TOKEN_TTL_SECONDS,
+    )
+
+
 def _issue_jwt_pair(db: Session, user: User) -> tuple[str, str]:
     """Create access + refresh JWTs and persist the refresh row."""
     access = create_access_token(user_id=str(user.id))
@@ -250,6 +267,8 @@ async def google_start(
         _disabled_404()
 
     # CSRF: refuse cross-site/same-site Sec-Fetch-Site (browsers send same-origin/none for legitimate XHR).
+    # V2.3.3.2 — keep the legacy detail "oauth_csrf_check_failed" on /auth/google/start for back-compat
+    # with V2.3.2 tests; the shared csrf.check_sec_fetch_site is used elsewhere with detail=csrf_check_failed.
     sfs = request.headers.get("sec-fetch-site")
     if sfs is not None and sfs.lower() not in {"same-origin", "none"}:
         raise HTTPException(status_code=403, detail="oauth_csrf_check_failed")
@@ -376,12 +395,12 @@ async def google_callback(
 
     # 5. Account linking matrix.
     return await _resolve_account_linking(
-        db=db, request=request, profile=profile
+        db=db, request=request, response=response, profile=profile
     )
 
 
 async def _resolve_account_linking(
-    *, db: Session, request: Request, profile
+    *, db: Session, request: Request, response: Response, profile
 ) -> dict:
     sub = profile.sub
     email = profile.email.lower()
@@ -414,6 +433,7 @@ async def _resolve_account_linking(
         # V2.3.3.1 — successful OAuth login on a dual-auth user resets failed_login_count.
         register_successful_login(db, user)
         _log.info("oauth.callback.success", provider=_PROVIDER_NAME, user_id=str(user.id))
+        _set_oauth_refresh_cookie(response, refresh)
         return {
             "access_token": access,
             "refresh_token": refresh,
@@ -575,6 +595,7 @@ async def _resolve_account_linking(
     )
     db.commit()
     _log.info("oauth.account.created", provider=_PROVIDER_NAME, user_id=str(user.id))
+    _set_oauth_refresh_cookie(response, refresh)
     return {
         "access_token": access,
         "refresh_token": refresh,
@@ -591,6 +612,7 @@ def oauth_link_confirm(
     response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
+    check_sec_fetch_site(request)
     row = verify_verification_token(db, body.token, "oauth_link_confirm")
     if row is None:
         raise HTTPException(status_code=400, detail="invalid_or_expired")
@@ -635,6 +657,7 @@ def oauth_link_confirm(
     )
     db.commit()
     _log.info("oauth.account.linked", provider=provider, user_id=str(user.id))
+    _set_oauth_refresh_cookie(response, refresh)
     return {
         "access_token": access,
         "refresh_token": refresh,
@@ -649,20 +672,22 @@ def oauth_link_confirm(
 ### Implements specs
 - [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `router`, `google_start`, `google_callback`, `oauth_link_confirm`
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `google_start`, `google_callback`, `oauth_link_confirm`
+- [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `google_callback`, `oauth_link_confirm`
 
 ### Symbols
-- `OauthStartIn` (class) — lines 75-76
-- `OauthStartOut` (class) — lines 79-80
-- `OauthLinkConfirmIn` (class) — lines 83-84
-- `_email_hash` (function) — lines 88-89
-- `_safe_ip` (function) — lines 92-106
-- `_audit` (function) — lines 109-146
-- `_google_enabled` (function) — lines 149-152
-- `_redirect_uri` (function) — lines 155-157
-- `_auto_register_enabled` (function) — lines 160-161
-- `_issue_jwt_pair` (function) — lines 164-178
-- `_disabled_404` (function) — lines 181-182
-- `_resolve_account_linking` (function) — lines 328-527
+- `OauthStartIn` (class) — lines 76-77
+- `OauthStartOut` (class) — lines 80-81
+- `OauthLinkConfirmIn` (class) — lines 84-85
+- `_email_hash` (function) — lines 89-90
+- `_safe_ip` (function) — lines 93-107
+- `_audit` (function) — lines 110-147
+- `_google_enabled` (function) — lines 150-153
+- `_redirect_uri` (function) — lines 156-158
+- `_auto_register_enabled` (function) — lines 161-162
+- `_set_oauth_refresh_cookie` (function) — lines 165-176
+- `_issue_jwt_pair` (function) — lines 179-193
+- `_disabled_404` (function) — lines 196-197
+- `_resolve_account_linking` (function) — lines 345-546
 
 ### Imports
 - `hashlib`
@@ -679,6 +704,7 @@ def oauth_link_confirm(
 - `server.logging_config`
 - `server.security.auth`
 - `server.security.auth_providers`
+- `server.security.csrf`
 - `server.security.auth_providers`
 - `server.security.auth_providers`
 - `server.security.auth_providers.google`
@@ -696,6 +722,7 @@ def oauth_link_confirm(
 - `_google_enabled`
 - `_redirect_uri`
 - `_auto_register_enabled`
+- `_set_oauth_refresh_cookie`
 - `_issue_jwt_pair`
 - `_disabled_404`
 - `_resolve_account_linking`

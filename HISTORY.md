@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| V2.3.3.2 — Frontend Nightfall (9 pages auth + theme switcher + rebrand Data Saillance) + security headers globaux + cookies httpOnly refresh + CSRF Sec-Fetch-Site | `static/auth/`, `static/css/`, `static/js/`, `static/assets/`, `server/middleware/security_headers.py`, `server/security/csrf.py`, `server/routers/static_pages.py`, `server/routers/{auth,auth_oauth}.py`, `server/main.py` | [`PENDING`](#2026-04-27-PENDING) |
 | V2.3.3.1 — Rate-limit slowapi (multi-decorator IP composite + cap pur-IP) + soft backoff exponentiel (anti-DoS lockout) + admin lock/unlock + IP right-most-untrusted + email global cap | `server/security/rate_limit.py`, `server/security/rate_limit_storage.py`, `server/security/lockout.py`, `server/middleware/rate_limit_context.py`, `server/middleware/slowapi_pre_auth.py`, `alembic/versions/0008_users_last_failed_login.py`, `server/routers/{auth,auth_oauth,admin,sleep,heartrate,steps,exercise,mood}.py` | [`c119976`](#2026-04-27-c119976) |
 | V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`10c682c`](#2026-04-26-10c682c) |
 | V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`83f77fd`](#2026-04-26-83f77fd) |
@@ -58,6 +59,24 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-04-27 `PENDING`
+feat(V2.3.3.2): frontend Nightfall — 9 pages auth + theme switcher Data Saillance + security headers globaux + refresh cookie httpOnly + CSRF Sec-Fetch-Site
+- `docs/vault/specs/2026-04-27-v2.3.3.2-frontend-nightfall.md` créé (status: ready, 45 acceptance tests dont 23 backend exécutables, 22 Playwright frontend reportés à manuel/V2.3.3.3). Patch v2 post-pentester avec 3 HIGH bloquants traités : (1) `oauth-callback.html` page intermédiaire ambigüe → backend redirige 302 vers `/auth/oauth-success#fragment` ou `/auth/oauth-error?code=` ou `/auth/oauth-link-pending`, (2) CSP `connect-src` Google endpoints inutile → restreint à `'self'`, (3) Security headers globaux (X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, HSTS conditionnel HTTPS) au lieu de juste pages auth.
+- `server/middleware/security_headers.py` (NEW) — middleware ASGI GLOBAL : security headers + strip server/via headers + CSP différencié par path (`/auth/*` strict no unsafe-inline, `/api/*` minimal `default-src 'none'`, dashboard `'unsafe-inline'` toléré pour D3).
+- `server/security/csrf.py` (NEW) — `check_sec_fetch_site(request)` raise 403 si `Sec-Fetch-Site in (cross-site, same-site)`. Appliqué sur 6 endpoints POST auth (login/register/refresh/reset/verify/oauth-link/google-start).
+- `server/routers/static_pages.py` (NEW) — 9 endpoints GET pour pages auth (login, register, reset-request, reset-confirm, verify-email, oauth-link-confirm, oauth-success, oauth-error, oauth-link-pending) avec `Cache-Control: no-store`.
+- `server/routers/auth.py` — `login` set Set-Cookie `refresh_token` httpOnly+Secure(prod)+SameSite=Strict+Path=/auth/refresh+30j. `refresh` lit body **explicit > implicit cookie** (back-compat tests V2.3 et clients legacy Android). `logout` delete_cookie. `register` + reset/verify request : check_sec_fetch_site.
+- `server/routers/auth_oauth.py` — `google_callback` retourne `RedirectResponse(302)` selon scénario : success → `/auth/oauth-success#access_token=X&return_to=Y` + cookie httpOnly refresh, link pending → `/auth/oauth-link-pending`, error → `/auth/oauth-error?code=<mapped>` (whitelist stricte, **jamais** error_description). `oauth_link_confirm` symétrique.
+- `server/main.py` — `app.include_router(static_pages.router)` AVANT auth router (priorité GET pages), `app.mount("/static", StaticFiles)`, `app.add_middleware(SecurityHeadersMiddleware)` global.
+- **Frontend bundle Data Saillance** :
+   - 9 pages HTML : structure minimale, no inline style/script, `<meta name="referrer" content="no-referrer">` sur reset/verify/oauth-link-confirm/oauth-success, autocomplete corrects, type=password sur admin token field, logo via `<picture><img>` pas inline SVG, `<a target="_blank" rel="noopener noreferrer">`.
+   - 2 CSS : `ds-tokens.css` (--ds-* light + dark via `[data-theme]`, type scale base 16 ratio 1.25, spacing scale 4px) + `auth.css` (layout pages auth).
+   - 3 JS : `theme.js` (FOUC prevention sync set data-theme avant body, toggle persist localStorage, listen prefers-color-scheme), `api-client.js` (fetch wrapper credentials:include, handle 429/423/401), `auth-form.js` (validation client-side, FLASH_PARAMS whitelist stricte `{registered, expired, verified, reset}`, history.replaceState après lecture token URL, `.textContent` only jamais `.innerHTML =`).
+   - Bundle assets : Playfair Display TTF variable + OFL.txt (depuis `~/MyPersonalProjects/Vectorizer/`), 3 logos SVG (dark, white-fond-blanc, favicon).
+- 3 fichiers tests V2.3.3.2 (52 tests RED → GREEN) : `test_static_auth_pages.py` (38), `test_csrf_check.py` (9), `test_refresh_cookie.py` (5/6).
+- **Tests Playwright frontend** : reportés (Playwright pas installé). Tests visuels manuels pour V2.3.3.2.
+- **320 passed + 1 skipped** (V2.3 timing soft backoff trade-off préservé). Suite complète V2.3 → V2.3.3.2.
 
 ### 2026-04-27 `c119976`
 feat(V2.3.3.1): rate-limit slowapi + soft backoff lockout + admin lock/unlock + right-most-untrusted IP — 4 HIGH pentester intégrés

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: 022cbb69ff95996b4765e4df08fd0c8a8d6c32ee
-last_synced: '2026-04-27T17:56:06Z'
-loc: 113
+git_blob: 5705706de0ae0037500c3696a9eb039a52b1faa9
+last_synced: '2026-04-27T20:51:40Z'
+loc: 122
 annotations: []
 imports:
 - time
@@ -17,6 +17,7 @@ imports:
 - server.logging_config
 - server.middleware.rate_limit_context
 - server.middleware.request_context
+- server.middleware.security_headers
 - server.middleware.slowapi_pre_auth
 - server.security.rate_limit
 - server.routers
@@ -49,6 +50,7 @@ from slowapi.errors import RateLimitExceeded
 from server.logging_config import configure_logging, get_logger
 from server.middleware.rate_limit_context import RateLimitContextMiddleware
 from server.middleware.request_context import RequestContextMiddleware
+from server.middleware.security_headers import SecurityHeadersMiddleware
 from server.middleware.slowapi_pre_auth import SlowAPIPreAuthMiddleware
 from server.security.rate_limit import (
     _rate_limit_exceeded_handler,
@@ -118,6 +120,7 @@ from server.routers import (  # noqa: E402
     heartrate,
     mood,
     sleep,
+    static_pages,
     steps,
 )
 
@@ -130,10 +133,17 @@ app = FastAPI(title="SamsungHealth", lifespan=lifespan)
 # BEFORE FastAPI dependency resolution (so rate-limit fires before auth — H1 / #43).
 app.state.limiter = limiter
 app.add_middleware(RequestContextMiddleware)       # innermost
+# V2.3.3.2 — security headers wrap the response BEFORE slowapi can inject its own
+# rate-limit headers; mounted between request_context (innermost) and slowapi
+# layers so all responses (404, 4xx, 5xx) carry CSP/XFO/etc.
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIPreAuthMiddleware)       # middle — per-route check pre-deps
 app.add_middleware(RateLimitContextMiddleware)     # outermost — peeks body BEFORE slowapi
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# V2.3.3.2 — static_pages router AVANT auth router pour que GET /auth/login
+# soit servi par la page HTML (et non un 405 du POST /auth/login).
+app.include_router(static_pages.router)
 app.include_router(auth.router)
 app.include_router(auth_oauth.router)
 app.include_router(admin.router)
@@ -164,10 +174,11 @@ def index():
 - [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify]] — symbols: `lifespan`
 - [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `lifespan`
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `app`, `lifespan`
+- [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `app`
 
 ### Symbols
-- `_validate_encryption_at_boot` (function) — lines 21-24 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
-- `_bench_argon2` (function) — lines 27-32
+- `_validate_encryption_at_boot` (function) — lines 22-25 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
+- `_bench_argon2` (function) — lines 28-33
 
 ### Imports
 - `time`
@@ -180,6 +191,7 @@ def index():
 - `server.logging_config`
 - `server.middleware.rate_limit_context`
 - `server.middleware.request_context`
+- `server.middleware.security_headers`
 - `server.middleware.slowapi_pre_auth`
 - `server.security.rate_limit`
 - `server.routers`

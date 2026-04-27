@@ -53,6 +53,10 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_admin_lock.py",
         "test_email_global_cap.py",
         "test_alembic_0008.py",
+        # V2.3.3.2 — frontend nightfall: static auth pages + CSRF check + refresh cookie
+        "test_static_auth_pages.py",
+        "test_csrf_check.py",
+        "test_refresh_cookie.py",
     }
 )
 
@@ -141,6 +145,10 @@ def _set_auth_env_defaults(monkeypatch):
         monkeypatch.setenv("SAMSUNGHEALTH_ENV", "test")
     if not os.environ.get("SAMSUNGHEALTH_TRUSTED_PROXIES"):
         monkeypatch.setenv("SAMSUNGHEALTH_TRUSTED_PROXIES", "127.0.0.1,::1")
+    # V2.3.3.2 — disable HSTS on HTTP test client by default. Tests that need
+    # HTTPS-style behaviour can monkeypatch this back to "true".
+    if not os.environ.get("SAMSUNGHEALTH_FORCE_HTTPS"):
+        monkeypatch.setenv("SAMSUNGHEALTH_FORCE_HTTPS", "false")
     yield
 
 

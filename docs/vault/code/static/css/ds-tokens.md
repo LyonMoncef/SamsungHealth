@@ -1,0 +1,98 @@
+---
+type: code-source
+language: css
+file_path: static/css/ds-tokens.css
+git_blob: fd6116541e96be6133980918dc1ca748a312f536
+last_synced: '2026-04-27T20:51:40Z'
+loc: 67
+annotations: []
+imports: []
+exports: []
+tags:
+- code
+- css
+---
+
+# static/css/ds-tokens.css
+
+> [!info] Code mirror
+> Ce fichier est un **miroir auto-généré** de [`static/css/ds-tokens.css`](../../../static/css/ds-tokens.css).
+> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
+> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
+
+```css
+/* V2.3.3.2 — Data Saillance design tokens (light + dark via [data-theme]). */
+
+:root {
+  --ds-font-display: 'Playfair Display', Georgia, serif;
+  --ds-font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --ds-fs-hero: 56px;     --ds-fw-hero: 700;
+  --ds-fs-h1: 40px;       --ds-fw-h1: 700;
+  --ds-fs-h2: 32px;       --ds-fw-h2: 700;
+  --ds-fs-h3: 22px;       --ds-fw-h3: 600;
+  --ds-fs-h4: 18px;       --ds-fw-h4: 600;
+  --ds-fs-eyebrow: 13px;  --ds-fw-eyebrow: 500;
+  --ds-fs-body: 16px;     --ds-fw-body: 400;
+  --ds-fs-body-sm: 14px;  --ds-fw-body-sm: 400;
+  --ds-fs-caption: 13px;  --ds-fw-caption: 400;
+
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+  --ds-space-12: 48px;
+  --ds-space-16: 64px;
+
+  --ds-radius-sm: 6px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 24px;
+}
+
+:root[data-theme="light"] {
+  --ds-bg-primary: #FAFAFA;
+  --ds-bg-secondary: #FFFFFF;
+  --ds-bg-accent: #0E9EB0;
+  --ds-text-primary: #191E22;
+  --ds-text-secondary: #4A4D4F;
+  --ds-text-muted: #828587;
+  --ds-accent-warm: #D37C04;
+  --ds-accent-cool: #07BCD3;
+  --ds-neutral: #828587;
+  --ds-border: #E5E5E5;
+  --ds-error: #C0392B;
+  --ds-success: #229954;
+}
+
+:root[data-theme="dark"] {
+  --ds-bg-primary: #191E22;
+  --ds-bg-secondary: #232E32;
+  --ds-bg-accent: #0E9EB0;
+  --ds-text-primary: #FAFAFA;
+  --ds-text-secondary: #C0C5C8;
+  --ds-text-muted: #828587;
+  --ds-accent-warm: #FCBF0E;
+  --ds-accent-cool: #8DFFFF;
+  --ds-neutral: #828587;
+  --ds-border: #3A4448;
+  --ds-error: #E74C3C;
+  --ds-success: #2ECC71;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/static/assets/fonts/PlayfairDisplay-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+```
+
+---
+
+## Appendix — symbols & navigation *(auto)*
+
+### Implements specs
+- [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]]

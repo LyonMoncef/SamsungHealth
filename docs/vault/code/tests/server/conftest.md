@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 70f48eaf6b034962dfaa191b5f463a85a20fe8d4
-last_synced: '2026-04-27T17:56:06Z'
-loc: 523
+git_blob: 74fdd3784f916b04fc1bd3e1b8dffb940a0666dc
+last_synced: '2026-04-27T20:51:40Z'
+loc: 531
 annotations: []
 imports:
 - base64
@@ -82,6 +82,10 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_admin_lock.py",
         "test_email_global_cap.py",
         "test_alembic_0008.py",
+        # V2.3.3.2 — frontend nightfall: static auth pages + CSRF check + refresh cookie
+        "test_static_auth_pages.py",
+        "test_csrf_check.py",
+        "test_refresh_cookie.py",
     }
 )
 
@@ -170,6 +174,10 @@ def _set_auth_env_defaults(monkeypatch):
         monkeypatch.setenv("SAMSUNGHEALTH_ENV", "test")
     if not os.environ.get("SAMSUNGHEALTH_TRUSTED_PROXIES"):
         monkeypatch.setenv("SAMSUNGHEALTH_TRUSTED_PROXIES", "127.0.0.1,::1")
+    # V2.3.3.2 — disable HSTS on HTTP test client by default. Tests that need
+    # HTTPS-style behaviour can monkeypatch this back to "true".
+    if not os.environ.get("SAMSUNGHEALTH_FORCE_HTTPS"):
+        monkeypatch.setenv("SAMSUNGHEALTH_FORCE_HTTPS", "false")
     yield
 
 
@@ -557,8 +565,8 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_ensure_orm_default_user` (function) — lines 340-358
-- `_register_default_user` (function) — lines 418-432
+- `_ensure_orm_default_user` (function) — lines 348-366
+- `_register_default_user` (function) — lines 426-440
 
 ### Imports
 - `base64`
