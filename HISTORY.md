@@ -4,7 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| V2.3.3.1 — Rate-limit slowapi (multi-decorator IP composite + cap pur-IP) + soft backoff exponentiel (anti-DoS lockout) + admin lock/unlock + IP right-most-untrusted + email global cap | `server/security/rate_limit.py`, `server/security/rate_limit_storage.py`, `server/security/lockout.py`, `server/middleware/rate_limit_context.py`, `server/middleware/slowapi_pre_auth.py`, `alembic/versions/0008_users_last_failed_login.py`, `server/routers/{auth,auth_oauth,admin,sleep,heartrate,steps,exercise,mood}.py` | [`PENDING`](#2026-04-27-PENDING) |
+| V2.3.3.1 — Rate-limit slowapi (multi-decorator IP composite + cap pur-IP) + soft backoff exponentiel (anti-DoS lockout) + admin lock/unlock + IP right-most-untrusted + email global cap | `server/security/rate_limit.py`, `server/security/rate_limit_storage.py`, `server/security/lockout.py`, `server/middleware/rate_limit_context.py`, `server/middleware/slowapi_pre_auth.py`, `alembic/versions/0008_users_last_failed_login.py`, `server/routers/{auth,auth_oauth,admin,sleep,heartrate,steps,exercise,mood}.py` | [`c119976`](#2026-04-27-c119976) |
 | V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`10c682c`](#2026-04-26-10c682c) |
 | V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`83f77fd`](#2026-04-26-83f77fd) |
 | V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`08101d1`](#2026-04-26-08101d1) |
@@ -59,7 +59,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-27 `PENDING`
+### 2026-04-27 `c119976`
 feat(V2.3.3.1): rate-limit slowapi + soft backoff lockout + admin lock/unlock + right-most-untrusted IP — 4 HIGH pentester intégrés
 - `docs/vault/specs/2026-04-26-v2.3.3.1-rate-limit-lockout.md` créé (status: ready, 44 acceptance tests, 7 fichiers tests / 47 tests). Patch v2 post-pentester avec 4 HIGH bloquants traités : (1) hard lockout DoS-able remplacé par soft backoff exponentiel (1s..60s, pas de hard lock auto), (2) IP spoofing via XFF first-IP remplacé par right-most-untrusted, (3) lost-update failed_login_count remplacé par UPDATE atomic RETURNING, (4) TRUSTED_PROXIES obligatoire en prod (`SAMSUNGHEALTH_ENV=production` + vide → boot fail).
 - `alembic/versions/0008_users_last_failed_login.py` — revision `1b4c5d6e7f83`, parent `0a3b4c5d6e72`. Ajout colonne `users.last_failed_login_at TIMESTAMPTZ NULL` (pour cleanup_stale_failed_login_counts cron).
