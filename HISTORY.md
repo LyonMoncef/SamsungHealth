@@ -4,7 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`PENDING`](#2026-04-26-PENDING) |
+| V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`10c682c`](#2026-04-26-10c682c) |
 | V2.3.1 — Password reset + email verification (dual-sink admin endpoint, 1h/24h TTL split, blocklist top-100, atomic audit) | `alembic/versions/0006_verification_tokens.py`, `server/security/passwords.py`, `server/security/email_outbound.py`, `server/security/auth.py`, `server/routers/auth.py`, `server/routers/admin.py` | [`83f77fd`](#2026-04-26-83f77fd) |
 | V2.3.0.1 — `user_id NOT NULL` cleanup + scripts CSV multi-user | `alembic/versions/0005_user_id_not_null.py`, `server/db/models.py`, `scripts/import_samsung_csv.py`, `scripts/generate_sample.py` | [`08101d1`](#2026-04-26-08101d1) |
 | V2.3 — Auth foundation atomique (users + JWT access+refresh + multi-user FK + redaction + audit) | `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/db/models.py`, `alembic/versions/0004_auth_foundation.py` | [`e32801a`](#2026-04-26-e32801a) |
@@ -58,7 +58,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-26 `PENDING`
+### 2026-04-26 `10c682c`
 feat(V2.3.2): Google OAuth via AuthProvider abstraction — state CSRF + nonce, deferred linking, JWKS hardcoded, raw_claims whitelist
 - `docs/vault/specs/2026-04-26-v2.3.2-google-oauth.md` créé (status: ready, 45 acceptance tests). Patch v2 post-pentester (4 HIGH bloquants + 4 MED durcissements + 3 ajouts intégrés).
 - `alembic/versions/0007_identity_providers.py` — revision `0a3b4c5d6e72`, parent `9d2e3f5a6b71`. Crée table `identity_providers` (id UUID7 PK, user_id FK CASCADE, provider TEXT, provider_sub TEXT, provider_email TEXT lowercase, email_verified BOOL, linked_at/last_used_at TIMESTAMPTZ, raw_claims JSONB) + 2 unique constraints `(provider, provider_sub)` et `(user_id, provider)`. Ajoute aussi colonne `payload jsonb NULL` à `verification_tokens` (pour le purpose `oauth_link_confirm`).
