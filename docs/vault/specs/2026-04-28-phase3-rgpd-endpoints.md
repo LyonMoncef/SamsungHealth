@@ -321,7 +321,20 @@ Note : `auth_events` anonymisé par UPDATE user_id=NULL (pas DELETE). C'est coh�
   - `_consume_verification_token_atomic(db, user, token, purpose)` (UPDATE...RETURNING anti-race)
   - `_verify_reauth(db, user, password_or_nonce)` (password OU OAuth nonce + soft backoff)
   - `_ip_hmac(request)` (réutilise V2.3.3.1 helper)
-  - `HEALTH_TABLES: tuple[str, ...]` (liste explicite des 21 tables santé)
+  - `HEALTH_TABLES: tuple[str, ...]` (liste explicite des 21 tables santé — vérifié 2026-04-28 contre `server/db/models.py`) :
+    ```python
+    HEALTH_TABLES = (
+        "sleep_sessions", "sleep_stages",
+        "steps_hourly", "steps_daily",
+        "heart_rate_hourly",
+        "exercise_sessions",
+        "stress", "spo2", "respiratory_rate", "hrv", "skin_temperature",
+        "weight", "height", "blood_pressure",
+        "mood", "water_intake",
+        "activity_daily", "vitality_score", "floors_daily", "activity_level",
+        "ecg",
+    )
+    ```
 - [ ] `server/main.py` : `app.include_router(me.router)`
 - [ ] **Alembic migration** : ajout `CHECK (purpose IN (...))` sur `verification_tokens.purpose` (extension purpose enum avec `account_export_confirm`)
 
@@ -332,7 +345,7 @@ Note : `auth_events` anonymisé par UPDATE user_id=NULL (pas DELETE). C'est coh�
   - `TestExportContent` : no `password_hash` leak, CSV columns match DB, mood déchiffré
   - `TestUserIsolation` : 2 users distincts → ZIP user A ne contient AUCUNE data user B
   - `TestExportRateLimit` : 5 request/h OK, 6e → 429 ; idem confirm
-  - `TestExportRaceWithErase` : export en cours bloque erase concurrent (test threadé ou simulé via `with_for_update` mock)
+  - `TestExportRaceWithErase` : test mock (`patch.object` sur `db.execute`) — assertion que `build_user_export_zip` appelle bien `select(User).where(...).with_for_update()` AVANT de matérialiser les données. Test integration threadé Postgres testcontainer **différé Phase 6 CI/CD** (note dans NOTES.md)
 - [ ] `tests/server/test_me_erase.py` (~14 tests) :
   - `TestErasePreconditions` : 401 sans token, 401 wrong password + soft backoff, CSRF Sec-Fetch-Site cross-site → 403
   - `TestEraseCascadeAllTables` : post-erase, `SELECT COUNT WHERE user_id=?` == 0 sur **chacune** des 21 tables santé + identity_providers + refresh_tokens + verification_tokens
