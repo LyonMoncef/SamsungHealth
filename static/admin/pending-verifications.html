@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — Pending Verifications</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/logo/favicon.svg">
+  <link rel="stylesheet" href="/static/css/ds-tokens.css?v=2.3.3.3">
+  <link rel="stylesheet" href="/static/css/auth.css?v=2.3.3.3">
+  <link rel="stylesheet" href="/static/css/admin.css?v=2.3.3.3">
+  <script src="/static/js/theme.js?v=2.3.3.3"></script>
+</head>
+<body>
+  <header class="admin-header">
+    <h1 class="admin-title">Pending Verifications</h1>
+    <nav class="admin-nav">
+      <a href="/admin/users">Users</a>
+      <a href="/admin/pending-verifications">Verifications</a>
+    </nav>
+    <div class="admin-actions">
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Changer le thème">Thème</button>
+      <button type="button" id="admin-logout" class="auth-btn-secondary">Déconnexion</button>
+    </div>
+  </header>
+  <main class="admin-main">
+    <section class="admin-card">
+      <p class="admin-intro">Liens valides 60 secondes (cache outbound). Auto-refresh 30 s.</p>
+      <ul class="admin-cards" id="admin-pending-list"></ul>
+      <div id="admin-pending-empty" class="admin-empty" hidden>Aucune vérification en attente.</div>
+    </section>
+    <div id="admin-pending-message" aria-live="polite"></div>
+  </main>
+  <script src="/static/js/admin.js?v=2.3.3.3" defer></script>
+</body>
+</html>

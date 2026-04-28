@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 74fdd3784f916b04fc1bd3e1b8dffb940a0666dc
-last_synced: '2026-04-27T20:51:40Z'
-loc: 531
+git_blob: 8e4b8714eb29801d2932f03ab82babb3cf995686
+last_synced: '2026-04-28T14:04:54Z'
+loc: 538
 annotations: []
 imports:
 - base64
@@ -86,6 +86,13 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_static_auth_pages.py",
         "test_csrf_check.py",
         "test_refresh_cookie.py",
+        # V2.3.3.3 — auth finitions: admin pages + admin users endpoint + CSRF + probe + Inter font + dashboard rebrand
+        "test_admin_pages.py",
+        "test_admin_users_endpoint.py",
+        "test_admin_csrf.py",
+        "test_admin_probe.py",
+        "test_inter_font_bundle.py",
+        "test_dashboard_rebrand.py",
     }
 )
 
@@ -565,8 +572,8 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_ensure_orm_default_user` (function) — lines 348-366
-- `_register_default_user` (function) — lines 426-440
+- `_ensure_orm_default_user` (function) — lines 355-373
+- `_register_default_user` (function) — lines 433-447
 
 ### Imports
 - `base64`

@@ -2,9 +2,9 @@
 type: code-source
 language: css
 file_path: static/css/ds-tokens.css
-git_blob: fd6116541e96be6133980918dc1ca748a312f536
-last_synced: '2026-04-27T20:51:40Z'
-loc: 67
+git_blob: 45c323d981b7069fcd817c833056764f9bf1ea81
+last_synced: '2026-04-28T14:04:54Z'
+loc: 75
 annotations: []
 imports: []
 exports: []
@@ -82,8 +82,16 @@ tags:
 }
 
 @font-face {
+  font-family: 'Inter';
+  src: url('/static/assets/fonts/Inter-VariableFont_wght.ttf?v=2.3.3.3') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Playfair Display';
-  src: url('/static/assets/fonts/PlayfairDisplay-VariableFont_wght.ttf') format('truetype-variations');
+  src: url('/static/assets/fonts/PlayfairDisplay-VariableFont_wght.ttf?v=2.3.3.3') format('truetype-variations');
   font-weight: 400 900;
   font-style: normal;
   font-display: swap;
