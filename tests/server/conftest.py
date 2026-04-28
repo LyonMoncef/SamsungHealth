@@ -57,6 +57,13 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_static_auth_pages.py",
         "test_csrf_check.py",
         "test_refresh_cookie.py",
+        # V2.3.3.3 — auth finitions: admin pages + admin users endpoint + CSRF + probe + Inter font + dashboard rebrand
+        "test_admin_pages.py",
+        "test_admin_users_endpoint.py",
+        "test_admin_csrf.py",
+        "test_admin_probe.py",
+        "test_inter_font_bundle.py",
+        "test_dashboard_rebrand.py",
     }
 )
 

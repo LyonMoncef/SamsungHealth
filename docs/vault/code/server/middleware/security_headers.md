@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/middleware/security_headers.py
-git_blob: 6805aa66f9ebcb3ec8764bf3111b688885614f6d
-last_synced: '2026-04-27T20:51:40Z'
-loc: 107
+git_blob: 31ed4f16f1d26cf3ba9d6488e2949cb5f894df01
+last_synced: '2026-04-28T14:04:54Z'
+loc: 118
 annotations: []
 imports:
 - os
@@ -82,8 +82,16 @@ CSP_DASHBOARD = (
 
 CSP_API = "default-src 'none'; frame-ancestors 'none'"
 
+# V2.3.3.3 — Admin pages get CSP_AUTH_PAGES base + Trusted Types (pentester #9).
+CSP_ADMIN_PAGES = (
+    CSP_AUTH_PAGES
+    + "; require-trusted-types-for 'script'; trusted-types default"
+)
+
 
 def _csp_for_path(path: str) -> str:
+    if path.startswith("/admin/") or path.startswith("/static/admin/"):
+        return CSP_ADMIN_PAGES
     if path.startswith("/auth/") or path.startswith("/static/auth/"):
         return CSP_AUTH_PAGES
     if path.startswith("/api/"):
@@ -93,6 +101,9 @@ def _csp_for_path(path: str) -> str:
 
 def _cache_control_for(path: str, query: str) -> str | None:
     """Return the Cache-Control value to apply, or None to leave as-is."""
+    # V2.3.3.3 — admin pages no-store (pentester L3).
+    if path.startswith("/admin/") and not path.startswith("/static/"):
+        return "no-store"
     if path.startswith("/auth/") and not path.startswith("/static/"):
         # Pages HTML auth — no-store (sensitive surface).
         return "no-store"
@@ -145,12 +156,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 ### Implements specs
 - [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `SecurityHeadersMiddleware`
+- [[../../specs/2026-04-28-v2.3.3.3-auth-finitions]] — symbols: `_csp_for_admin_path`
 
 ### Symbols
-- `_csp_for_path` (function) — lines 54-59
-- `_cache_control_for` (function) — lines 62-72
-- `_force_https` (function) — lines 75-76
-- `SecurityHeadersMiddleware` (class) — lines 79-107 · **Specs**: [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall|2026-04-27-v2.3.3.2-frontend-nightfall]]
+- `_csp_for_path` (function) — lines 60-67
+- `_cache_control_for` (function) — lines 70-83
+- `_force_https` (function) — lines 86-87
+- `SecurityHeadersMiddleware` (class) — lines 90-118 · **Specs**: [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall|2026-04-27-v2.3.3.2-frontend-nightfall]]
 
 ### Imports
 - `os`

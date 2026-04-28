@@ -260,6 +260,13 @@ def _ip_hash(ip: str) -> str:
     ).hexdigest()[:16]
 
 
+# V2.3.3.3 — public alias for re-use outside rate-limit module (admin UserSummary).
+def ip_hash(ip: str) -> str:
+    """HMAC-SHA256 truncated to 16 hex chars. Used by admin endpoints to expose
+    `last_login_ip_hash` instead of the raw INET (HIGH bloquant #2)."""
+    return _ip_hash(ip)
+
+
 def audit_rate_limit_exceeded(db, request: Request, endpoint: str) -> None:
     """Insert a single auth_events row with HMACed IP. Caller commits."""
     from server.db.models import AuthEvent

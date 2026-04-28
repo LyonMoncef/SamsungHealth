@@ -50,8 +50,16 @@ CSP_DASHBOARD = (
 
 CSP_API = "default-src 'none'; frame-ancestors 'none'"
 
+# V2.3.3.3 — Admin pages get CSP_AUTH_PAGES base + Trusted Types (pentester #9).
+CSP_ADMIN_PAGES = (
+    CSP_AUTH_PAGES
+    + "; require-trusted-types-for 'script'; trusted-types default"
+)
+
 
 def _csp_for_path(path: str) -> str:
+    if path.startswith("/admin/") or path.startswith("/static/admin/"):
+        return CSP_ADMIN_PAGES
     if path.startswith("/auth/") or path.startswith("/static/auth/"):
         return CSP_AUTH_PAGES
     if path.startswith("/api/"):
@@ -61,6 +69,9 @@ def _csp_for_path(path: str) -> str:
 
 def _cache_control_for(path: str, query: str) -> str | None:
     """Return the Cache-Control value to apply, or None to leave as-is."""
+    # V2.3.3.3 — admin pages no-store (pentester L3).
+    if path.startswith("/admin/") and not path.startswith("/static/"):
+        return "no-store"
     if path.startswith("/auth/") and not path.startswith("/static/"):
         # Pages HTML auth — no-store (sensitive surface).
         return "no-store"

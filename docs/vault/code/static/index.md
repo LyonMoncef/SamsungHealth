@@ -2,9 +2,9 @@
 type: code-source
 language: html
 file_path: static/index.html
-git_blob: e9801f41d2d542193165bbf8e7e4e0eebd7f2447
-last_synced: '2026-04-23T10:49:30Z'
-loc: 18
+git_blob: 020de77f118305548fc0aa1b077df7af925b997e
+last_synced: '2026-04-28T14:04:54Z'
+loc: 22
 annotations: []
 imports: []
 exports: []
@@ -30,11 +30,15 @@ tags:
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/ds-tokens.css?v=2.3.3.3" />
     <link rel="stylesheet" href="/static/dashboard.css" />
+    <script src="/static/js/theme.js?v=2.3.3.3"></script>
   </head>
   <body>
+    <button type="button" class="theme-toggle" data-theme-toggle aria-label="Changer le thème">Thème</button>
     <div id="app"></div>
     <div id="cursor-glow"></div>
+    <script src="/static/js/ds-colors.js?v=2.3.3.3"></script>
     <script src="/static/dashboard.js"></script>
     <script src="/static/api.js"></script>
   </body>

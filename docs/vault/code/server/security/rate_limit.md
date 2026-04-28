@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/security/rate_limit.py
-git_blob: 47194ab9609ba268162c22a2782b948de3439635
-last_synced: '2026-04-27T17:56:06Z'
-loc: 276
+git_blob: f1b027424c1215ec48e7c01247d5dfcd78c6fa97
+last_synced: '2026-04-28T14:04:54Z'
+loc: 283
 annotations: []
 imports:
 - hashlib
@@ -34,6 +34,7 @@ exports:
 - _email_request_composite_cap
 - _rate_limit_exceeded_handler
 - _ip_hash
+- ip_hash
 - audit_rate_limit_exceeded
 tags:
 - code
@@ -310,6 +311,13 @@ def _ip_hash(ip: str) -> str:
     ).hexdigest()[:16]
 
 
+# V2.3.3.3 — public alias for re-use outside rate-limit module (admin UserSummary).
+def ip_hash(ip: str) -> str:
+    """HMAC-SHA256 truncated to 16 hex chars. Used by admin endpoints to expose
+    `last_login_ip_hash` instead of the raw INET (HIGH bloquant #2)."""
+    return _ip_hash(ip)
+
+
 def audit_rate_limit_exceeded(db, request: Request, endpoint: str) -> None:
     """Insert a single auth_events row with HMACed IP. Caller commits."""
     from server.db.models import AuthEvent
@@ -347,7 +355,8 @@ def audit_rate_limit_exceeded(db, request: Request, endpoint: str) -> None:
 - `_email_request_composite_cap` (function) — lines 193-200
 - `_rate_limit_exceeded_handler` (function) — lines 212-250 · **Specs**: [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout|2026-04-26-v2.3.3.1-rate-limit-lockout]]
 - `_ip_hash` (function) — lines 254-260
-- `audit_rate_limit_exceeded` (function) — lines 263-276
+- `ip_hash` (function) — lines 264-267
+- `audit_rate_limit_exceeded` (function) — lines 270-283
 
 ### Imports
 - `hashlib`
@@ -378,4 +387,5 @@ def audit_rate_limit_exceeded(db, request: Request, endpoint: str) -> None:
 - `_email_request_composite_cap`
 - `_rate_limit_exceeded_handler`
 - `_ip_hash`
+- `ip_hash`
 - `audit_rate_limit_exceeded`
