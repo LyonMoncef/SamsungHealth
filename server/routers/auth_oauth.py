@@ -44,6 +44,7 @@ from server.security.auth import (
     verify_verification_token,
 )
 from server.security.auth_providers import AuthProviderError
+from server.security.csrf import check_sec_fetch_site
 from server.security.auth_providers import google as google_mod
 from server.security.auth_providers import state as state_mod
 from server.security.auth_providers.google import (
@@ -161,6 +162,20 @@ def _auto_register_enabled() -> bool:
     return os.environ.get(_AUTO_REGISTER_ENV, "false").lower() == "true"
 
 
+def _set_oauth_refresh_cookie(response: Response, refresh_jwt: str) -> None:
+    """V2.3.3.2 — Set httpOnly + SameSite=Strict + Path=/auth/refresh refresh cookie."""
+    secure = os.environ.get("SAMSUNGHEALTH_ENV", "").lower() == "production"
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_jwt,
+        httponly=True,
+        secure=secure,
+        samesite="strict",
+        path="/auth/refresh",
+        max_age=REFRESH_TOKEN_TTL_SECONDS,
+    )
+
+
 def _issue_jwt_pair(db: Session, user: User) -> tuple[str, str]:
     """Create access + refresh JWTs and persist the refresh row."""
     access = create_access_token(user_id=str(user.id))
@@ -195,6 +210,8 @@ async def google_start(
         _disabled_404()
 
     # CSRF: refuse cross-site/same-site Sec-Fetch-Site (browsers send same-origin/none for legitimate XHR).
+    # V2.3.3.2 — keep the legacy detail "oauth_csrf_check_failed" on /auth/google/start for back-compat
+    # with V2.3.2 tests; the shared csrf.check_sec_fetch_site is used elsewhere with detail=csrf_check_failed.
     sfs = request.headers.get("sec-fetch-site")
     if sfs is not None and sfs.lower() not in {"same-origin", "none"}:
         raise HTTPException(status_code=403, detail="oauth_csrf_check_failed")
@@ -321,12 +338,12 @@ async def google_callback(
 
     # 5. Account linking matrix.
     return await _resolve_account_linking(
-        db=db, request=request, profile=profile
+        db=db, request=request, response=response, profile=profile
     )
 
 
 async def _resolve_account_linking(
-    *, db: Session, request: Request, profile
+    *, db: Session, request: Request, response: Response, profile
 ) -> dict:
     sub = profile.sub
     email = profile.email.lower()
@@ -359,6 +376,7 @@ async def _resolve_account_linking(
         # V2.3.3.1 — successful OAuth login on a dual-auth user resets failed_login_count.
         register_successful_login(db, user)
         _log.info("oauth.callback.success", provider=_PROVIDER_NAME, user_id=str(user.id))
+        _set_oauth_refresh_cookie(response, refresh)
         return {
             "access_token": access,
             "refresh_token": refresh,
@@ -520,6 +538,7 @@ async def _resolve_account_linking(
     )
     db.commit()
     _log.info("oauth.account.created", provider=_PROVIDER_NAME, user_id=str(user.id))
+    _set_oauth_refresh_cookie(response, refresh)
     return {
         "access_token": access,
         "refresh_token": refresh,
@@ -536,6 +555,7 @@ def oauth_link_confirm(
     response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
+    check_sec_fetch_site(request)
     row = verify_verification_token(db, body.token, "oauth_link_confirm")
     if row is None:
         raise HTTPException(status_code=400, detail="invalid_or_expired")
@@ -580,6 +600,7 @@ def oauth_link_confirm(
     )
     db.commit()
     _log.info("oauth.account.linked", provider=provider, user_id=str(user.id))
+    _set_oauth_refresh_cookie(response, refresh)
     return {
         "access_token": access,
         "refresh_token": refresh,

@@ -18,6 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from server.security.csrf import check_sec_fetch_site
 from server.security.lockout import (
     is_user_locked,
     register_failed_login,
@@ -91,7 +92,9 @@ class TokenPair(BaseModel):
 
 
 class RefreshIn(BaseModel):
-    refresh_token: str
+    # V2.3.3.2 — refresh_token optional in body (fallback for legacy clients);
+    # primary source is the httpOnly cookie set at login.
+    refresh_token: str | None = None
 
 
 class LogoutIn(BaseModel):
@@ -99,6 +102,31 @@ class LogoutIn(BaseModel):
 
 
 # ── helpers ────────────────────────────────────────────────────────────────
+_REFRESH_COOKIE_NAME = "refresh_token"
+_REFRESH_COOKIE_PATH = "/auth/refresh"
+
+
+def _cookie_secure() -> bool:
+    return os.environ.get("SAMSUNGHEALTH_ENV", "").lower() == "production"
+
+
+def _set_refresh_cookie(response: Response, refresh_jwt: str) -> None:
+    """V2.3.3.2 — Set refresh_token cookie httpOnly + SameSite=Strict + Path=/auth/refresh."""
+    response.set_cookie(
+        key=_REFRESH_COOKIE_NAME,
+        value=refresh_jwt,
+        httponly=True,
+        secure=_cookie_secure(),
+        samesite="strict",
+        path=_REFRESH_COOKIE_PATH,
+        max_age=REFRESH_TOKEN_TTL_SECONDS,
+    )
+
+
+def _delete_refresh_cookie(response: Response) -> None:
+    response.delete_cookie(_REFRESH_COOKIE_NAME, path=_REFRESH_COOKIE_PATH)
+
+
 def _email_hash(email: str) -> str:
     return hashlib.sha256(email.lower().encode("utf-8")).hexdigest()
 
@@ -134,6 +162,7 @@ def register(
     x_registration_token: str | None = Header(default=None, alias="X-Registration-Token"),
     db: Session = Depends(get_session),
 ) -> RegisterOut:
+    check_sec_fetch_site(request)
     check_registration_token(x_registration_token)
 
     email = str(body.email)
@@ -177,6 +206,7 @@ def login(
     response: Response,
     db: Session = Depends(get_session),
 ) -> TokenPair:
+    check_sec_fetch_site(request)
     email = str(body.email)
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
@@ -272,6 +302,7 @@ def login(
     register_successful_login(db, user)
 
     _log.info("auth.login.success", user_id=str(user.id), email_hash=_email_hash(email))
+    _set_refresh_cookie(response, refresh_jwt)
     return TokenPair(access_token=access, refresh_token=refresh_jwt)
 
 
@@ -284,8 +315,19 @@ def refresh(
     response: Response,
     db: Session = Depends(get_session),
 ) -> TokenPair:
+    check_sec_fetch_site(request)
+
+    # V2.3.3.2 — explicit body > implicit cookie. Si le caller fournit explicitement
+    # un refresh_token dans le body, c'est intentionnel (tests V2.3, clients legacy
+    # Android pre-V2.3.3.2) et doit gagner sur le cookie httpOnly automatiquement
+    # renvoyé par le browser. Sinon (frontend Nightfall classique), on lit le cookie.
+    cookie_token = request.cookies.get(_REFRESH_COOKIE_NAME)
+    refresh_token = body.refresh_token or cookie_token
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="invalid_refresh")
+
     try:
-        payload = decode_refresh_token(body.refresh_token)
+        payload = decode_refresh_token(refresh_token)
     except Exception:
         raise HTTPException(status_code=401, detail="invalid_refresh")
 
@@ -361,6 +403,7 @@ def refresh(
         old_jti=str(jti),
         new_jti=str(new_jti),
     )
+    _set_refresh_cookie(response, new_refresh_jwt)
     return TokenPair(access_token=new_access, refresh_token=new_refresh_jwt)
 
 
@@ -406,7 +449,9 @@ def logout(
     db.commit()
 
     _log.info("auth.logout.success", user_id=str(user_uuid) if user_uuid else None)
-    return Response(status_code=204)
+    out = Response(status_code=204)
+    _delete_refresh_cookie(out)
+    return out
 
 
 # ── V2.3.1 — verification token request/confirm ────────────────────────────
@@ -546,6 +591,7 @@ def request_email_verification(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_session),
 ) -> dict:
+    check_sec_fetch_site(request)
     # Auth optional: prefer Bearer current_user, else use body.email.
     target_email: str | None = None
     if authorization and authorization.startswith("Bearer "):
@@ -642,6 +688,7 @@ def request_password_reset(
     response: Response,
     db: Session = Depends(get_session),
 ) -> dict:
+    check_sec_fetch_site(request)
     target_email = str(body.email)
 
     # V2.3.3.1 — anti mail-bombing distribué (cap pur-email global).

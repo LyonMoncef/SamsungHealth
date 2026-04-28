@@ -10,6 +10,7 @@ from slowapi.errors import RateLimitExceeded
 from server.logging_config import configure_logging, get_logger
 from server.middleware.rate_limit_context import RateLimitContextMiddleware
 from server.middleware.request_context import RequestContextMiddleware
+from server.middleware.security_headers import SecurityHeadersMiddleware
 from server.middleware.slowapi_pre_auth import SlowAPIPreAuthMiddleware
 from server.security.rate_limit import (
     _rate_limit_exceeded_handler,
@@ -79,6 +80,7 @@ from server.routers import (  # noqa: E402
     heartrate,
     mood,
     sleep,
+    static_pages,
     steps,
 )
 
@@ -91,10 +93,17 @@ app = FastAPI(title="SamsungHealth", lifespan=lifespan)
 # BEFORE FastAPI dependency resolution (so rate-limit fires before auth — H1 / #43).
 app.state.limiter = limiter
 app.add_middleware(RequestContextMiddleware)       # innermost
+# V2.3.3.2 — security headers wrap the response BEFORE slowapi can inject its own
+# rate-limit headers; mounted between request_context (innermost) and slowapi
+# layers so all responses (404, 4xx, 5xx) carry CSP/XFO/etc.
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIPreAuthMiddleware)       # middle — per-route check pre-deps
 app.add_middleware(RateLimitContextMiddleware)     # outermost — peeks body BEFORE slowapi
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# V2.3.3.2 — static_pages router AVANT auth router pour que GET /auth/login
+# soit servi par la page HTML (et non un 405 du POST /auth/login).
+app.include_router(static_pages.router)
 app.include_router(auth.router)
 app.include_router(auth_oauth.router)
 app.include_router(admin.router)
