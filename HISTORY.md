@@ -4,7 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
-| V2.3.3.3 — Auth finitions (Inter font + 4 pages admin UI + dashboard rebrand --ds-* + content-negotiation + last_login_ip HMAC + CSRF admin + trusted-types) | `static/admin/`, `static/assets/fonts/Inter-VariableFont_wght.ttf`, `static/css/admin.css`, `static/js/{admin,admin-auth,ds-colors}.js`, `static/dashboard.css`, `static/index.html`, `server/routers/admin.py`, `server/middleware/security_headers.py`, `server/security/rate_limit.py` | [`PENDING`](#2026-04-28-PENDING) |
+| V2.3.3.3 — Auth finitions (Inter font + 4 pages admin UI + dashboard rebrand --ds-* + content-negotiation + last_login_ip HMAC + CSRF admin + trusted-types) | `static/admin/`, `static/assets/fonts/Inter-VariableFont_wght.ttf`, `static/css/admin.css`, `static/js/{admin,admin-auth,ds-colors}.js`, `static/dashboard.css`, `static/index.html`, `server/routers/admin.py`, `server/middleware/security_headers.py`, `server/security/rate_limit.py` | [`cab3ecb`](#2026-04-28-cab3ecb) |
 | V2.3.3.2 — Frontend Nightfall (9 pages auth + theme switcher + rebrand Data Saillance) + security headers globaux + cookies httpOnly refresh + CSRF Sec-Fetch-Site | `static/auth/`, `static/css/`, `static/js/`, `static/assets/`, `server/middleware/security_headers.py`, `server/security/csrf.py`, `server/routers/static_pages.py`, `server/routers/{auth,auth_oauth}.py`, `server/main.py` | [`0b098a7`](#2026-04-27-0b098a7) |
 | V2.3.3.1 — Rate-limit slowapi (multi-decorator IP composite + cap pur-IP) + soft backoff exponentiel (anti-DoS lockout) + admin lock/unlock + IP right-most-untrusted + email global cap | `server/security/rate_limit.py`, `server/security/rate_limit_storage.py`, `server/security/lockout.py`, `server/middleware/rate_limit_context.py`, `server/middleware/slowapi_pre_auth.py`, `alembic/versions/0008_users_last_failed_login.py`, `server/routers/{auth,auth_oauth,admin,sleep,heartrate,steps,exercise,mood}.py` | [`c119976`](#2026-04-27-c119976) |
 | V2.3.2 — Google OAuth via AuthProvider abstraction (state CSRF + nonce, JWKS hardcoded, raw_claims whitelist 8 keys, return_to validator strict, deferred linking via oauth_link_confirm) | `alembic/versions/0007_identity_providers.py`, `server/security/auth_providers/`, `server/routers/auth_oauth.py`, `server/db/models.py`, `server/security/auth.py`, `server/security/redaction.py`, `server/routers/auth.py`, `server/main.py` | [`10c682c`](#2026-04-26-10c682c) |
@@ -61,7 +61,7 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
-### 2026-04-28 `PENDING`
+### 2026-04-28 `cab3ecb`
 feat(V2.3.3.3): auth finitions — Inter font + page admin UI + dashboard rebrand + 3 fixes pentester (CSRF admin, last_login_ip HMAC, cache-control)
 - `docs/vault/specs/2026-04-28-v2.3.3.3-auth-finitions.md` créé (status: ready, 28+ acceptance tests, 6 fichiers tests backend / 53 tests). Patch v2 post-pentester avec 3 HIGH bloquants : (1) CSRF check `Sec-Fetch-Site` étendu admin (lock/unlock/probe), (2) `last_login_ip` HMAC dans `UserSummary` Pydantic (jamais brut), (3) Cache-Control no-store étendu `/admin/*`.
 - Inter font bundle local (~340KB Variable TTF + OFL.txt) — fallback `-apple-system` n'est plus utilisé. `@font-face` dans `ds-tokens.css` avec `font-display: swap` (pas de FOUT bloquant).
