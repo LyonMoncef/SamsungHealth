@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 8e4b8714eb29801d2932f03ab82babb3cf995686
-last_synced: '2026-04-28T14:04:54Z'
-loc: 538
+git_blob: 6f0a54688f06c24d9da1611432e1ffccb665f158
+last_synced: '2026-04-28T23:12:43Z'
+loc: 543
 annotations: []
 imports:
 - base64
@@ -93,6 +93,11 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_admin_probe.py",
         "test_inter_font_bundle.py",
         "test_dashboard_rebrand.py",
+        # Phase 3 RGPD — 2-step re-auth flows owning their own login + needing
+        # 401-without-token + multi-user isolation tests.
+        "test_me_export.py",
+        "test_me_erase.py",
+        "test_me_audit_log.py",
     }
 )
 
@@ -572,8 +577,8 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_ensure_orm_default_user` (function) — lines 355-373
-- `_register_default_user` (function) — lines 433-447
+- `_ensure_orm_default_user` (function) — lines 360-378
+- `_register_default_user` (function) — lines 438-452
 
 ### Imports
 - `base64`

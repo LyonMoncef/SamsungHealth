@@ -64,6 +64,11 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_admin_probe.py",
         "test_inter_font_bundle.py",
         "test_dashboard_rebrand.py",
+        # Phase 3 RGPD — 2-step re-auth flows owning their own login + needing
+        # 401-without-token + multi-user isolation tests.
+        "test_me_export.py",
+        "test_me_erase.py",
+        "test_me_audit_log.py",
     }
 )
 
