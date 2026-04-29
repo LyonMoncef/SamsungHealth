@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Phase 3 — RGPD endpoints `/me/{export,erase,audit-log}` (Art. 15/17/20) — 2-step re-auth, cascade applicatif explicit 21 tables santé, anonymisation `auth_events` (HIGH 2), race lock `SELECT FOR UPDATE` (HIGH 4), OAuth-only nonce, filter `admin_*`, filename générique, atomic UPDATE...RETURNING, purpose CHECK enum, audit_event helper meta cap 4KB. Pentester verdict WARN tracé issue #22 (closed by PR). | `server/routers/me.py`, `server/security/{rgpd,audit}.py`, `server/db/models.py`, `server/main.py`, `alembic/versions/0009_phase3_rgpd_audit_meta_purpose_check.py`, `tests/server/test_me_{export,erase,audit_log}.py`, `.github/ISSUE_TEMPLATE/pentester-review.yml`, `NOTES.md` | [`94bdfca`](#2026-04-30-94bdfca) |
 | V2.3.3.3 — Auth finitions (Inter font + 4 pages admin UI + dashboard rebrand --ds-* + content-negotiation + last_login_ip HMAC + CSRF admin + trusted-types) | `static/admin/`, `static/assets/fonts/Inter-VariableFont_wght.ttf`, `static/css/admin.css`, `static/js/{admin,admin-auth,ds-colors}.js`, `static/dashboard.css`, `static/index.html`, `server/routers/admin.py`, `server/middleware/security_headers.py`, `server/security/rate_limit.py` | [`cab3ecb`](#2026-04-28-cab3ecb) |
 | V2.3.3.2 — Frontend Nightfall (9 pages auth + theme switcher + rebrand Data Saillance) + security headers globaux + cookies httpOnly refresh + CSRF Sec-Fetch-Site | `static/auth/`, `static/css/`, `static/js/`, `static/assets/`, `server/middleware/security_headers.py`, `server/security/csrf.py`, `server/routers/static_pages.py`, `server/routers/{auth,auth_oauth}.py`, `server/main.py` | [`0b098a7`](#2026-04-27-0b098a7) |
 | V2.3.3.1 — Rate-limit slowapi (multi-decorator IP composite + cap pur-IP) + soft backoff exponentiel (anti-DoS lockout) + admin lock/unlock + IP right-most-untrusted + email global cap | `server/security/rate_limit.py`, `server/security/rate_limit_storage.py`, `server/security/lockout.py`, `server/middleware/rate_limit_context.py`, `server/middleware/slowapi_pre_auth.py`, `alembic/versions/0008_users_last_failed_login.py`, `server/routers/{auth,auth_oauth,admin,sleep,heartrate,steps,exercise,mood}.py` | [`c119976`](#2026-04-27-c119976) |
@@ -60,6 +61,38 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-04-30 `94bdfca`
+feat(Phase 3): RGPD endpoints `/me/{export,erase,audit-log}` — Art. 15 (accès) / 17 (effacement) / 20 (portabilité) (#23)
+- **Spec** : `docs/vault/specs/2026-04-28-phase3-rgpd-endpoints.md` (status: ready, 39 acceptance tests, 3 fichiers tests). Pentester reviewé pré-TDD → verdict `WARN` 4 HIGH + 3 décisions design + 5 risques additionnels — tous adressés. Trace audit publique : issue [#22](https://github.com/LyonMoncef/SamsungHealth/issues/22) (closed by PR).
+- **5 endpoints** sur `/me/*` (auth Bearer required, scope = current_user) :
+   - `POST /me/export/request` — re-auth password OU oauth_nonce → export_token TTL 5min single-use (purpose `account_export_confirm`). Rate-limit 5/h/user.
+   - `GET /me/export/confirm?export_token=&full=` — consume + stream ZIP via `SpooledTemporaryFile(max_size=10MB)`. Filename générique `export_my_data_<date>.zip` (pas de user_id leak). Cache-Control no-store.
+   - `POST /me/erase/request` — re-auth → erase_token TTL 5min purpose `account_erase_confirm`.
+   - `POST /me/erase/confirm` → 204. Cascade applicatif explicit sur les 21 tables santé + identity_providers + refresh_tokens + verification_tokens, anonymisation auth_events (4 cols NULL), DELETE users.
+   - `GET /me/audit-log` — paginated (limit/offset, total global). Filter `admin_*` par défaut (`include_admin=False`). 60/h/user.
+- **`server/security/rgpd.py`** (NEW) — 21 `HEALTH_TABLES` + 7 Pydantic models + 9 helpers :
+   - `build_user_export_zip(db, user, full_audit)` — **HIGH 4** : `SELECT FOR UPDATE` users.id AVANT toute access tables santé (bloque erase concurrent). ZIP : manifest.json + user.json (sans `password_hash`) + identity_providers.json + auth_events.json + 21 × csv+json (déchiffrement V2.2.1 transparent ORM).
+   - `erase_user_cascade(db, user_id) -> EraseStats` — **HIGH 3** : ordre strict pentester (lock users → audit BEFORE delete → 21 health tables → 3 auth tables → anonymize auth_events → DELETE users). `sleep_stages` special-case (FK `session_id` cascade).
+   - `_anonymize_auth_events(db, user_id)` — **HIGH 2** : UPDATE 4 cols NULL (`user_id`, `email_hash`, `ip_hash`, `user_agent`).
+   - `_safe_audit_event(db, event_type, user_id, meta)` — **HIGH 2** : skip silencieux si user.id n'existe plus (anti re-création `email_hash` post-erase). Utilisé par TOUS les audit calls Phase 3.
+   - `_consume_verification_token_atomic(db, user, raw, purpose)` — **LOW** : UPDATE...RETURNING anti-race single-use (consumed_at IS NULL AND expires_at > now() AND purpose match).
+   - `_verify_reauth(db, user, password, oauth_nonce)` — argon2.verify (rejette OAUTH_SENTINEL) ; OAuth-only path via `_verify_oauth_nonce` (stub mockable test). Soft backoff V2.3.3.1 sur fail.
+   - `_create_verification_token` — révoque tokens actifs précédents (`uq_verification_tokens_active_per_purpose`) avant insert.
+   - `_ip_hmac(request)` — réutilise V2.3.3.1 helper.
+- **`server/security/audit.py`** (NEW) — `audit_event(db, event_type, user_id, ip_hash, user_agent, meta)` helper centralisé (V2.3 patterns inlined `AuthEvent(...)` direct, ce helper consolide). Cap meta 4KB côté insertion : si `len(json.dumps(meta).encode("utf-8")) > 4096` → tronque + `meta["truncated"] = True`. **MED**.
+- **`server/routers/me.py`** (NEW) — 5 routes async avec `@limiter.limit` (slowapi requiert `request: Request, response: Response` — pattern V2.3 réutilisé). CSRF `Sec-Fetch-Site` sur tous les POST. Audit events : `rgpd.{export.requested,export.downloaded,erase.requested,erase.confirmed,audit_log.read}`.
+- **`alembic/versions/0009_phase3_rgpd_audit_meta_purpose_check.py`** (NEW) — `auth_events.{ip_hash TEXT NULL, meta JSONB NULL}` cols + `verification_tokens.purpose` CHECK enum whitelist (5 valeurs : `email_verification`, `password_reset`, `oauth_link_confirm`, `account_export_confirm`, `account_erase_confirm`). **MED** anti cross-purpose token reuse au DB level.
+- **`server/db/models.py`** — +2 cols sur `AuthEvent` (`ip_hash`, `meta`) pour mirror la migration.
+- **`server/main.py`** — `app.include_router(me.router)`.
+- **Tests Phase 3** : 57/57 GREEN.
+   - `test_me_export.py` (13 tests) — re-auth 401/wrong-pwd/OK/oauth-only ; confirm invalid/replay/zip ; ZIP structure 21 tables ; user.json no password_hash ; mood déchiffré ; user isolation ; rate-limit 5/h ; race export↔erase white-box (mock `db.execute` spy sur `SELECT FOR UPDATE`).
+   - `test_me_erase.py` (34 tests, parametrize 21 cascade) — preconditions ; cascade param par table ; identity_providers/refresh_tokens/verification_tokens ; users row ; auth_events anonymized 4 cols NULL ; audit `rgpd.erase.confirmed` survives anonymized ; expired/wrong-purpose tokens 400 ; replay ; OAuth-only ; `_safe_audit_event` no-op post-erase ; atomic single-use UPDATE...RETURNING.
+   - `test_me_audit_log.py` (10 tests) — 401, payload shape, scope user, filter `admin_*` par défaut + include_admin=true, pagination, ordering DESC, ip_hash 16-hex, meta cap 4KB, rate-limit 60/h.
+- **Conftest patch** — `test_me_{export,erase,audit_log}.py` ajoutés à `_NO_AUTO_AUTH_FILES` (gestion Bearer manuelle pour 401-sans-token + multi-user isolation).
+- **Test_alembic_0008.py patch** — pin `downgrade base + upgrade 1b4c5d6e7f83` au lieu de `upgrade head` (pattern projet 0006/0007). Évite régression à chaque nouvelle migration.
+- **Workflow** : `.github/ISSUE_TEMPLATE/pentester-review.yml` (NEW) + ADR-2 dans `NOTES.md` formalisent le pattern : à chaque pentester review d'une spec → issue GitHub label `pentester-review` → PR ferme via `Closes #N`. Trace native indexable (`gh issue list --label pentester-review --state all`). Pattern à appliquer Phase 4 / Phase 6 / futures.
+- **Différé hors scope Phase 3** : compression bomb fallback (cap 50MB hit → export par-table chunks différé Phase 3+) ; bulk admin erase ; export incremental.
 
 ### 2026-04-28 `cab3ecb`
 feat(V2.3.3.3): auth finitions — Inter font + page admin UI + dashboard rebrand + 3 fixes pentester (CSRF admin, last_login_ip HMAC, cache-control)
