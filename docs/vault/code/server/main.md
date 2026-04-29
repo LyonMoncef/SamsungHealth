@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: 5705706de0ae0037500c3696a9eb039a52b1faa9
-last_synced: '2026-04-27T20:51:40Z'
-loc: 122
+git_blob: f6e81a920a2bf4278677fc45a5dbe96e05f685ec
+last_synced: '2026-04-29T20:50:46Z'
+loc: 124
 annotations: []
 imports:
 - time
@@ -118,6 +118,7 @@ from server.routers import (  # noqa: E402
     auth_oauth,
     exercise,
     heartrate,
+    me as me_router,
     mood,
     sleep,
     static_pages,
@@ -152,6 +153,7 @@ app.include_router(steps.router)
 app.include_router(heartrate.router)
 app.include_router(exercise.router)
 app.include_router(mood.router)
+app.include_router(me_router.router)
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -175,6 +177,7 @@ def index():
 - [[../../specs/2026-04-26-v2.3.2-google-oauth]] — symbols: `lifespan`
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `app`, `lifespan`
 - [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `app`
+- [[../../specs/2026-04-28-phase3-rgpd-endpoints]] — symbols: `app`
 
 ### Symbols
 - `_validate_encryption_at_boot` (function) — lines 22-25 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]

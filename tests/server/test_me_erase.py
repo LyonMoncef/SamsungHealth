@@ -81,32 +81,55 @@ def _seed_health_data(db_session, user_id) -> None:
         Weight,
     )
 
-    base = datetime(2026, 4, 28, 12, 0, 0, tzinfo=timezone.utc)
-    sleep = SleepSession(user_id=user_id, sleep_start=base, sleep_end=base)
+    t0 = datetime(2026, 4, 28, 12, 0, 0, tzinfo=timezone.utc)
+    t1 = datetime(2026, 4, 28, 13, 0, 0, tzinfo=timezone.utc)
+    day_str = "2026-04-28"
+
+    sleep = SleepSession(user_id=user_id, sleep_start=t0, sleep_end=t1)
     db_session.add(sleep)
     db_session.flush()
     db_session.add_all(
         [
-            SleepStage(session_id=sleep.id, stage=1, start_time=base, end_time=base),
-            StepsHourly(user_id=user_id, hour=base, steps=100),
-            StepsDaily(user_id=user_id, day=base.date(), steps=1000),
-            HeartRateHourly(user_id=user_id, hour=base, heart_rate=70),
-            ExerciseSession(user_id=user_id, start_time=base, end_time=base),
-            Stress(user_id=user_id, start_time=base),
-            Spo2(user_id=user_id, start_time=base),
-            RespiratoryRate(user_id=user_id, start_time=base),
-            Hrv(user_id=user_id, start_time=base),
-            SkinTemperature(user_id=user_id, start_time=base),
-            Weight(user_id=user_id, start_time=base),
-            Height(user_id=user_id, start_time=base),
-            BloodPressure(user_id=user_id, start_time=base),
-            Mood(user_id=user_id, start_time=base, notes="seed"),
-            WaterIntake(user_id=user_id, start_time=base, amount_ml=250.0),
-            ActivityDaily(user_id=user_id, day=base.date()),
-            VitalityScore(user_id=user_id, day=base.date()),
-            FloorsDaily(user_id=user_id, day=base.date()),
-            ActivityLevel(user_id=user_id, start_time=base),
-            Ecg(user_id=user_id, start_time=base),
+            SleepStage(
+                user_id=user_id,
+                session_id=sleep.id,
+                stage_type="REM",
+                stage_start=t0,
+                stage_end=t1,
+            ),
+            StepsHourly(user_id=user_id, date=day_str, hour=12, step_count=100),
+            StepsDaily(user_id=user_id, day_date=day_str),
+            HeartRateHourly(
+                user_id=user_id,
+                date=day_str,
+                hour=12,
+                min_bpm=60,
+                max_bpm=80,
+                avg_bpm=70,
+                sample_count=10,
+            ),
+            ExerciseSession(
+                user_id=user_id,
+                exercise_type="run",
+                exercise_start=t0,
+                exercise_end=t1,
+                duration_minutes=60.0,
+            ),
+            Stress(user_id=user_id, start_time=t0, end_time=t1),
+            Spo2(user_id=user_id, start_time=t0, end_time=t1),
+            RespiratoryRate(user_id=user_id, start_time=t0, end_time=t1),
+            Hrv(user_id=user_id, start_time=t0, end_time=t1),
+            SkinTemperature(user_id=user_id, start_time=t0, end_time=t1),
+            Weight(user_id=user_id, start_time=t0),
+            Height(user_id=user_id, start_time=t0),
+            BloodPressure(user_id=user_id, start_time=t0),
+            Mood(user_id=user_id, start_time=t0, notes="seed"),
+            WaterIntake(user_id=user_id, start_time=t0, amount_ml=250.0),
+            ActivityDaily(user_id=user_id, day_date=day_str),
+            VitalityScore(user_id=user_id, day_date=day_str),
+            FloorsDaily(user_id=user_id, day_date=day_str),
+            ActivityLevel(user_id=user_id, start_time=t0),
+            Ecg(user_id=user_id, start_time=t0, end_time=t1),
         ]
     )
     db_session.commit()

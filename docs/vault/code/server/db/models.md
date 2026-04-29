@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/db/models.py
-git_blob: 299e9a712ebefc022813937829372f172007a46c
-last_synced: '2026-04-27T17:56:06Z'
-loc: 610
+git_blob: ef04e462e247306c433f633ac4263baed6bab869
+last_synced: '2026-04-29T20:50:46Z'
+loc: 615
 annotations: []
 imports:
 - datetime
@@ -608,8 +608,13 @@ class AuthEvent(Uuid7PkMixin, Base):
     )
     email_hash: Mapped[str | None] = mapped_column(Text)
     ip: Mapped[str | None] = mapped_column(INET)
+    # Phase 3 — HMAC-SHA256 truncated 16-hex of the client IP (cohérent V2.3.3.1).
+    # Stable cross-event identifier without storing raw IP (RGPD-friendly).
+    ip_hash: Mapped[str | None] = mapped_column(Text)
     user_agent: Mapped[str | None] = mapped_column(Text)
     request_id: Mapped[str | None] = mapped_column(Text)
+    # Phase 3 — JSONB meta payload (capped 4KB at insertion via audit_event helper).
+    meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -709,9 +714,9 @@ class IdentityProvider(Uuid7PkMixin, Base):
 - `Ecg` (class) — lines 471-490 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-extend-art9|2026-04-24-v2-aes256-gcm-extend-art9]], [[../../specs/2026-04-24-v2-postgres-migration|2026-04-24-v2-postgres-migration]]
 - `User` (class) — lines 494-512 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]], [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]], [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout|2026-04-26-v2.3.3.1-rate-limit-lockout]]
 - `RefreshToken` (class) — lines 515-536 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `AuthEvent` (class) — lines 539-556 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
-- `VerificationToken` (class) — lines 560-580 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]], [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
-- `IdentityProvider` (class) — lines 584-610 · **Specs**: [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
+- `AuthEvent` (class) — lines 539-561 · **Specs**: [[../../specs/2026-04-26-v2-auth-foundation|2026-04-26-v2-auth-foundation]]
+- `VerificationToken` (class) — lines 565-585 · **Specs**: [[../../specs/2026-04-26-v2.3.1-reset-password-email-verify|2026-04-26-v2.3.1-reset-password-email-verify]], [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
+- `IdentityProvider` (class) — lines 589-615 · **Specs**: [[../../specs/2026-04-26-v2.3.2-google-oauth|2026-04-26-v2.3.2-google-oauth]]
 
 ### Imports
 - `datetime`

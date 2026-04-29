@@ -78,6 +78,7 @@ from server.routers import (  # noqa: E402
     auth_oauth,
     exercise,
     heartrate,
+    me as me_router,
     mood,
     sleep,
     static_pages,
@@ -112,6 +113,7 @@ app.include_router(steps.router)
 app.include_router(heartrate.router)
 app.include_router(exercise.router)
 app.include_router(mood.router)
+app.include_router(me_router.router)
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

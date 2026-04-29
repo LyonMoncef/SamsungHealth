@@ -549,8 +549,13 @@ class AuthEvent(Uuid7PkMixin, Base):
     )
     email_hash: Mapped[str | None] = mapped_column(Text)
     ip: Mapped[str | None] = mapped_column(INET)
+    # Phase 3 — HMAC-SHA256 truncated 16-hex of the client IP (cohérent V2.3.3.1).
+    # Stable cross-event identifier without storing raw IP (RGPD-friendly).
+    ip_hash: Mapped[str | None] = mapped_column(Text)
     user_agent: Mapped[str | None] = mapped_column(Text)
     request_id: Mapped[str | None] = mapped_column(Text)
+    # Phase 3 — JSONB meta payload (capped 4KB at insertion via audit_event helper).
+    meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

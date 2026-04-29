@@ -30,13 +30,17 @@ def _run_alembic(cmd: list[str], pg_url: str) -> subprocess.CompletedProcess:
 
 class TestUpgradeDowngrade:
     def test_upgrade_adds_last_failed_login_at_column(self, pg_url, engine):
-        """given alembic upgrade head, when DB inspected, then users.last_failed_login_at column exists (TIMESTAMPTZ nullable).
+        """given alembic upgrade to revision 0008, when DB inspected, then users.last_failed_login_at column exists (TIMESTAMPTZ nullable).
 
         spec §Migration alembic 0008 — ajout colonne pour cleanup_stale_failed_login_counts.
+        Updated for Phase 3 (migration 0009 added on top): pin upgrade target
+        to revision 0008 instead of head so adding migrations downstream
+        does not break this test.
         """
         from sqlalchemy import inspect
 
-        result = _run_alembic(["upgrade", "head"], pg_url)
+        _run_alembic(["downgrade", "base"], pg_url)
+        result = _run_alembic(["upgrade", "1b4c5d6e7f83"], pg_url)
         assert result.returncode == 0, f"upgrade failed: {result.stderr}"
 
         inspector = inspect(engine)
@@ -50,13 +54,15 @@ class TestUpgradeDowngrade:
         )
 
     def test_upgrade_head_revision_matches_spec(self, pg_url, engine):
-        """given alembic upgrade head, when alembic_version inspected, then revision == '1b4c5d6e7f83'.
+        """given alembic upgrade to revision 0008, when alembic_version inspected, then revision == '1b4c5d6e7f83'.
 
         spec §Livrables — alembic 0008 revision id 1b4c5d6e7f83, parent 0a3b4c5d6e72.
+        Updated for Phase 3 (migration 0009 added on top): pin upgrade target.
         """
         from sqlalchemy import text
 
-        result = _run_alembic(["upgrade", "head"], pg_url)
+        _run_alembic(["downgrade", "base"], pg_url)
+        result = _run_alembic(["upgrade", "1b4c5d6e7f83"], pg_url)
         assert result.returncode == 0, f"upgrade failed: {result.stderr}"
 
         with engine.connect() as conn:
@@ -66,13 +72,15 @@ class TestUpgradeDowngrade:
         )
 
     def test_downgrade_drops_last_failed_login_at_clean(self, pg_url, engine):
-        """given alembic upgrade head + downgrade -1, when inspected, then last_failed_login_at column dropped + previous tables intact.
+        """given alembic upgrade to 0008 + downgrade -1, when inspected, then last_failed_login_at column dropped + previous tables intact.
 
         spec §Migration alembic 0008 — downgrade DROP COLUMN clean.
+        Updated for Phase 3 (migration 0009 added on top): pin upgrade target.
         """
         from sqlalchemy import inspect, text
 
-        up = _run_alembic(["upgrade", "head"], pg_url)
+        _run_alembic(["downgrade", "base"], pg_url)
+        up = _run_alembic(["upgrade", "1b4c5d6e7f83"], pg_url)
         assert up.returncode == 0, f"upgrade failed: {up.stderr}"
 
         inspector = inspect(engine)
