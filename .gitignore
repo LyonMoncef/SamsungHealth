@@ -34,3 +34,19 @@ Thumbs.db
 
 # Design handoff exports
 *.zip
+
+# Multi-agent runtime artifacts (briefs/results/traces per task-id) — never commit
+work/
+# Pentester POC scripts — fork-safe redundancy (already covered by work/)
+**/poc/
+
+# Code-as-vault logs (Phase B+, volatile — regénérés depuis JSONL sources)
+docs/vault/logs/
+# Obsidian local config (graph layout, hotkeys, plugins state) — pollue les diffs
+docs/vault/.obsidian/
+
+# Coverage map (Phase A.7) — regénéré par /sync-coverage, pas dans git
+docs/vault/_index/coverage-map.json
+coverage.json
+.coverage*
+.coveragerc-cartographer

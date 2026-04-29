@@ -1,0 +1,41 @@
+#!/bin/bash
+# annotation-suggester (Phase A.6) — propose des annotations vault après commit.
+#
+# OFF par défaut. Activer avec : export CARTOGRAPHER_SUGGEST=1
+# (le subagent ne s'exécute que si la variable est définie).
+#
+# Le hook lui-même ne lance PAS le subagent (qui nécessite Claude Code) — il
+# enregistre l'intent dans work/post-commit-suggest/<sha>.json pour qu'un
+# /annotate suggest manuel ou un agent runner le récupère.
+
+set -e
+
+if [ -z "$CARTOGRAPHER_SUGGEST" ]; then
+  exit 0
+fi
+
+SHA=$(git rev-parse HEAD)
+SHORT=$(git rev-parse --short HEAD)
+MSG=$(git log -1 --format="%s%n%b")
+FILES=$(git show --name-only --format= "$SHA")
+
+OUT_DIR="work/post-commit-suggest/$SHORT"
+mkdir -p "$OUT_DIR"
+
+# Persiste un brief minimal (le subagent l'enrichira)
+cat > "$OUT_DIR/brief.json" <<JSON
+{
+  "version": "1.0",
+  "task_id": "post-commit-$SHORT",
+  "invoked_by": "git-hook:post-commit",
+  "work_dir": "$OUT_DIR",
+  "triggered_by": "post_commit",
+  "commit_sha": "$SHA",
+  "commit_message": $(printf '%s' "$MSG" | python3 -c "import sys, json; print(json.dumps(sys.stdin.read()))"),
+  "diff_files": [$(echo "$FILES" | sed '/^$/d' | awk '{printf "\"%s\",", $0}' | sed 's/,$//')]
+}
+JSON
+
+echo "[post-commit] suggestion brief queued → $OUT_DIR/brief.json"
+echo "  Run: claude '/annotate suggest --brief $OUT_DIR/brief.json' to materialize"
+exit 0

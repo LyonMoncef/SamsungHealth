@@ -9,8 +9,8 @@ class SleepStageIn(BaseModel):
 
 
 class SleepStageOut(BaseModel):
-    id: int
-    session_id: int
+    id: str
+    session_id: str
     stage_type: str
     stage_start: str
     stage_end: str
@@ -23,10 +23,10 @@ class SleepSessionIn(BaseModel):
 
 
 class SleepSessionOut(BaseModel):
-    id: int
+    id: str
     sleep_start: str
     sleep_end: str
-    created_at: str
+    created_at: str | None = None
     stages: list[SleepStageOut] | None = None
 
 
@@ -88,3 +88,28 @@ class ExerciseSessionOut(BaseModel):
 
 class ExerciseBulkIn(BaseModel):
     sessions: list[ExerciseSessionIn]
+
+
+# V2.2 — mood (champs Art.9 chiffrés côté DB, types python natifs côté API)
+class MoodIn(BaseModel):
+    start_time: str
+    mood_type: int | None = None
+    emotions: str | None = None
+    factors: str | None = None
+    notes: str | None = None
+    place: str | None = None
+    company: str | None = None
+
+
+class MoodOut(BaseModel):
+    start_time: str | None
+    mood_type: int | None = None
+    emotions: str | None = None
+    factors: str | None = None
+    notes: str | None = None
+    place: str | None = None
+    company: str | None = None
+
+
+class MoodBulkIn(BaseModel):
+    entries: list[MoodIn]
