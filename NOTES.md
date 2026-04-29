@@ -5,6 +5,23 @@
 
 ---
 
+## ADR-2 : Workflow pentester-review pour les phases sensibles
+
+**Contexte :** Le subagent `pentester` review les specs avant TDD et émet un verdict `PASS|WARN|FAIL` avec HIGH bloquants + décisions design + risques additionnels. Ces verdicts doivent vivre quelque part de traçable et indexable, pas seulement dans la spec ou la mémoire de la session.
+
+**Décision :** À chaque pentester-review d'une spec :
+1. Ouvrir une **issue GitHub** avec label `pentester-review` (template `.github/ISSUE_TEMPLATE/pentester-review.yml` pré-rempli)
+2. Body = mini-rapport audit synthétisé (HIGH cochables, design choices, risks, tests, différé hors-scope)
+3. Le **PR de la phase ferme l'issue** via `Closes #N` dans la description
+
+**Conséquences :**
+- Trace native GitHub : indexable par label, fermée par PR, cherchable via `is:closed label:pentester-review`
+- Onboarding futur : `gh issue list --label pentester-review --state all` montre tous les audits passés
+- Le pattern à reproduire pour Phase 4 / Phase 6 / etc.
+- Précédent : Issue #22 — Phase 3 RGPD (commit 2923097)
+
+---
+
 ## ADR-1 : Port 8001 pour le serveur FastAPI
 
 **Contexte :** DataSaillance tourne sur le port 8000 en dev local. Les deux projets coexistent sur la même machine.
