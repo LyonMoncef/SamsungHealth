@@ -33,6 +33,33 @@ tags: [phase6, cicd, deploy, vps, infra, samsunghealth, spec]
 
 # Phase 6 MVP — CI/CD multi-env (VPS perso)
 
+## Pentester verdict — patch complet
+
+**Statut** : pentester reviewé 2026-04-30 → verdict `WARN` (5 HIGH bloquants + 5 décisions design + 11 risques additionnels). Patch reconcilié 2026-04-30 — tous les HIGH intégrés + D et risques significatifs.
+
+| Pentester | Section spec |
+|-----------|--------------|
+| HIGH 1 — SSH key dev↔prod separation | §6 (2 clés `VPS_SSH_KEY_DEV` / `VPS_SSH_KEY_PROD` scopés par environment) |
+| HIGH 2 — Mutable tag `dev-latest` en prod fallback | §5 (`inputs.sha` obligatoire avec regex validation, pas de fallback `:latest` en prod) |
+| HIGH 3 — Migration alembic sans backup ni health-gate | §4/§5 (pg_dump pré-upgrade + check `alembic current == expected_previous_head` + downtime fenêtre explicite) |
+| HIGH 4 — Smoke test fail sans rollback | §4/§5 (capture `IMAGE_TAG_PREV` + rollback auto si smoke fail) |
+| HIGH 5 — Pas de SCA/secrets-scan dans CI | §9 nouvelle (pip-audit + gitleaks + hash-pinned requirements via pip-compile lock) |
+| Décision D-1 — Pas de cosign/SLSA | Out of scope MVP, doc Phase 6+ |
+| Décision D-2 — `accept-new` MITM TOFU | §4 (commit `.github/known_hosts` puis `StrictHostKeyChecking=yes`) |
+| Décision D-3 — `/readyz` info-leak | §3 (recommandation reverse-proxy `/readyz` localhost-only, doc README VPS) |
+| Décision D-4 — Step `docker build` required check | §7 (liste explicite des required checks main post-merge) |
+| Décision D-5 — Sémantique `paths-ignore` | §4 (commentaire explicatif) |
+| R-H1 — `.env.prod` chmod 600 + rotation | §6 (instructions VPS + ADR-3 rotation différée) |
+| R-H2 — Backup pg | Out of scope MVP, **NOTES.md ADR-3** + checklist VPS |
+| R-M1 — GHCR permissions par-job | §4 (`permissions: { packages: write }` UNIQUEMENT sur job `build`) |
+| R-M2 — Smoke prod single-shot | §5 (loop comme dev) |
+| R-M3 — Postgres `ports:` jamais exposé | §2 (commentaire explicatif) |
+| R-M4 — SSH command injection `inputs.sha` | §5 (regex validate `^[a-f0-9]{7,40}$` avant export) |
+| R-M5 — Stack trace email leak en logs | §10 nouvelle (workflow logs : redaction + reminder ne pas log payload alembic) |
+| R-L5 — `curl` absent python:3.12-slim | §1 (healthcheck via `python -c "import urllib.request..."` au lieu de curl) |
+
+**Action prochaine** : TDD RED via test-writer agent (tests `/healthz` + `/readyz`).
+
 ## Vision
 
 Livrer un pipeline CI/CD minimal mais complet permettant :
@@ -52,8 +79,9 @@ Différé Phase 6+ (master plan) : frontend Vitest, Android lint/unit, UI parity
 FROM python:3.12-slim AS builder
 WORKDIR /app
 RUN pip install --no-cache-dir uv
-COPY requirements.txt .
-RUN uv pip install --system --no-cache -r requirements.txt
+COPY requirements.txt requirements.lock .
+# --require-hashes : pip refuse d'installer si le hash ne correspond pas (HIGH 5)
+RUN uv pip install --system --no-cache --require-hashes -r requirements.lock
 
 # Stage 2: runner (slim runtime)
 FROM python:3.12-slim AS runner
@@ -66,10 +94,13 @@ COPY alembic/ ./alembic/
 COPY alembic.ini .
 USER app
 EXPOSE 8001
+# python urllib (pas de curl dans python:3.12-slim — R-L5)
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/healthz', timeout=3).status == 200 else 1)"
 CMD ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8001"]
 ```
 
-Image taille cible : ~150 MB (slim + no-cache).
+Image taille cible : ~150 MB (slim + no-cache). `requirements.lock` généré via `pip-compile --generate-hashes requirements.in` (HIGH 5 — supply chain integrity).
 
 ### 2. `docker-compose.prod.yml` — service web + postgres
 
@@ -83,6 +114,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # ⚠️ JAMAIS de section `ports:` sur postgres (R-M3) — accès uniquement
+    # via le réseau Docker interne, pas exposé sur l'IP publique du VPS.
     restart: unless-stopped
   web:
     image: ghcr.io/lyonmoncef/samsunghealth:${IMAGE_TAG:-latest}
@@ -109,20 +142,41 @@ Bascule local : `cp .env.prod.example .env.prod` + `docker compose -f docker-com
 
 Cohérent avec K8s/Docker healthcheck convention. Pas de bearer requis (pour le LB / monitoring externe).
 
+**`/readyz` info-leak (D-3)** : la response 503 expose `reason: "alembic_mismatch"` qui peut indiquer qu'une migration tourne (info-leak modéré : version DB inferable). **Recommandation reverse-proxy** : exposer `/healthz` publiquement (LB GitHub Actions smoke), restreindre `/readyz` à `127.0.0.1` uniquement (interne docker / monitoring local). Exemple Caddy :
+```
+samsunghealth.example {
+    @internal {
+        path /readyz
+        not remote_ip private_ranges 127.0.0.1
+    }
+    handle @internal { respond 404 }
+    reverse_proxy localhost:8001
+}
+```
+Documenté dans `README.md` section déploiement.
+
 ### 4. Workflow `deploy-dev.yml` — auto sur push main
+
+**Note `paths-ignore` (D-5)** : un push qui touche À LA FOIS un `.md` ET un `.py` déclenche le workflow (paths-ignore = "skip si TOUS les fichiers matchent"). Sémantique GitHub Actions confirmée. Donc commit mixte = workflow tourne (safe).
 
 ```yaml
 on:
   push:
     branches: [main]
+    # Skip si TOUS les fichiers du push matchent ces patterns. Mixte = tourne.
     paths-ignore: ["**/*.md", ".claude/**", "docs/vault/**"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # GHCR write UNIQUEMENT sur ce job (R-M1 — least privilege)
     permissions: { packages: write, contents: read }
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -131,30 +185,83 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ghcr.io/lyonmoncef/samsunghealth:dev-${{ github.sha }},ghcr.io/lyonmoncef/samsunghealth:dev-latest
+          # Pas de tag mutable :latest pour éviter HIGH 2 supply-chain race
+          tags: ghcr.io/lyonmoncef/samsunghealth:${{ steps.meta.outputs.tag }}
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment: dev   # GitHub environment "dev" — non-protected
+    # Pas besoin de packages: write côté deploy (R-M1)
+    permissions: { contents: read }
     steps:
+      - uses: actions/checkout@v4   # pour récupérer .github/known_hosts (D-2)
       - uses: webfactory/ssh-agent@v0.9.0
-        with: { ssh-private-key: ${{ secrets.VPS_SSH_KEY }} }
-      - name: Deploy to VPS dev
+        # 2 clés SSH distinctes — VPS_SSH_KEY_DEV scopée environment dev (HIGH 1)
+        with: { ssh-private-key: ${{ secrets.VPS_SSH_KEY_DEV }} }
+      - name: Trust known_hosts (D-2 — pas de TOFU)
         run: |
-          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.VPS_DEV_HOST }} '
+          mkdir -p ~/.ssh
+          cp .github/known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Capture previous image tag (HIGH 4 — rollback)
+        id: prev
+        run: |
+          PREV=$(ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_DEV_HOST }} \
+            'cd /srv/samsunghealth-dev && grep -E "^IMAGE_TAG=" .env.prod | cut -d= -f2 || echo "none"')
+          echo "tag=$PREV" >> $GITHUB_OUTPUT
+      - name: Backup DB pre-upgrade (HIGH 3)
+        run: |
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_DEV_HOST }} '
             cd /srv/samsunghealth-dev &&
-            export IMAGE_TAG=dev-${{ github.sha }} &&
-            docker compose -f docker-compose.prod.yml pull web &&
-            docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head &&
-            docker compose -f docker-compose.prod.yml up -d web
+            mkdir -p backups &&
+            BACKUP=backups/pre-upgrade-$(date -u +%Y%m%dT%H%M%SZ).sql.gz &&
+            docker compose -f docker-compose.prod.yml exec -T postgres \
+              pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > $BACKUP &&
+            ls -lh $BACKUP
           '
-      - name: Smoke test
+      - name: Verify migration head + deploy
+        id: deploy
+        run: |
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_DEV_HOST }} '
+            set -e
+            cd /srv/samsunghealth-dev &&
+            export IMAGE_TAG=${{ needs.build.outputs.image_tag }} &&
+            docker compose -f docker-compose.prod.yml pull web &&
+            CURRENT=$(docker compose -f docker-compose.prod.yml run --rm web alembic current 2>/dev/null | head -1 | awk "{print \$1}") &&
+            echo "alembic current=$CURRENT" &&
+            docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head &&
+            docker compose -f docker-compose.prod.yml up -d web &&
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
+          '
+      - name: Smoke test (loop, 60s max)
+        id: smoke
         run: |
           for i in {1..30}; do
-            if curl -fs https://${{ secrets.VPS_DEV_DOMAIN }}/healthz; then exit 0; fi
+            if curl -fs https://${{ secrets.VPS_DEV_DOMAIN }}/healthz; then
+              echo "healthz OK"
+              exit 0
+            fi
             sleep 2
           done
+          echo "::error::smoke test failed after 60s"
+          exit 1
+      - name: Auto-rollback on smoke failure (HIGH 4)
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          PREV="${{ steps.prev.outputs.tag }}"
+          if [ "$PREV" = "none" ] || [ -z "$PREV" ]; then
+            echo "::warning::no previous tag — manual recovery required"
+            exit 1
+          fi
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_DEV_HOST }} '
+            cd /srv/samsunghealth-dev &&
+            export IMAGE_TAG='"$PREV"' &&
+            docker compose -f docker-compose.prod.yml pull web &&
+            docker compose -f docker-compose.prod.yml up -d web &&
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG='"$PREV"'/" .env.prod
+          '
+          echo "::warning::rolled back to $PREV — investigate smoke failure"
           exit 1
 ```
 
@@ -165,35 +272,91 @@ on:
   workflow_dispatch:
     inputs:
       sha:
-        description: "Commit SHA to deploy (default: latest dev image)"
-        required: false
+        # OBLIGATOIRE (HIGH 2 — pas de mutable :latest fallback)
+        description: "Commit SHA to deploy (40 hex, must exist as dev-<sha> in GHCR)"
+        required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production   # GitHub environment "production" — protected, manual approval
+    permissions: { contents: read }   # pas de packages: write (R-M1)
     steps:
-      - uses: webfactory/ssh-agent@v0.9.0
-        with: { ssh-private-key: ${{ secrets.VPS_SSH_KEY }} }
-      - name: Deploy to VPS prod
+      - name: Validate SHA input (R-M4 — anti command injection)
         run: |
-          TAG="${{ github.event.inputs.sha || 'dev-latest' }}"
-          ssh ${{ secrets.VPS_PROD_HOST }} '
+          SHA="${{ github.event.inputs.sha }}"
+          if ! [[ "$SHA" =~ ^[a-f0-9]{7,40}$ ]]; then
+            echo "::error::Invalid SHA format: $SHA"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: webfactory/ssh-agent@v0.9.0
+        # 2 clés SSH distinctes — VPS_SSH_KEY_PROD scopée environment production (HIGH 1)
+        with: { ssh-private-key: ${{ secrets.VPS_SSH_KEY_PROD }} }
+      - name: Trust known_hosts (D-2)
+        run: |
+          mkdir -p ~/.ssh && cp .github/known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Capture previous image tag (HIGH 4)
+        id: prev
+        run: |
+          PREV=$(ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_PROD_HOST }} \
+            'cd /srv/samsunghealth-prod && grep -E "^IMAGE_TAG=" .env.prod | cut -d= -f2 || echo "none"')
+          echo "tag=$PREV" >> $GITHUB_OUTPUT
+      - name: Backup DB pre-upgrade (HIGH 3)
+        run: |
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_PROD_HOST }} '
+            cd /srv/samsunghealth-prod &&
+            mkdir -p backups &&
+            BACKUP=backups/pre-upgrade-$(date -u +%Y%m%dT%H%M%SZ).sql.gz &&
+            docker compose -f docker-compose.prod.yml exec -T postgres \
+              pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > $BACKUP
+          '
+      - name: Deploy
+        run: |
+          TAG="dev-${{ github.event.inputs.sha }}"
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_PROD_HOST }} '
+            set -e
             cd /srv/samsunghealth-prod &&
             export IMAGE_TAG="'$TAG'" &&
             docker compose -f docker-compose.prod.yml pull web &&
             docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head &&
-            docker compose -f docker-compose.prod.yml up -d web
+            docker compose -f docker-compose.prod.yml up -d web &&
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG='"$TAG"'/" .env.prod
           '
-      - name: Smoke test
-        run: curl -fs https://${{ secrets.VPS_PROD_DOMAIN }}/healthz || exit 1
+      - name: Smoke test (loop — R-M2, pas single-shot)
+        id: smoke
+        run: |
+          for i in {1..30}; do
+            if curl -fs https://${{ secrets.VPS_PROD_DOMAIN }}/healthz; then exit 0; fi
+            sleep 2
+          done
+          echo "::error::prod smoke failed"
+          exit 1
+      - name: Auto-rollback on smoke failure (HIGH 4)
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          PREV="${{ steps.prev.outputs.tag }}"
+          [ "$PREV" = "none" ] && exit 1
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_PROD_HOST }} '
+            cd /srv/samsunghealth-prod &&
+            export IMAGE_TAG='"$PREV"' &&
+            docker compose -f docker-compose.prod.yml pull web &&
+            docker compose -f docker-compose.prod.yml up -d web &&
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG='"$PREV"'/" .env.prod
+          '
+          echo "::error::rolled back prod to $PREV — manual investigation required"
+          exit 1
 ```
 
 ### 6. Secrets GitHub à configurer
 
+**HIGH 1 — 2 clés SSH distinctes scopées par environment** (compromission d'une = pas d'accès à l'autre, préserve l'intérêt du gate prod approval) :
+
 | Secret | Scope | Contenu |
 |--------|-------|---------|
-| `VPS_SSH_KEY` | repo | Clé privée Ed25519 dédiée CI (autorisée sur dev + prod via authorized_keys) |
+| `VPS_SSH_KEY_DEV` | env `dev` | Clé privée Ed25519 dédiée CI dev — autorisée UNIQUEMENT sur VPS dev |
+| `VPS_SSH_KEY_PROD` | env `production` | Clé privée Ed25519 dédiée CI prod — autorisée UNIQUEMENT sur VPS prod |
 | `VPS_DEV_HOST` | env `dev` | `user@dev.samsunghealth.example` |
 | `VPS_DEV_DOMAIN` | env `dev` | `dev.samsunghealth.example` |
 | `VPS_PROD_HOST` | env `production` | `user@samsunghealth.example` |
@@ -201,14 +364,105 @@ jobs:
 
 Pas de DATABASE_URL/SAMSUNGHEALTH_* en GitHub Secrets : ils vivent dans `.env.prod` sur chaque VPS, jamais en CI.
 
+**`.env.prod` sur VPS — durcissement (R-H1)** :
+```bash
+# sur chaque VPS, après config initiale
+chmod 600 /srv/samsunghealth-{dev,prod}/.env.prod
+chown app:app /srv/samsunghealth-{dev,prod}/.env.prod
+# vérifier qu'aucun autre user n'a accès
+ls -la /srv/samsunghealth-{dev,prod}/.env.prod
+```
+Génération de `SAMSUNGHEALTH_ENCRYPTION_KEY` :
+```bash
+python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
+```
+**Rotation** : différée Phase 6+ — ADR-3 (NOTES.md) à terme via SOPS/age. MVP : si compromis, opération manuelle (re-encrypt tables Art.9 V2.2.1 avec nouvelle clé).
+
 ### 7. Branch protection `main`
 
 Activée via `gh api`. Règles :
-- Require status checks before merge : `Tests`, `Lint`, `Coverage` (existants ci.yml)
+- Require status checks before merge : `Tests`, `Lint`, `Coverage` (ci.yml existant) **+ `Docker build`, `Security gates` (D-4 — nouveaux jobs §9)**. Liste explicite des required checks ci-dessous.
 - Require linear history (rebase/squash only)
 - Disallow force-push
 - Disallow direct push
 - Pas de "require N reviews" (solo dev) — peut être ajouté plus tard
+
+**Required status checks** (à configurer via `gh api repos/.../branches/main/protection`) :
+- `Tests` (de `ci.yml`)
+- `Lint` (de `ci.yml`)
+- `Coverage` (de `coverage.yml`)
+- `Docker build` (de `ci.yml` augmenté §9)
+- `Security gates` (pip-audit + gitleaks, §9)
+
+Commande type :
+```bash
+gh api -X PUT repos/LyonMoncef/SamsungHealth/branches/main/protection \
+  --field required_status_checks='{"strict":true,"contexts":["Tests","Lint","Coverage","Docker build","Security gates"]}' \
+  --field enforce_admins=false \
+  --field required_pull_request_reviews=null \
+  --field restrictions=null \
+  --field required_linear_history=true \
+  --field allow_force_pushes=false \
+  --field allow_deletions=false
+```
+
+### 9. CI security gates (HIGH 5)
+
+Jobs ajoutés à `.github/workflows/ci.yml` (run sur chaque PR) :
+
+```yaml
+  security:
+    name: Security gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: pip-audit (SCA — CVE check Python deps)
+        run: |
+          pip install pip-audit
+          pip-audit --requirement requirements.txt --strict
+      - name: gitleaks (secrets scan)
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push) — validate Dockerfile + lock
+        uses: docker/build-push-action@v5
+        with:
+          push: false
+          load: true
+          tags: samsunghealth:ci-${{ github.sha }}
+      - name: Smoke run container
+        run: |
+          docker run -d --name smoke -p 8001:8001 \
+            -e DATABASE_URL=sqlite:///tmp/test.db \
+            samsunghealth:ci-${{ github.sha }}
+          for i in {1..15}; do
+            if curl -fs http://localhost:8001/healthz; then exit 0; fi
+            sleep 1
+          done
+          docker logs smoke
+          exit 1
+```
+
+Hash-pinning : `requirements.lock` généré via `pip-compile --generate-hashes requirements.in`. Process documenté dans `README.md` : à régénérer à chaque update de `requirements.in`.
+
+### 10. Workflow logs — protection PII (R-M5 RGPD)
+
+Les stack traces alembic/uvicorn peuvent contenir `email_hash` ou rows JSON serialized. Les logs GitHub Actions sont privés (visible uniquement à des users avec read sur le repo) mais le risque RGPD demeure si quelqu'un fork ou si l'historique est exporté.
+
+**Mitigations** :
+- Workflows utilisent `set +x` par défaut (jamais `set -x` qui afficherait les variables expandées)
+- Aucun `echo "$VAR"` sur secrets (déjà mute par `::add-mask::` GitHub natif)
+- Migrations alembic : si une exception remonte, capter dans `step` avec `|| true` puis failer explicitement avec message court (sans stack trace) — pattern déjà appliqué Phase 3
+- `structlog` redaction V2.3.x déjà active (PII scrubber sur logs runtime — réutilisé dans le container)
+- Doc `NOTES.md` (ADR-3) : "Si une migration crash en CI, télécharger logs locaux pour diag, ne PAS coller dans une issue publique"
 
 ### 8. Bascule local ↔ VPS
 
@@ -228,30 +482,32 @@ docker compose -f docker-compose.prod.yml up
 ## Livrables
 
 ### Backend
-- [ ] `server/routers/health.py` (NEW) : 2 endpoints `/healthz`, `/readyz` + Pydantic
+- [ ] `server/routers/health.py` (NEW) : 2 endpoints `/healthz`, `/readyz` + Pydantic (response models `HealthOut`, `ReadyOut`)
 - [ ] `server/main.py` : `app.include_router(health.router)` + helper alembic head check pour `/readyz`
-- [ ] `Dockerfile` (NEW) : multi-stage builder + runner non-root
-- [ ] `docker-compose.prod.yml` (NEW) : web + postgres + healthcheck
-- [ ] `.dockerignore` (NEW) : exclure tests, .git, docs, .claude, etc.
+- [ ] `Dockerfile` (NEW) : multi-stage builder + runner non-root + HEALTHCHECK via python urllib (R-L5)
+- [ ] `docker-compose.prod.yml` (NEW) : web + postgres (sans `ports:`) + healthcheck
+- [ ] `.dockerignore` (NEW) : exclure `tests/`, `.git`, `docs/`, `.claude/`, `*.md`, `.env*`, `__pycache__`, `*.pyc`
 - [ ] `.env.prod.example` (NEW) : template var prod (POSTGRES_*, DATABASE_URL, IMAGE_TAG, SAMSUNGHEALTH_*)
+- [ ] `requirements.in` (NEW) + `requirements.lock` (NEW) : pip-compile hashes (HIGH 5)
 
 ### Workflows
-- [ ] `.github/workflows/deploy-dev.yml` (NEW) : build image GHCR + deploy SSH dev + smoke
-- [ ] `.github/workflows/deploy-prod.yml` (NEW) : workflow_dispatch + environment production approval + smoke
-- [ ] (optionnel) `.github/workflows/ci.yml` : ajouter step `docker build` pour valider le Dockerfile
+- [ ] `.github/workflows/deploy-dev.yml` (NEW) : build GHCR + capture prev tag + pg_dump + alembic upgrade + smoke loop + auto-rollback
+- [ ] `.github/workflows/deploy-prod.yml` (NEW) : workflow_dispatch SHA required + regex validate + env production approval + même flow + auto-rollback
+- [ ] `.github/workflows/ci.yml` : ajouter jobs `Security gates` (pip-audit + gitleaks) et `Docker build` (HIGH 5 + D-4)
+- [ ] `.github/known_hosts` (NEW) : SSH fingerprints VPS dev + prod (D-2 — pas de TOFU)
 
 ### Tests
 - [ ] `tests/server/test_healthz.py` (~5 tests : `/healthz` 200 sans auth, `/readyz` 200 si DB ping + alembic head OK, `/readyz` 503 si DB down [mock])
 
 ### Docs
-- [ ] `README.md` : section "Déploiement" (workflow VPS + bascule local)
-- [ ] `NOTES.md` : ADR-3 "Pourquoi VPS perso vs PaaS"
+- [ ] `README.md` : section "Déploiement" (workflow VPS + bascule local + Caddy snippet `/readyz` localhost-only D-3 + commande `pip-compile` régénération lock)
+- [ ] `NOTES.md` : ADR-3 "Pourquoi VPS perso vs PaaS + checklist hardening (chmod .env.prod, backups, fail2ban, SSH password disabled, rotation clé maître différée)"
 - [ ] `HISTORY.md` : entry post-merge
 
 ### GitHub config (manuel post-merge)
-- [ ] Créer environments `dev` (no protection) et `production` (required reviewers = self, wait timer 0)
-- [ ] Configurer secrets dans chaque environment (pas en repo-level)
-- [ ] Activer branch protection main : `gh api repos/.../branches/main/protection` (commande dans README)
+- [ ] Créer environments `dev` (no protection, secrets : `VPS_SSH_KEY_DEV`, `VPS_DEV_HOST`, `VPS_DEV_DOMAIN`) et `production` (required reviewers = self, wait timer 0, secrets : `VPS_SSH_KEY_PROD`, `VPS_PROD_HOST`, `VPS_PROD_DOMAIN`)
+- [ ] Aucun secret en repo-level (HIGH 1)
+- [ ] Activer branch protection main avec required checks `Tests`, `Lint`, `Coverage`, `Docker build`, `Security gates` (commande dans README)
 
 ## Tests d'acceptation
 
@@ -267,14 +523,26 @@ docker compose -f docker-compose.prod.yml up
 7. `docker compose -f docker-compose.prod.yml up` (local avec .env.prod test) → web + postgres up, `/healthz` OK.
 
 ### Workflows (test sur PR via push branch + workflow_dispatch override)
-8. Push sur branche `feat/phase6-cicd-mvp` → `ci.yml` PASSE (existing) + nouveau step docker build PASSE.
-9. Trigger manuel `deploy-dev.yml` (post-merge) → image GHCR construite + tag `dev-<sha>` poussé.
-10. Smoke test `deploy-dev.yml` → curl `/healthz` retourne 200 sur le domain dev.
-11. Trigger `deploy-prod.yml` workflow_dispatch → wait approval (GitHub UI) → après approval, deploy + smoke.
+8. Push sur branche `feat/phase6-cicd-mvp` → `ci.yml` PASSE : `Tests`, `Lint`, `Coverage`, `Docker build`, `Security gates` (pip-audit + gitleaks).
+9. Push main (post-merge) → `deploy-dev.yml` auto : build GHCR `dev-<sha>` (pas de `:latest` mutable) + capture prev tag + pg_dump + alembic upgrade + smoke loop.
+10. Smoke test `deploy-dev.yml` fail (mock /healthz down) → auto-rollback vers `prev tag` + workflow exit 1.
+11. Trigger `deploy-prod.yml` sans `inputs.sha` → workflow REJECTED (required input).
+12. Trigger `deploy-prod.yml` avec `sha=zzz` (invalide) → step "Validate SHA" exit 1.
+13. Trigger `deploy-prod.yml` avec sha valide → wait approval (GitHub UI environment `production`) → deploy + smoke + auto-rollback si fail.
+
+### Sécurité supply chain
+14. `pip install -r requirements.lock --require-hashes` dans Dockerfile passe ; alteration manuelle d'un hash dans `.lock` → build FAIL.
+15. `gitleaks` détecte un secret commit accidental (ex: AWS key dans test fixture) → CI fail.
+16. Secret leaked en push → 1 PR de revert + rotation immediate.
 
 ### Branch protection
-12. Tentative `git push origin main` direct → REJETÉ (require PR).
-13. PR sans CI green → "Merge" button DISABLED.
+17. Tentative `git push origin main` direct → REJETÉ (require PR).
+18. PR sans CI green (1 des 5 required checks rouge) → "Merge" button DISABLED.
+
+### Hardening VPS
+19. `ls -la /srv/samsunghealth-prod/.env.prod` → `-rw------- 1 app app` (chmod 600, owner app).
+20. `nmap` sur VPS public IP → port postgres 5432 NON ouvert (réseau docker interne uniquement).
+21. SSH config VPS : `PasswordAuthentication no`, `PermitRootLogin no`, `fail2ban` actif (vérifier `systemctl status fail2ban`).
 
 ## Out of scope Phase 6 MVP
 
