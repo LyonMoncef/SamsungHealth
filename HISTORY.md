@@ -27,6 +27,12 @@
 
 ## Checkpoint
 
+### 2026-04-30 `checkpoint-pre-merge-dev-2026-05-01`
+chore(checkpoint): safety tag before merge origin/dev into feat/phase6-cicd-mvp
+- Reason: merge 10-file conflict — HISTORY.md, NOTES.md, Makefile, .githooks/pre-push, .gitignore, static/{dashboard.css,index.html}, .github/workflows/ci.yml, scripts/generate_sample.py, server/routers/sleep.py
+- Scope: feat/phase6-cicd-mvp HEAD (commit 9340872) — stratégie B validée : --ours pour fichiers trivial + difficile, fusion manuelle pour Makefile/NOTES.md/HISTORY.md
+- [CHECKPOINT]
+
 ### `checkpoint-before-v2-refactor-2026-04-23` — 2026-04-23 → `5343c9b`
 chore(checkpoint): safety tag before V2 full security/RGPD refactor
 - Reason: Major refactor — migration SQLite → Postgres, multi-user auth (email+pwd + Google OAuth), chiffrement AES-256-GCM, endpoints RGPD, Android Compose shell + dual-track UI (WebView dev / Compose natif prod), logging structuré sharded, docker-compose dev/prod
