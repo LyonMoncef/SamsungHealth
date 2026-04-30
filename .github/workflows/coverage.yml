@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-coverage-map:
-    name: Build coverage map
+    name: Coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
