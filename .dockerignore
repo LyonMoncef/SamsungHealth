@@ -1,0 +1,66 @@
+# Phase 6 — minimise le contexte de build et la taille de l'image.
+# Spec: docs/vault/specs/2026-04-30-phase6-cicd-mvp.md §"Livrables"
+
+# --- Git ---
+.git
+.gitignore
+.gitattributes
+.githooks
+
+# --- Tests / docs / tooling agents (jamais en image runtime) ---
+tests/
+docs/
+.claude/
+.github/
+agents/
+work/
+scripts/
+
+# --- Markdown root ---
+*.md
+NOTES.md
+HISTORY.md
+README.md
+ROADMAP.md
+BACKLOG.md
+REVIEW.current.md
+
+# --- Env files (jamais de secrets dans l'image) ---
+.env
+.env.*
+!.env.prod.example
+
+# --- Python build artifacts ---
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+coverage.json
+htmlcov/
+*.egg-info
+.mypy_cache
+.ruff_cache
+
+# --- Virtualenvs / Node ---
+venv/
+.venv/
+node_modules/
+
+# --- Mobile shell (out of scope backend image) ---
+android-app/
+
+# --- Données locales / exports / archives ---
+*.sqlite
+*.sqlite3
+*.db
+samsung_export*/
+*.zip
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

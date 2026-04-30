@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - "**/*.md"
       - ".claude/**"
+      - "docs/vault/**"
 
 jobs:
   test:
@@ -29,3 +30,53 @@ jobs:
           python-version: "3.12"
       - name: Run lint
         run: make ci-lint
+
+  security:
+    name: Security gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: pip-audit (SCA — CVE check Python deps)
+        run: |
+          pip install pip-audit
+          pip-audit --requirement requirements.lock --strict
+      - name: gitleaks (secrets scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push) — validate Dockerfile
+        uses: docker/build-push-action@v5
+        with:
+          push: false
+          load: true
+          tags: samsunghealth:ci-${{ github.sha }}
+      - name: Smoke run container
+        run: |
+          set -euo pipefail
+          # Ephemeral throwaway secrets for smoke test (NOT real credentials)
+          ENC_KEY=$(python -c "import secrets,base64;print(base64.b64encode(secrets.token_bytes(32)).decode())")
+          JWT=$(python -c "import secrets;print(secrets.token_urlsafe(48))")
+          SALT=$(python -c "import secrets;print(secrets.token_hex(32))")
+          docker run -d --name smoke -p 8001:8001 \
+            -e DATABASE_URL=sqlite:////tmp/test.db \
+            -e SAMSUNGHEALTH_ENCRYPTION_KEY="$ENC_KEY" \
+            -e SAMSUNGHEALTH_JWT_SECRET="$JWT" \
+            -e SAMSUNGHEALTH_EMAIL_HASH_SALT="$SALT" \
+            -e SAMSUNGHEALTH_PUBLIC_BASE_URL="http://localhost:8001" \
+            samsunghealth:ci-${{ github.sha }}
+          for i in {1..15}; do
+            if curl -fs http://localhost:8001/healthz; then exit 0; fi
+            sleep 1
+          done
+          docker logs smoke
+          exit 1

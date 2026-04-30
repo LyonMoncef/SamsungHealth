@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/conftest.py
-git_blob: 6f0a54688f06c24d9da1611432e1ffccb665f158
-last_synced: '2026-04-28T23:12:43Z'
-loc: 543
+git_blob: 405ea20cfad17325398131cc73c04d603dfd6657
+last_synced: '2026-04-30T20:33:28Z'
+loc: 545
 annotations: []
 imports:
 - base64
@@ -98,6 +98,8 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_me_export.py",
         "test_me_erase.py",
         "test_me_audit_log.py",
+        # Phase 6 CI/CD MVP — public liveness/readiness probes (no Bearer).
+        "test_healthz.py",
     }
 )
 
@@ -577,8 +579,8 @@ def client_pg(pg_url, engine):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_ensure_orm_default_user` (function) — lines 360-378
-- `_register_default_user` (function) — lines 438-452
+- `_ensure_orm_default_user` (function) — lines 362-380
+- `_register_default_user` (function) — lines 440-454
 
 ### Imports
 - `base64`

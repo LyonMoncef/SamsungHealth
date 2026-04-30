@@ -1,0 +1,143 @@
+name: Deploy dev
+
+on:
+  push:
+    branches: [main]
+    # paths-ignore = skip si TOUS les fichiers du push matchent (D-5).
+    # Commit mixte (.md + .py) = workflow tourne quand même (safe).
+    paths-ignore:
+      - "**/*.md"
+      - ".claude/**"
+      - "docs/vault/**"
+
+jobs:
+  build:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    # GHCR write UNIQUEMENT sur ce job (R-M1 — least privilege)
+    permissions:
+      packages: write
+      contents: read
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: meta
+        name: Compute image tag (immutable, no :latest)
+        run: echo "tag=dev-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push GHCR (no :latest mutable tag — HIGH 2)
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ghcr.io/lyonmoncef/samsunghealth:${{ steps.meta.outputs.tag }}
+
+  deploy:
+    name: Deploy to VPS dev
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    # Pas de packages: write côté deploy (R-M1)
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        # 2 clés SSH distinctes — VPS_SSH_KEY_DEV scopée environment dev (HIGH 1)
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY_DEV }}
+
+      - name: Trust known_hosts (D-2 — pas de TOFU)
+        run: |
+          mkdir -p ~/.ssh
+          cp .github/known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Capture previous image tag (HIGH 4 — rollback)
+        id: prev
+        run: |
+          PREV=$(ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_DEV_HOST }} \
+            'cd /srv/samsunghealth-dev && grep -E "^IMAGE_TAG=" .env.prod | cut -d= -f2 || echo "none"')
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Backup DB pre-upgrade (HIGH 3)
+        run: |
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
+          set -euo pipefail
+          cd /srv/samsunghealth-dev
+          mkdir -p backups
+          BACKUP=backups/pre-upgrade-\$(date -u +%Y%m%dT%H%M%SZ).sql.gz
+          docker compose -f docker-compose.prod.yml exec -T postgres \
+            pg_dump -U "\$POSTGRES_USER" "\$POSTGRES_DB" | gzip > "\$BACKUP"
+          ls -lh "\$BACKUP"
+          EOF
+
+      - name: Verify migration head + deploy
+        id: deploy
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
+          set -euo pipefail
+          cd /srv/samsunghealth-dev
+          export IMAGE_TAG="$IMAGE_TAG"
+          docker compose -f docker-compose.prod.yml pull web
+          CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
+          EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
+          if [ -z "\$CURRENT" ] || [ -z "\$EXPECTED" ]; then
+            echo "::error::Failed to read alembic current/heads"
+            exit 1
+          fi
+          echo "alembic current=\$CURRENT expected=\$EXPECTED"
+          if [ "\$CURRENT" != "\$EXPECTED" ] && [ "\$CURRENT" != "(none)" ]; then
+            echo "::error::Alembic drift — current=\$CURRENT expected=\$EXPECTED"
+            exit 1
+          fi
+          docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
+          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
+          EOF
+
+      - name: Smoke test (loop, 60s max)
+        id: smoke
+        run: |
+          for i in {1..30}; do
+            if curl -fs https://${{ secrets.VPS_DEV_DOMAIN }}/healthz; then
+              echo "healthz OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::smoke test failed after 60s"
+          exit 1
+
+      - name: Auto-rollback on smoke failure (HIGH 4)
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          PREV="${{ steps.prev.outputs.tag }}"
+          if [ "$PREV" = "none" ] || [ -z "$PREV" ]; then
+            echo "::warning::no previous tag — manual recovery required"
+            exit 1
+          fi
+          if ! [[ "$PREV" =~ ^dev-[a-f0-9]{7,40}$ ]]; then
+            echo "::error::Suspicious PREV tag detected — rollback aborted"
+            exit 1
+          fi
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
+          set -euo pipefail
+          cd /srv/samsunghealth-dev
+          export IMAGE_TAG="$PREV"
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$PREV/" .env.prod
+          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
+          EOF
+          echo "::warning::rolled back to $PREV — investigate smoke failure"
+          exit 1

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/main.py
-git_blob: f6e81a920a2bf4278677fc45a5dbe96e05f685ec
-last_synced: '2026-04-29T20:50:46Z'
-loc: 124
+git_blob: a486b53a2bea3e016aa294d8acd8c6a29a49c04d
+last_synced: '2026-04-30T20:33:28Z'
+loc: 127
 annotations: []
 imports:
 - time
@@ -117,6 +117,7 @@ from server.routers import (  # noqa: E402
     auth,
     auth_oauth,
     exercise,
+    health as health_router,
     heartrate,
     me as me_router,
     mood,
@@ -154,6 +155,8 @@ app.include_router(heartrate.router)
 app.include_router(exercise.router)
 app.include_router(mood.router)
 app.include_router(me_router.router)
+# Phase 6 CI/CD MVP — liveness/readiness probes (public, no auth).
+app.include_router(health_router.router)
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -178,6 +181,7 @@ def index():
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `app`, `lifespan`
 - [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `app`
 - [[../../specs/2026-04-28-phase3-rgpd-endpoints]] — symbols: `app`
+- [[../../specs/2026-04-30-phase6-cicd-mvp]] — symbols: `app`
 
 ### Symbols
 - `_validate_encryption_at_boot` (function) — lines 22-25 · **Specs**: [[../../specs/2026-04-24-v2-aes256-gcm-encrypted-fields|2026-04-24-v2-aes256-gcm-encrypted-fields]]
