@@ -69,6 +69,10 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-30 `edcfad2`
+fix(ci): set fetch-depth: 0 on security job checkout for gitleaks diff scan
+- Résout l'erreur gitleaks `ambiguous argument` causée par un shallow clone (depth=1) empêchant le diff de commits sur le job `Security gates`.
+
 ### 2026-04-30 `1c35bf7`
 chore(lint): remove unused imports flagged by ruff (F401)
 - `server/middleware/rate_limit_context.py` — supprime `ASGIApp`
