@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/test_sleep.py
 git_blob: 01b6423b7be698284bc474debdf5e9de3e6080b1
-last_synced: '2026-04-23T10:49:30Z'
+last_synced: '2026-05-01T00:03:09Z'
 loc: 38
 annotations: []
 imports: []
@@ -142,3 +142,8 @@ def test_get_sleep_not_found(client):
 - [[../../code/server/database|server/database.py]] · `get_connection`
 - [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
 - [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+
+## Validates specs *(auto — declared by spec)*
+
+- [[../../specs/2026-04-24-v2-postgres-routers-cutover]]

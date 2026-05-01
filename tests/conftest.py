@@ -1,31 +1,3 @@
----
-type: code-source
-language: python
-file_path: tests/conftest.py
-git_blob: 1e940a45fbb3d5264b550c1d4416ce5ac64aa4c6
-last_synced: '2026-05-01T00:03:09Z'
-loc: 34
-annotations: []
-imports:
-- os
-- tempfile
-- pytest
-- fastapi.testclient
-- server.main
-exports: []
-tags:
-- code
-- python
----
-
-# tests/conftest.py
-
-> [!info] Code mirror
-> Ce fichier est un **miroir auto-généré** de [`tests/conftest.py`](../../../tests/conftest.py).
-> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
-> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
-
-```python
 import os
 import tempfile
 import pytest
@@ -60,15 +32,3 @@ def clean_db():
     conn.execute("DELETE FROM exercise_sessions")
     conn.commit()
     conn.close()
-```
-
----
-
-## Appendix — symbols & navigation *(auto)*
-
-### Imports
-- `os`
-- `tempfile`
-- `pytest`
-- `fastapi.testclient`
-- `server.main`
