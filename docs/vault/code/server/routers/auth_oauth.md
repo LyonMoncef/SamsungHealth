@@ -2,15 +2,14 @@
 type: code-source
 language: python
 file_path: server/routers/auth_oauth.py
-git_blob: 18b7895dbc45aa9d71aefc2b0cfc7adadeedc9bc
-last_synced: '2026-04-27T20:51:40Z'
-loc: 608
+git_blob: a29ea730e8a2c804bace328469469299ec7632bd
+last_synced: '2026-05-01T12:19:09Z'
+loc: 603
 annotations: []
 imports:
 - hashlib
 - os
 - datetime
-- typing
 - fastapi
 - pydantic
 - sqlalchemy
@@ -22,7 +21,6 @@ imports:
 - server.security.auth
 - server.security.auth_providers
 - server.security.csrf
-- server.security.auth_providers
 - server.security.auth_providers
 - server.security.auth_providers.google
 - server.security.email_outbound
@@ -73,9 +71,8 @@ import hashlib
 import os
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -97,21 +94,17 @@ from server.security.auth import (
     create_access_token,
     create_refresh_token,
     generate_verification_token,
-    hash_verification_token,
     verify_verification_token,
 )
 from server.security.auth_providers import AuthProviderError
 from server.security.csrf import check_sec_fetch_site
-from server.security.auth_providers import google as google_mod
 from server.security.auth_providers import state as state_mod
 from server.security.auth_providers.google import (
     GoogleAuthProvider,
-    _GOOGLE_ERROR_MAP,
     _filter_claims,
     _map_google_error,
 )
 from server.security.email_outbound import (
-    _outbound_link_cache,
     send_verification_email,
 )
 from server.security.lockout import register_successful_login
@@ -675,25 +668,24 @@ def oauth_link_confirm(
 - [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `google_callback`, `oauth_link_confirm`
 
 ### Symbols
-- `OauthStartIn` (class) — lines 76-77
-- `OauthStartOut` (class) — lines 80-81
-- `OauthLinkConfirmIn` (class) — lines 84-85
-- `_email_hash` (function) — lines 89-90
-- `_safe_ip` (function) — lines 93-107
-- `_audit` (function) — lines 110-147
-- `_google_enabled` (function) — lines 150-153
-- `_redirect_uri` (function) — lines 156-158
-- `_auto_register_enabled` (function) — lines 161-162
-- `_set_oauth_refresh_cookie` (function) — lines 165-176
-- `_issue_jwt_pair` (function) — lines 179-193
-- `_disabled_404` (function) — lines 196-197
-- `_resolve_account_linking` (function) — lines 345-546
+- `OauthStartIn` (class) — lines 71-72
+- `OauthStartOut` (class) — lines 75-76
+- `OauthLinkConfirmIn` (class) — lines 79-80
+- `_email_hash` (function) — lines 84-85
+- `_safe_ip` (function) — lines 88-102
+- `_audit` (function) — lines 105-142
+- `_google_enabled` (function) — lines 145-148
+- `_redirect_uri` (function) — lines 151-153
+- `_auto_register_enabled` (function) — lines 156-157
+- `_set_oauth_refresh_cookie` (function) — lines 160-171
+- `_issue_jwt_pair` (function) — lines 174-188
+- `_disabled_404` (function) — lines 191-192
+- `_resolve_account_linking` (function) — lines 340-541
 
 ### Imports
 - `hashlib`
 - `os`
 - `datetime`
-- `typing`
 - `fastapi`
 - `pydantic`
 - `sqlalchemy`
@@ -705,7 +697,6 @@ def oauth_link_confirm(
 - `server.security.auth`
 - `server.security.auth_providers`
 - `server.security.csrf`
-- `server.security.auth_providers`
 - `server.security.auth_providers`
 - `server.security.auth_providers.google`
 - `server.security.email_outbound`

@@ -20,7 +20,6 @@ import os
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp
 
 
 _HSTS_VALUE = "max-age=63072000; includeSubDomains"

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/auth.py
-git_blob: e0285a8797dc2df56b448f1756056595d87221a8
-last_synced: '2026-04-27T20:51:40Z'
-loc: 809
+git_blob: 010a85aa81e8fe417361f5b3d25d1d4d5985ea93
+last_synced: '2026-05-01T12:19:09Z'
+loc: 807
 annotations: []
 imports:
 - hashlib
@@ -12,7 +12,6 @@ imports:
 - random
 - time
 - datetime
-- jwt
 - fastapi
 - pydantic
 - sqlalchemy
@@ -75,7 +74,6 @@ import time
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
 
-import jwt
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
@@ -120,7 +118,6 @@ from server.security.auth import (
     _DUMMY_HASH,
 )
 from server.security.email_outbound import (
-    _outbound_link_cache,
     send_password_reset_email,
     send_verification_email,
 )
@@ -885,27 +882,27 @@ def confirm_password_reset(
 - [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall]] — symbols: `login`, `register`, `refresh`, `logout`, `request_email_verification`, `request_password_reset`
 
 ### Symbols
-- `RegisterIn` (class) — lines 72-74
-- `RegisterOut` (class) — lines 77-79
-- `LoginIn` (class) — lines 82-84
-- `TokenPair` (class) — lines 87-91
-- `RefreshIn` (class) — lines 94-97
-- `LogoutIn` (class) — lines 100-101
-- `_cookie_secure` (function) — lines 109-110
-- `_set_refresh_cookie` (function) — lines 113-123
-- `_delete_refresh_cookie` (function) — lines 126-127
-- `_email_hash` (function) — lines 130-131
-- `_record_event` (function) — lines 134-152
-- `VerifyEmailRequestIn` (class) — lines 458-459
-- `VerifyEmailConfirmIn` (class) — lines 462-463
-- `PasswordResetRequestIn` (class) — lines 466-467
-- `PasswordResetConfirmIn` (class) — lines 470-472
-- `_anti_enum_jitter` (function) — lines 475-477
-- `_hmac_email_for_cap` (function) — lines 480-488
-- `_check_email_global_cap` (function) — lines 491-520
-- `_dummy_token_ops` (function) — lines 523-526
-- `_revoke_active_tokens_for_purpose` (function) — lines 529-542
-- `_issue_verification_token` (function) — lines 545-581
+- `RegisterIn` (class) — lines 70-72
+- `RegisterOut` (class) — lines 75-77
+- `LoginIn` (class) — lines 80-82
+- `TokenPair` (class) — lines 85-89
+- `RefreshIn` (class) — lines 92-95
+- `LogoutIn` (class) — lines 98-99
+- `_cookie_secure` (function) — lines 107-108
+- `_set_refresh_cookie` (function) — lines 111-121
+- `_delete_refresh_cookie` (function) — lines 124-125
+- `_email_hash` (function) — lines 128-129
+- `_record_event` (function) — lines 132-150
+- `VerifyEmailRequestIn` (class) — lines 456-457
+- `VerifyEmailConfirmIn` (class) — lines 460-461
+- `PasswordResetRequestIn` (class) — lines 464-465
+- `PasswordResetConfirmIn` (class) — lines 468-470
+- `_anti_enum_jitter` (function) — lines 473-475
+- `_hmac_email_for_cap` (function) — lines 478-486
+- `_check_email_global_cap` (function) — lines 489-518
+- `_dummy_token_ops` (function) — lines 521-524
+- `_revoke_active_tokens_for_purpose` (function) — lines 527-540
+- `_issue_verification_token` (function) — lines 543-579
 
 ### Imports
 - `hashlib`
@@ -913,7 +910,6 @@ def confirm_password_reset(
 - `random`
 - `time`
 - `datetime`
-- `jwt`
 - `fastapi`
 - `pydantic`
 - `sqlalchemy`

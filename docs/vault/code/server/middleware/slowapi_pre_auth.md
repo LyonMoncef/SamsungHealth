@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/middleware/slowapi_pre_auth.py
-git_blob: cd6d2650d6a058d18581607859457a90ed69e674
-last_synced: '2026-04-27T17:56:06Z'
-loc: 75
+git_blob: 7dc8054818253e47464033d089a6a5d40baaf63a
+last_synced: '2026-05-01T12:19:09Z'
+loc: 74
 annotations: []
 imports:
 - slowapi
@@ -12,7 +12,6 @@ imports:
 - slowapi.middleware
 - starlette.middleware.base
 - starlette.requests
-- starlette.responses
 - starlette.types
 exports:
 - _should_exempt
@@ -49,7 +48,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import _find_route_handler
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
 from starlette.types import ASGIApp
 
 
@@ -112,8 +110,8 @@ class SlowAPIPreAuthMiddleware(BaseHTTPMiddleware):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `_should_exempt` (function) — lines 24-28
-- `SlowAPIPreAuthMiddleware` (class) — lines 31-75
+- `_should_exempt` (function) — lines 23-27
+- `SlowAPIPreAuthMiddleware` (class) — lines 30-74
 
 ### Imports
 - `slowapi`
@@ -121,7 +119,6 @@ class SlowAPIPreAuthMiddleware(BaseHTTPMiddleware):
 - `slowapi.middleware`
 - `starlette.middleware.base`
 - `starlette.requests`
-- `starlette.responses`
 - `starlette.types`
 
 ### Exports

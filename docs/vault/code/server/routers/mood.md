@@ -2,13 +2,12 @@
 type: code-source
 language: python
 file_path: server/routers/mood.py
-git_blob: 565a518206010436b81e24e27e5bf1b271a2d23e
-last_synced: '2026-04-27T17:56:06Z'
-loc: 131
+git_blob: 7c63fcb22736acc54caae10afc903e8a20311765
+last_synced: '2026-05-01T12:19:09Z'
+loc: 130
 annotations: []
 imports:
 - datetime
-- typing
 - fastapi
 - pydantic
 - sqlalchemy
@@ -40,10 +39,9 @@ tags:
 ```python
 """V2.2 — router /api/mood avec champs Art.9 chiffrés transparent via TypeDecorator."""
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -181,13 +179,12 @@ def get_mood_entries(
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_to_dt` (function) — lines 24-28
-- `_iso` (function) — lines 31-32
-- `_normalize_payload` (function) — lines 35-60
+- `_to_dt` (function) — lines 23-27
+- `_iso` (function) — lines 30-31
+- `_normalize_payload` (function) — lines 34-59
 
 ### Imports
 - `datetime`
-- `typing`
 - `fastapi`
 - `pydantic`
 - `sqlalchemy`
