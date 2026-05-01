@@ -69,6 +69,16 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-04-30 `1c35bf7`
+chore(lint): remove unused imports flagged by ruff (F401)
+- `server/middleware/rate_limit_context.py` — supprime `ASGIApp`
+- `server/middleware/security_headers.py` — supprime `ASGIApp`
+- `server/middleware/slowapi_pre_auth.py` — supprime `Response`
+- `server/routers/admin.py` — supprime `JSONResponse` (consolide from-import)
+- `server/routers/auth.py` — supprime `jwt`, `_outbound_link_cache`
+- `server/routers/auth_oauth.py` — supprime `Any`, `Header`, `status`, `hash_verification_token`, `google_mod`, `_GOOGLE_ERROR_MAP`, `_outbound_link_cache` (consolide from-imports)
+- `server/routers/mood.py` — supprime `Any`, `BaseModel` (consolide from-import)
+
 ### 2026-04-30 `23ec1c1`
 docs(phase6): README section Déploiement + NOTES ADR-3 VPS vs PaaS + spec symbols sync
 - **README** : nouvelle section `## Déploiement` (~190 lignes) — vue d'ensemble CI/CD, architecture réseau VPS (diagram ASCII Caddy → Docker), snippet Caddy block `/readyz` IP externe, prérequis VPS (SSH keys, known_hosts, env secrets GH), variables d'env prod documentées, procédures deploy-dev / deploy-prod (workflow_dispatch), healthz + readyz exemples curl, guide backup PG manuel, smoke test local Docker.
