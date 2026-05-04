@@ -1,0 +1,39 @@
+#!/bin/bash
+# code-cartographer sync — re-render docs/vault/code/ for any staged source file
+# and stage the regenerated notes alongside the commit.
+#
+# Skip with: git commit --no-verify (discouraged — drift accumulates silently)
+
+set -e
+
+CHANGED=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep -E '\.(py|js|mjs|cjs|kt|kts|html|htm|css)$|^docs/vault/annotations/' \
+  || true)
+
+if [ -z "$CHANGED" ]; then
+  exit 0
+fi
+
+# Only the source files matter for --diff (annotation files trigger re-render
+# of their anchor source files, handled inside the CLI).
+SOURCE_FILES=$(echo "$CHANGED" | grep -E '\.(py|js|mjs|cjs|kt|kts|html|htm|css)$' || true)
+
+MIRROR_FLAG=""
+if [ -n "$CARTOGRAPHER_MIRROR_TO" ]; then
+  MIRROR_FLAG="--mirror-to $CARTOGRAPHER_MIRROR_TO"
+fi
+
+if [ -z "$SOURCE_FILES" ]; then
+  # Annotation-only commit — re-scan all source files referenced by changed annotations
+  # (cheap fallback: full scan, ~5s on this repo)
+  echo "[pre-commit] annotation change detected → full vault re-sync"
+  python3 -m agents.cartographer.cli --full $MIRROR_FLAG
+else
+  echo "[pre-commit] cartographer --diff $(echo "$SOURCE_FILES" | wc -l) file(s)"
+  python3 -m agents.cartographer.cli --diff $SOURCE_FILES $MIRROR_FLAG
+fi
+
+# Stage regenerated notes + indexes
+git add docs/vault/code/ docs/vault/_index/ 2>/dev/null || true
+
+exit 0

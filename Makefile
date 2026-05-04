@@ -1,9 +1,51 @@
-.PHONY: dev dev-mobile test lint install ci-test ci-lint
+.PHONY: dev dev-mobile test lint install ci-test ci-lint security-install pentest setup-hooks vault-mirror db-up db-down db-migrate db-reset
 
-## install : install Python dependencies
+## install : install Python dependencies + activate git hooks
 install:
 	pip install -r requirements.txt -q
 	pip install pytest pytest-asyncio httpx ruff -q
+	$(MAKE) setup-hooks
+
+## setup-hooks : point git at .githooks/ (pre-commit cartographer sync, pre-push branch check)
+setup-hooks:
+	git config core.hooksPath .githooks
+	@echo "✓ git hooks active (.githooks/) — pre-commit cartographer sync + pre-push branch check"
+
+## vault-mirror : full re-render + copie vers $CARTOGRAPHER_MIRROR_TO (Windows/PKM)
+vault-mirror:
+	@if [ -z "$$CARTOGRAPHER_MIRROR_TO" ]; then \
+		echo "❌ Set CARTOGRAPHER_MIRROR_TO env var first."; \
+		echo "   ex: export CARTOGRAPHER_MIRROR_TO=/mnt/c/Users/idsmf/Documents/Obsidian/SamsungHealth"; \
+		exit 1; \
+	fi
+	python3 -m agents.cartographer.cli --full --mirror-to "$$CARTOGRAPHER_MIRROR_TO"
+	@echo "✓ Vault mirror updated → $$CARTOGRAPHER_MIRROR_TO"
+
+## db-up : start Postgres 16 via Docker Compose (idempotent)
+db-up:
+	docker compose up -d postgres
+	@echo "Waiting for Postgres to be ready..."
+	@until docker compose exec -T postgres pg_isready -U samsung -d samsunghealth >/dev/null 2>&1; do sleep 1; done
+	@echo "✓ Postgres ready on localhost:5432 (user: samsung, db: samsunghealth)"
+
+## db-down : stop Postgres container (volume preserved)
+db-down:
+	docker compose down
+
+## db-migrate : run pending alembic migrations against $$DATABASE_URL (defaults to local PG)
+db-migrate:
+	@if [ -z "$$DATABASE_URL" ]; then \
+		DATABASE_URL="postgresql+psycopg://samsung:samsung@localhost:5432/samsunghealth" alembic upgrade head; \
+	else \
+		alembic upgrade head; \
+	fi
+
+## db-reset : DESTRUCTIVE — drop volume + recreate empty PG, then re-apply migrations
+db-reset:
+	docker compose down -v
+	$(MAKE) db-up
+	$(MAKE) db-migrate
+	@echo "✓ Postgres reset — empty schema migrated to head"
 
 ## dev : start the FastAPI server (reload + accessible from phone on LAN)
 dev:
@@ -41,3 +83,23 @@ ci-test:
 ci-lint:
 	pip install ruff -q
 	ruff check server/ scripts/
+
+## security-install : install pentester toolchain (SAST/SCA/secrets)
+security-install:
+	pip install bandit pip-audit safety semgrep -q
+	@echo ""
+	@echo "✓ Installed: bandit, pip-audit, safety, semgrep"
+	@echo "⚠ gitleaks not pip-installable — install via:"
+	@echo "  brew install gitleaks                       # macOS"
+	@echo "  apt install gitleaks                        # Debian/Ubuntu (>= 23.04)"
+	@echo "  go install github.com/zricethezav/gitleaks/v8@latest   # any platform with Go"
+	@echo ""
+
+## pentest : escape hatch — run all SAST/SCA/secrets tools manually (prefer /pentest skill)
+pentest:
+	@echo "→ bandit (SAST)" ; bandit -r server/ scripts/ -q || true
+	@echo "→ pip-audit (SCA)" ; pip-audit || true
+	@echo "→ semgrep (SAST multi-rules)" ; semgrep --config=auto server/ scripts/ --quiet || true
+	@command -v gitleaks > /dev/null && (echo "→ gitleaks (secrets)" ; gitleaks detect --no-banner) || echo "⚠ gitleaks not installed — skipped"
+	@echo ""
+	@echo "ℹ For structured findings + POC generation, use the /pentest skill instead."

@@ -1,3 +1,5 @@
+/* V2.3.3.3 — accent tokens from ds-tokens.css drive theme-aware accents.
+   Legacy palette below is preserved for stage colors / neutral inks. */
 :root {
   --ink-0: #06060e;
   --ink-1: #0a0a18;
@@ -8,6 +10,8 @@
   --paper-dim: #aea8c9;
   --paper-faint: #6a6488;
   --paper-ghost: #3a3560;
+  --dashboard-accent-warm: var(--ds-accent-warm);
+  --dashboard-accent-cool: var(--ds-accent-cool);
   --stage-deep: oklch(0.48 0.14 275);
   --stage-deep-soft: oklch(0.38 0.12 275);
   --stage-light: oklch(0.68 0.14 295);
