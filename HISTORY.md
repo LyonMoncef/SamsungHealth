@@ -69,6 +69,11 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 
 ## Changelog
 
+### 2026-05-04 `ad6a08a`
+chore(ci): add .gitleaks.toml allowlist (tests + vault doc mirror)
+- Ajoute `.gitleaks.toml` avec `useDefault = true` — exclut `tests/` et `docs/vault/code/` (fixtures fake, jamais utilisées en production)
+- Supprime les faux positifs gitleaks sur `_TEST_JWT_SECRET` dans les tests
+
 ### 2026-04-30 `edcfad2`
 fix(ci): set fetch-depth: 0 on security job checkout for gitleaks diff scan
 - Résout l'erreur gitleaks `ambiguous argument` causée par un shallow clone (depth=1) empêchant le diff de commits sur le job `Security gates`.
