@@ -51,6 +51,12 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-prod
+          # Skip backup if postgres not running (first deploy)
+          if ! docker compose -f docker-compose.prod.yml ps postgres --status running 2>/dev/null | grep -q "running"; then
+            echo "postgres not running — skipping backup (first deploy)"
+            exit 0
+          fi
+          set -a && source .env.prod && set +a
           mkdir -p backups
           BACKUP=backups/pre-upgrade-\$(date -u +%Y%m%dT%H%M%SZ).sql.gz
           docker compose -f docker-compose.prod.yml exec -T postgres \
