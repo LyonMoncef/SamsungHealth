@@ -89,7 +89,7 @@ jobs:
         id: smoke
         run: |
           for i in {1..30}; do
-            if curl -fs https://${{ secrets.VPS_PROD_DOMAIN }}/healthz; then
+            if curl -fs http://${{ secrets.VPS_PROD_DOMAIN }}/healthz; then
               echo "healthz OK"
               exit 0
             fi
