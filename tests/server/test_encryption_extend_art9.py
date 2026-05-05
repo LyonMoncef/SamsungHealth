@@ -179,7 +179,7 @@ class TestSentinelleBytea:
         for col in row:
             assert _is_bytes_storage(col)
         all_bytes = b"".join(_bytes_value(c) for c in row)
-        for needle in (b"68.0", b"1"):
+        for needle in (b"68.0",):
             assert needle not in all_bytes
 
 

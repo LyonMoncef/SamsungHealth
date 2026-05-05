@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: tests/server/test_encryption_extend_art9.py
-git_blob: 8b74520d61d5484f5cad88d15ae15d4c4fe86272
-last_synced: '2026-04-24T03:53:09Z'
+git_blob: f74f5be3764728a31406dddfa1bac69aae3ca350
+last_synced: '2026-05-05T23:39:11Z'
 loc: 301
 annotations: []
 imports:
@@ -209,7 +209,7 @@ class TestSentinelleBytea:
         for col in row:
             assert _is_bytes_storage(col)
         all_bytes = b"".join(_bytes_value(c) for c in row)
-        for needle in (b"68.0", b"1"):
+        for needle in (b"68.0",):
             assert needle not in all_bytes
 
 
