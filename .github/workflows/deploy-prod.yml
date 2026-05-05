@@ -95,13 +95,17 @@ jobs:
       - name: Smoke test (loop — R-M2, pas single-shot)
         id: smoke
         run: |
-          for i in {1..30}; do
-            if curl -fs http://${{ secrets.VPS_PROD_DOMAIN }}/healthz; then
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << 'EOF'
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:8001/healthz; then
               echo "healthz OK"
               exit 0
             fi
             sleep 2
           done
+          echo "smoke test failed after 60s"
+          exit 1
+          EOF
           echo "::error::prod smoke failed"
           exit 1
 
