@@ -1,0 +1,122 @@
+name: Deploy prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        # OBLIGATOIRE (HIGH 2 — pas de mutable :latest fallback)
+        description: "Commit SHA to deploy (40 hex, must exist as dev-<sha> in GHCR)"
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to VPS prod
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Validate SHA input (R-M4 — anti command injection)
+        env:
+          SHA_INPUT: ${{ github.event.inputs.sha }}
+        run: |
+          SHA="$SHA_INPUT"
+          if ! [[ "$SHA" =~ ^[a-f0-9]{7,40}$ ]]; then
+            echo "::error::Invalid SHA format: $SHA"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        # 2 clés SSH distinctes — VPS_SSH_KEY_PROD scopée environment production (HIGH 1)
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY_PROD }}
+
+      - name: Trust known_hosts (D-2)
+        run: |
+          mkdir -p ~/.ssh
+          cp .github/known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Capture previous image tag (HIGH 4)
+        id: prev
+        run: |
+          PREV=$(ssh -o StrictHostKeyChecking=yes ${{ secrets.VPS_PROD_HOST }} \
+            'cd /srv/samsunghealth-prod && grep -E "^IMAGE_TAG=" .env.prod | cut -d= -f2 || echo "none"')
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Backup DB pre-upgrade (HIGH 3)
+        run: |
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
+          set -euo pipefail
+          cd /srv/samsunghealth-prod
+          mkdir -p backups
+          BACKUP=backups/pre-upgrade-\$(date -u +%Y%m%dT%H%M%SZ).sql.gz
+          docker compose -f docker-compose.prod.yml exec -T postgres \
+            pg_dump -U "\$POSTGRES_USER" "\$POSTGRES_DB" | gzip > "\$BACKUP"
+          ls -lh "\$BACKUP"
+          EOF
+
+      - name: Deploy
+        id: deploy
+        env:
+          SHA_INPUT: ${{ github.event.inputs.sha }}
+        run: |
+          TAG="dev-$SHA_INPUT"
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
+          set -euo pipefail
+          cd /srv/samsunghealth-prod
+          export IMAGE_TAG="$TAG"
+          docker compose -f docker-compose.prod.yml pull web
+          CURRENT=\$(docker compose -f docker-compose.prod.yml exec -T web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
+          EXPECTED=\$(docker compose -f docker-compose.prod.yml run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
+          if [ -z "\$CURRENT" ] || [ -z "\$EXPECTED" ]; then
+            echo "::error::Failed to read alembic current/heads"
+            exit 1
+          fi
+          echo "alembic current=\$CURRENT expected=\$EXPECTED"
+          if [ "\$CURRENT" != "\$EXPECTED" ] && [ "\$CURRENT" != "(none)" ]; then
+            echo "::error::Alembic drift — current=\$CURRENT expected=\$EXPECTED"
+            exit 1
+          fi
+          docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head
+          docker compose -f docker-compose.prod.yml up -d web
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
+          EOF
+
+      - name: Smoke test (loop — R-M2, pas single-shot)
+        id: smoke
+        run: |
+          for i in {1..30}; do
+            if curl -fs http://${{ secrets.VPS_PROD_DOMAIN }}/healthz; then
+              echo "healthz OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::prod smoke failed"
+          exit 1
+
+      - name: Auto-rollback on smoke failure (HIGH 4)
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          PREV="${{ steps.prev.outputs.tag }}"
+          if [ "$PREV" = "none" ] || [ -z "$PREV" ]; then
+            echo "::error::no previous tag — manual recovery required"
+            exit 1
+          fi
+          if ! [[ "$PREV" =~ ^dev-[a-f0-9]{7,40}$ ]]; then
+            echo "::error::Suspicious PREV tag detected — rollback aborted"
+            exit 1
+          fi
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
+          set -euo pipefail
+          cd /srv/samsunghealth-prod
+          export IMAGE_TAG="$PREV"
+          docker compose -f docker-compose.prod.yml pull web
+          docker compose -f docker-compose.prod.yml up -d web
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$PREV/" .env.prod
+          EOF
+          echo "::error::rolled back prod to $PREV — manual investigation required"
+          exit 1

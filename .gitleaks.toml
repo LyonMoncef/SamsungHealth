@@ -1,0 +1,14 @@
+title = "SamsungHealth gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures and vault doc mirror — fake secrets, never used in production"
+paths = [
+  '''^tests/.*''',
+  '''^docs/vault/code/.*''',
+]
+regexes = [
+  '''_TEST_JWT_SECRET\s*=''',
+]

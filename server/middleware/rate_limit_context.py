@@ -13,7 +13,6 @@ import json
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.types import ASGIApp
 
 
 # Routes where we want to extract `email` for composite key (IP, email).

@@ -11,7 +11,6 @@ import time
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
 
-import jwt
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
@@ -56,7 +55,6 @@ from server.security.auth import (
     _DUMMY_HASH,
 )
 from server.security.email_outbound import (
-    _outbound_link_cache,
     send_password_reset_email,
     send_verification_email,
 )

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/test_sleep_api_shape.py
 git_blob: 1582c0dca1a6b21a8e5f205ce76f492f6877451a
-last_synced: '2026-04-23T10:49:30Z'
+last_synced: '2026-05-01T00:03:09Z'
 loc: 94
 annotations: []
 imports: []
@@ -182,3 +182,8 @@ def test_sleep_empty_db_returns_list(client):
 - [[../../code/server/database|server/database.py]] · `get_connection`
 - [[../../code/server/routers/sleep|server/routers/sleep.py]] · `create_sleep_sessions`
 - [[../../code/server/routers/sleep|server/routers/sleep.py]] · `get_sleep_sessions`
+
+
+## Validates specs *(auto — declared by spec)*
+
+- [[../../specs/2026-04-24-v2-postgres-routers-cutover]]

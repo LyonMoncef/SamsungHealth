@@ -69,6 +69,8 @@ _NO_AUTO_AUTH_FILES = frozenset(
         "test_me_export.py",
         "test_me_erase.py",
         "test_me_audit_log.py",
+        # Phase 6 CI/CD MVP — public liveness/readiness probes (no Bearer).
+        "test_healthz.py",
     }
 )
 

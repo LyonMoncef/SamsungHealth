@@ -16,9 +16,8 @@ import hashlib
 import os
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -40,21 +39,17 @@ from server.security.auth import (
     create_access_token,
     create_refresh_token,
     generate_verification_token,
-    hash_verification_token,
     verify_verification_token,
 )
 from server.security.auth_providers import AuthProviderError
 from server.security.csrf import check_sec_fetch_site
-from server.security.auth_providers import google as google_mod
 from server.security.auth_providers import state as state_mod
 from server.security.auth_providers.google import (
     GoogleAuthProvider,
-    _GOOGLE_ERROR_MAP,
     _filter_claims,
     _map_google_error,
 )
 from server.security.email_outbound import (
-    _outbound_link_cache,
     send_verification_email,
 )
 from server.security.lockout import register_successful_login

@@ -2,15 +2,14 @@
 type: code-source
 language: python
 file_path: server/middleware/rate_limit_context.py
-git_blob: d313d288a26c7bde09d6ebe6bf2345462666195c
-last_synced: '2026-04-27T17:56:06Z'
-loc: 78
+git_blob: 02b80e02b58dc4680c4c7eea635c7f978ca679ac
+last_synced: '2026-05-01T12:19:09Z'
+loc: 77
 annotations: []
 imports:
 - json
 - starlette.middleware.base
 - starlette.requests
-- starlette.types
 exports:
 - RateLimitContextMiddleware
 tags:
@@ -41,7 +40,6 @@ import json
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.types import ASGIApp
 
 
 # Routes where we want to extract `email` for composite key (IP, email).
@@ -111,13 +109,12 @@ class RateLimitContextMiddleware(BaseHTTPMiddleware):
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `RateLimitContextMiddleware` (class) — lines 32-78
+- `RateLimitContextMiddleware` (class) — lines 31-77
 
 ### Imports
 - `json`
 - `starlette.middleware.base`
 - `starlette.requests`
-- `starlette.types`
 
 ### Exports
 - `RateLimitContextMiddleware`

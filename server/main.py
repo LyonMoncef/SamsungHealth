@@ -77,6 +77,7 @@ from server.routers import (  # noqa: E402
     auth,
     auth_oauth,
     exercise,
+    health as health_router,
     heartrate,
     me as me_router,
     mood,
@@ -114,6 +115,8 @@ app.include_router(heartrate.router)
 app.include_router(exercise.router)
 app.include_router(mood.router)
 app.include_router(me_router.router)
+# Phase 6 CI/CD MVP — liveness/readiness probes (public, no auth).
+app.include_router(health_router.router)
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

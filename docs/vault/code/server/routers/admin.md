@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: server/routers/admin.py
-git_blob: a5cda9b099bad1b3fc07809ea81479ea81e95ee4
-last_synced: '2026-04-28T14:04:54Z'
+git_blob: cf564917259876d8c73adf0529935a158ad95ca1
+last_synced: '2026-05-01T12:19:09Z'
 loc: 560
 annotations: []
 imports:
@@ -88,7 +88,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session

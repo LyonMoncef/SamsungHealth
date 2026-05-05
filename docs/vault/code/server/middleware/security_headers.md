@@ -2,16 +2,15 @@
 type: code-source
 language: python
 file_path: server/middleware/security_headers.py
-git_blob: 31ed4f16f1d26cf3ba9d6488e2949cb5f894df01
-last_synced: '2026-04-28T14:04:54Z'
-loc: 118
+git_blob: 29afa8ed9ed6b6802d92a2d876db23d19953ab90
+last_synced: '2026-05-01T12:19:09Z'
+loc: 117
 annotations: []
 imports:
 - os
 - starlette.middleware.base
 - starlette.requests
 - starlette.responses
-- starlette.types
 exports:
 - _csp_for_path
 - _cache_control_for
@@ -52,7 +51,6 @@ import os
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp
 
 
 _HSTS_VALUE = "max-age=63072000; includeSubDomains"
@@ -159,17 +157,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 - [[../../specs/2026-04-28-v2.3.3.3-auth-finitions]] — symbols: `_csp_for_admin_path`
 
 ### Symbols
-- `_csp_for_path` (function) — lines 60-67
-- `_cache_control_for` (function) — lines 70-83
-- `_force_https` (function) — lines 86-87
-- `SecurityHeadersMiddleware` (class) — lines 90-118 · **Specs**: [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall|2026-04-27-v2.3.3.2-frontend-nightfall]]
+- `_csp_for_path` (function) — lines 59-66
+- `_cache_control_for` (function) — lines 69-82
+- `_force_https` (function) — lines 85-86
+- `SecurityHeadersMiddleware` (class) — lines 89-117 · **Specs**: [[../../specs/2026-04-27-v2.3.3.2-frontend-nightfall|2026-04-27-v2.3.3.2-frontend-nightfall]]
 
 ### Imports
 - `os`
 - `starlette.middleware.base`
 - `starlette.requests`
 - `starlette.responses`
-- `starlette.types`
 
 ### Exports
 - `_csp_for_path`

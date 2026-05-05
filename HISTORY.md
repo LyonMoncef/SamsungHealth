@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Phase 6 — MVP CI/CD VPS perso — Dockerfile multi-stage + GHCR + deploy-dev + deploy-prod (auto-rollback) + /healthz /readyz + requirements.lock + ci.yml security gates (pip-audit, gitleaks, docker-build smoke). Pentester ACCEPT_WITH_CAVEATS — 5 HIGH levés + 5 D décisions + 4 issues résiduelles (#issues). | `Dockerfile`, `docker-compose.prod.yml`, `.github/workflows/{ci,deploy-dev,deploy-prod}.yml`, `server/routers/health.py`, `server/main.py`, `tests/server/test_healthz.py`, `requirements.{in,lock}`, `.env.prod.example` | [`9b825b1`](#2026-04-30-9b825b1) |
 | Phase 3 — RGPD endpoints `/me/{export,erase,audit-log}` (Art. 15/17/20) — 2-step re-auth, cascade applicatif explicit 21 tables santé, anonymisation `auth_events` (HIGH 2), race lock `SELECT FOR UPDATE` (HIGH 4), OAuth-only nonce, filter `admin_*`, filename générique, atomic UPDATE...RETURNING, purpose CHECK enum, audit_event helper meta cap 4KB. Pentester verdict WARN tracé issue #22 (closed by PR). | `server/routers/me.py`, `server/security/{rgpd,audit}.py`, `server/db/models.py`, `server/main.py`, `alembic/versions/0009_phase3_rgpd_audit_meta_purpose_check.py`, `tests/server/test_me_{export,erase,audit_log}.py`, `.github/ISSUE_TEMPLATE/pentester-review.yml`, `NOTES.md` | [`94bdfca`](#2026-04-30-94bdfca) |
 | V2.3.3.3 — Auth finitions (Inter font + 4 pages admin UI + dashboard rebrand --ds-* + content-negotiation + last_login_ip HMAC + CSRF admin + trusted-types) | `static/admin/`, `static/assets/fonts/Inter-VariableFont_wght.ttf`, `static/css/admin.css`, `static/js/{admin,admin-auth,ds-colors}.js`, `static/dashboard.css`, `static/index.html`, `server/routers/admin.py`, `server/middleware/security_headers.py`, `server/security/rate_limit.py` | [`cab3ecb`](#2026-04-28-cab3ecb) |
 | V2.3.3.2 — Frontend Nightfall (9 pages auth + theme switcher + rebrand Data Saillance) + security headers globaux + cookies httpOnly refresh + CSRF Sec-Fetch-Site | `static/auth/`, `static/css/`, `static/js/`, `static/assets/`, `server/middleware/security_headers.py`, `server/security/csrf.py`, `server/routers/static_pages.py`, `server/routers/{auth,auth_oauth}.py`, `server/main.py` | [`0b098a7`](#2026-04-27-0b098a7) |
@@ -25,6 +26,12 @@
 ---
 
 ## Checkpoint
+
+### 2026-04-30 `checkpoint-pre-merge-dev-2026-05-01`
+chore(checkpoint): safety tag before merge origin/dev into feat/phase6-cicd-mvp
+- Reason: merge 10-file conflict — HISTORY.md, NOTES.md, Makefile, .githooks/pre-push, .gitignore, static/{dashboard.css,index.html}, .github/workflows/ci.yml, scripts/generate_sample.py, server/routers/sleep.py
+- Scope: feat/phase6-cicd-mvp HEAD (commit 9340872) — stratégie B validée : --ours pour fichiers trivial + difficile, fusion manuelle pour Makefile/NOTES.md/HISTORY.md
+- [CHECKPOINT]
 
 ### `checkpoint-before-v2-refactor-2026-04-23` — 2026-04-23 → `5343c9b`
 chore(checkpoint): safety tag before V2 full security/RGPD refactor
@@ -61,6 +68,49 @@ chore(release-archive): tag état de l'app au moment de l'enregistrement loom
 ---
 
 ## Changelog
+
+### 2026-05-04 `ad6a08a`
+chore(ci): add .gitleaks.toml allowlist (tests + vault doc mirror)
+- Ajoute `.gitleaks.toml` avec `useDefault = true` — exclut `tests/` et `docs/vault/code/` (fixtures fake, jamais utilisées en production)
+- Supprime les faux positifs gitleaks sur `_TEST_JWT_SECRET` dans les tests
+
+### 2026-04-30 `edcfad2`
+fix(ci): set fetch-depth: 0 on security job checkout for gitleaks diff scan
+- Résout l'erreur gitleaks `ambiguous argument` causée par un shallow clone (depth=1) empêchant le diff de commits sur le job `Security gates`.
+
+### 2026-04-30 `1c35bf7`
+chore(lint): remove unused imports flagged by ruff (F401)
+- `server/middleware/rate_limit_context.py` — supprime `ASGIApp`
+- `server/middleware/security_headers.py` — supprime `ASGIApp`
+- `server/middleware/slowapi_pre_auth.py` — supprime `Response`
+- `server/routers/admin.py` — supprime `JSONResponse` (consolide from-import)
+- `server/routers/auth.py` — supprime `jwt`, `_outbound_link_cache`
+- `server/routers/auth_oauth.py` — supprime `Any`, `Header`, `status`, `hash_verification_token`, `google_mod`, `_GOOGLE_ERROR_MAP`, `_outbound_link_cache` (consolide from-imports)
+- `server/routers/mood.py` — supprime `Any`, `BaseModel` (consolide from-import)
+
+### 2026-04-30 `23ec1c1`
+docs(phase6): README section Déploiement + NOTES ADR-3 VPS vs PaaS + spec symbols sync
+- **README** : nouvelle section `## Déploiement` (~190 lignes) — vue d'ensemble CI/CD, architecture réseau VPS (diagram ASCII Caddy → Docker), snippet Caddy block `/readyz` IP externe, prérequis VPS (SSH keys, known_hosts, env secrets GH), variables d'env prod documentées, procédures deploy-dev / deploy-prod (workflow_dispatch), healthz + readyz exemples curl, guide backup PG manuel, smoke test local Docker.
+- **NOTES.md** : ADR-3 "VPS perso vs PaaS" — justification coût/maîtrise/learning + non-choix PaaS + conséquences ops. Checklist hardening VPS avant 1er déploiement dev + prod.
+- **Spec** : sync `implements` symbols (Dockerfile `[builder, runner]`, deploy workflows `[build, deploy]` / `[deploy]`, `.env.prod.example`).
+
+### 2026-04-30 `9b825b1`
+feat(phase6): MVP CI/CD VPS — Dockerfile + GHCR + 2 deploy workflows + /healthz /readyz + requirements.lock
+- **Spec** : `docs/vault/specs/2026-04-30-phase6-cicd-mvp.md` (post-pentester reconcile, 5 HIGH + 5 D + risques significatifs intégrés). Baseline pytest : 22 passed + 1 skipped.
+- **`Dockerfile`** (NEW) — multi-stage `builder` (pip + uv compile) + `runner` non-root `appuser:1001`, HEALTHCHECK urllib `/healthz`, `COPY --chown`, entrypoint direct `uvicorn` port 8001.
+- **`docker-compose.prod.yml`** (NEW) — services `web` + `postgres` (réseau interne), `env_file: .env.prod`, bind port `8001:8001`, volumes PG nommé, restart `unless-stopped`.
+- **`.github/workflows/deploy-dev.yml`** (NEW) — trigger `push:main`, build + push GHCR `dev-<sha>`, SSH VPS dev (`VPS_SSH_KEY_DEV` scoped env), `docker compose pull && up -d`, smoke `/healthz`, auto-rollback `PREV` si smoke fail.
+- **`.github/workflows/deploy-prod.yml`** (NEW) — trigger `workflow_dispatch` + approval GitHub environment `production`, build + push GHCR `prod-<sha>`, SSH VPS prod (`VPS_SSH_KEY_PROD`), même pattern smoke + rollback.
+- **`ci.yml`** : +2 jobs — `security` (pip-audit SCA + gitleaks secrets scan) ; `docker-build` (build no-push + smoke run container avec secrets éphémères générés runtime). `paths-ignore` étendu à `docs/vault/**`.
+- **`server/routers/health.py`** (NEW) — `/healthz` (200 `{"status":"ok"}`) + `/readyz` (DB ping `SELECT 1` + alembic head check, 200 ou 503 `{"status":"degraded","checks":{"db":"…","migrations":"…"}}`).
+- **`server/main.py`** — `app.include_router(health_router.router)`.
+- **`tests/server/test_healthz.py`** (NEW) — 3 tests : healthz OK, readyz OK (mock alembic), readyz degraded DB down.
+- **`tests/server/conftest.py`** — `test_healthz.py` ajouté à `_NO_AUTO_AUTH_FILES` (probes publics sans Bearer).
+- **`requirements.in`** (NEW) — deps runtime déclarées (uv compile source).
+- **`requirements.lock`** (NEW) — lockfile complet généré par `uv pip compile requirements.in`.
+- **`.env.prod.example`** (NEW) — template variables prod avec instructions génération (clé AES-256, JWT secret, salt HMAC).
+- **`.dockerignore`** (NEW) — exclut `.git`, `__pycache__`, `*.pyc`, `.env*`, `tests/`, `docs/`, `android-app/`.
+- **`.github/known_hosts`** (NEW) — empreintes SSH VPS pré-vérifiées (anti TOFU, HIGH-1 pentester).
 
 ### 2026-04-30 `94bdfca`
 feat(Phase 3): RGPD endpoints `/me/{export,erase,audit-log}` — Art. 15 (accès) / 17 (effacement) / 20 (portabilité) (#23)

@@ -1,0 +1,49 @@
+# Phase 6 — production compose (VPS dev + VPS prod, même fichier).
+# Spec: docs/vault/specs/2026-04-30-phase6-cicd-mvp.md §2
+#
+# Bascule local : `cp .env.prod.example .env.prod` puis :
+#   docker compose -f docker-compose.prod.yml up
+#
+# Bascule VPS : même fichier, env vars différentes dans .env.prod (chmod 600 — R-H1).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # ⚠️ JAMAIS de section `ports:` sur postgres (R-M3) — accès uniquement
+    # via le réseau Docker interne, pas exposé sur l'IP publique du VPS.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    # IMAGE_TAG est piloté par le workflow deploy-*.yml (jamais de :latest mutable — HIGH 2)
+    image: ghcr.io/lyonmoncef/samsunghealth:${IMAGE_TAG:?IMAGE_TAG must be a SHA tag from .env.prod}
+    env_file: .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    healthcheck:
+      # urllib stdlib — pas de curl dans python:3.12-slim (R-L5)
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/healthz', timeout=3).status == 200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pgdata:

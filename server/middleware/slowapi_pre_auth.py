@@ -17,7 +17,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import _find_route_handler
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
 from starlette.types import ASGIApp
 
 
