@@ -1,15 +1,4 @@
 # .github/known_hosts — fingerprints SSH VPS (D-2 anti-TOFU)
-#
-# À remplir POST-merge Phase 6, avant 1er deploy. Procédure :
-#
-# 1. Sur le poste qui a SSH access aux VPS :
-#    ssh-keyscan -t ed25519 dev.samsunghealth.example >> known_hosts.tmp
-#    ssh-keyscan -t ed25519 samsunghealth.example >> known_hosts.tmp
-#
-# 2. Vérifier que les fingerprints matchent ce que tu vois en SSH direct :
-#    ssh-keygen -lf known_hosts.tmp
-#
-# 3. Commit les lignes concrètes ci-dessous (remplacer ce placeholder).
-#
-# Format :
-# <hostname> ssh-ed25519 AAAAxxxxxx...
+# VPS OVH — 51.38.190.100 (Ubuntu 24.04 / OpenSSH 9.6p1)
+# Généré : 2026-05-05 via ssh-keyscan -t ed25519 51.38.190.100
+51.38.190.100 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb80Sn04I8XG0iqJ9K0eWWPN3JcXtZdXFGAqJDpTVbV
