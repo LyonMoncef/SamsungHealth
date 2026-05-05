@@ -96,12 +96,15 @@ jobs:
           cd /srv/samsunghealth-dev
           export IMAGE_TAG="$IMAGE_TAG"
           docker compose -f docker-compose.prod.yml pull web
-          CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
+          # Use run --rm (not exec) — works even if web container not yet started
+          CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
           EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
-          if [ -z "\$CURRENT" ] || [ -z "\$EXPECTED" ]; then
-            echo "::error::Failed to read alembic current/heads"
+          if [ -z "\$EXPECTED" ]; then
+            echo "::error::Failed to read alembic heads"
             exit 1
           fi
+          # CURRENT empty = fresh DB, treat as (none)
+          CURRENT=\${CURRENT:-(none)}
           echo "alembic current=\$CURRENT expected=\$EXPECTED"
           if [ "\$CURRENT" != "\$EXPECTED" ] && [ "\$CURRENT" != "(none)" ]; then
             echo "::error::Alembic drift — current=\$CURRENT expected=\$EXPECTED"
