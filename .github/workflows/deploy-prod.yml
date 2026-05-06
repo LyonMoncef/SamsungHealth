@@ -73,8 +73,8 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-prod
-          export IMAGE_TAG="$TAG"
-          docker compose -f docker-compose.prod.yml pull web
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
+          docker compose -f docker-compose.prod.yml --env-file .env.prod pull web
           CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
           EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
           if [ -z "\$EXPECTED" ]; then
@@ -87,9 +87,8 @@ jobs:
             echo "::error::Alembic drift — current=\$CURRENT expected=\$EXPECTED"
             exit 1
           fi
-          docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head
-          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
-          docker compose -f docker-compose.prod.yml up -d web
+          docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
+          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
           EOF
 
       - name: Smoke test (loop — R-M2, pas single-shot)
