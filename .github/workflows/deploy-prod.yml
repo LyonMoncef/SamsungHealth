@@ -88,8 +88,8 @@ jobs:
             exit 1
           fi
           docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head
-          docker compose -f docker-compose.prod.yml up -d web
           sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
+          docker compose -f docker-compose.prod.yml up -d web
           EOF
 
       - name: Smoke test (loop — R-M2, pas single-shot)
