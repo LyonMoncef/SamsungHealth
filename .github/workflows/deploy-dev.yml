@@ -129,8 +129,6 @@ jobs:
           echo "smoke test failed after 60s"
           exit 1
           EOF
-          echo "::error::smoke test failed after 60s"
-          exit 1
 
       - name: Auto-rollback on smoke failure (HIGH 4)
         if: failure() && steps.smoke.outcome == 'failure'
