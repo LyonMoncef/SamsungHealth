@@ -51,6 +51,12 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-prod
+          # Skip backup if postgres not running (first deploy)
+          if ! docker compose -f docker-compose.prod.yml ps postgres --status running 2>/dev/null | grep -q "running"; then
+            echo "postgres not running — skipping backup (first deploy)"
+            exit 0
+          fi
+          set -a && source .env.prod && set +a
           mkdir -p backups
           BACKUP=backups/pre-upgrade-\$(date -u +%Y%m%dT%H%M%SZ).sql.gz
           docker compose -f docker-compose.prod.yml exec -T postgres \
@@ -67,35 +73,35 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-prod
-          export IMAGE_TAG="$TAG"
-          docker compose -f docker-compose.prod.yml pull web
-          CURRENT=\$(docker compose -f docker-compose.prod.yml exec -T web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
-          EXPECTED=\$(docker compose -f docker-compose.prod.yml run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
-          if [ -z "\$CURRENT" ] || [ -z "\$EXPECTED" ]; then
-            echo "::error::Failed to read alembic current/heads"
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
+          docker compose -f docker-compose.prod.yml --env-file .env.prod pull web
+          CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
+          EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
+          if [ -z "\$EXPECTED" ]; then
+            echo "::error::Failed to read alembic heads"
             exit 1
           fi
+          CURRENT=\${CURRENT:-(none)}
           echo "alembic current=\$CURRENT expected=\$EXPECTED"
           if [ "\$CURRENT" != "\$EXPECTED" ] && [ "\$CURRENT" != "(none)" ]; then
             echo "::error::Alembic drift — current=\$CURRENT expected=\$EXPECTED"
             exit 1
           fi
-          docker compose -f docker-compose.prod.yml run --rm web alembic upgrade head
-          docker compose -f docker-compose.prod.yml up -d web
-          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
+          docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
+          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
           EOF
 
       - name: Smoke test (loop — R-M2, pas single-shot)
         id: smoke
         run: |
-          for i in {1..30}; do
-            if curl -fs http://${{ secrets.VPS_PROD_DOMAIN }}/healthz; then
+          for i in $(seq 1 30); do
+            if curl -fs https://sh-prod.datasaillance.fr/healthz; then
               echo "healthz OK"
               exit 0
             fi
             sleep 2
           done
-          echo "::error::prod smoke failed"
+          echo "smoke test failed after 60s"
           exit 1
 
       - name: Auto-rollback on smoke failure (HIGH 4)
