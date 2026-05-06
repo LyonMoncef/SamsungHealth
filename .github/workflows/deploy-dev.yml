@@ -119,7 +119,7 @@ jobs:
         id: smoke
         run: |
           for i in $(seq 1 30); do
-            if curl -fs https://sh.datasaillance.fr/healthz; then
+            if curl -fs https://sh-dev.datasaillance.fr/healthz; then
               echo "healthz OK"
               exit 0
             fi
