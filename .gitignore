@@ -31,6 +31,7 @@ android-app/app/release/
 # OS
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
 # Design handoff exports
 *.zip
