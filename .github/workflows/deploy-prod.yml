@@ -73,6 +73,7 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_PROD_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-prod
+          git pull origin main
           sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env.prod
           docker compose -f docker-compose.prod.yml --env-file .env.prod pull web
           CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
