@@ -4,6 +4,8 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Foundation docs — VISION.md + CLAUDE.md | `VISION.md`, `CLAUDE.md` | [`523a981`](#2026-05-06-523a981) |
+| Agent migration Phase 2+3 — suppressions locaux obsolètes + vision-keeper projet | `.claude/agents/vision-keeper.md`, `.claude/skills/vision/SKILL.md`, `agents/contracts/vision_keeper.py` | [`pending`](#pending) |
 | Phase 6 — MVP CI/CD VPS perso — Dockerfile multi-stage + GHCR + deploy-dev + deploy-prod (auto-rollback) + /healthz /readyz + requirements.lock + ci.yml security gates (pip-audit, gitleaks, docker-build smoke). Pentester ACCEPT_WITH_CAVEATS — 5 HIGH levés + 5 D décisions + 4 issues résiduelles (#issues). | `Dockerfile`, `docker-compose.prod.yml`, `.github/workflows/{ci,deploy-dev,deploy-prod}.yml`, `server/routers/health.py`, `server/main.py`, `tests/server/test_healthz.py`, `requirements.{in,lock}`, `.env.prod.example` | [`9b825b1`](#2026-04-30-9b825b1) |
 | Phase 3 — RGPD endpoints `/me/{export,erase,audit-log}` (Art. 15/17/20) — 2-step re-auth, cascade applicatif explicit 21 tables santé, anonymisation `auth_events` (HIGH 2), race lock `SELECT FOR UPDATE` (HIGH 4), OAuth-only nonce, filter `admin_*`, filename générique, atomic UPDATE...RETURNING, purpose CHECK enum, audit_event helper meta cap 4KB. Pentester verdict WARN tracé issue #22 (closed by PR). | `server/routers/me.py`, `server/security/{rgpd,audit}.py`, `server/db/models.py`, `server/main.py`, `alembic/versions/0009_phase3_rgpd_audit_meta_purpose_check.py`, `tests/server/test_me_{export,erase,audit_log}.py`, `.github/ISSUE_TEMPLATE/pentester-review.yml`, `NOTES.md` | [`94bdfca`](#2026-04-30-94bdfca) |
 | V2.3.3.3 — Auth finitions (Inter font + 4 pages admin UI + dashboard rebrand --ds-* + content-negotiation + last_login_ip HMAC + CSRF admin + trusted-types) | `static/admin/`, `static/assets/fonts/Inter-VariableFont_wght.ttf`, `static/css/admin.css`, `static/js/{admin,admin-auth,ds-colors}.js`, `static/dashboard.css`, `static/index.html`, `server/routers/admin.py`, `server/middleware/security_headers.py`, `server/security/rate_limit.py` | [`cab3ecb`](#2026-04-28-cab3ecb) |
@@ -22,6 +24,25 @@
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
+
+---
+
+## Changelog
+
+### 2026-05-06 `523a981`
+chore(project): CLAUDE.md — stack, contraintes C1/C2/C3, design DataSaillance, skill chain
+- Crée CLAUDE.md projet : stack FastAPI/SQLAlchemy/pytest, key files, dev commands
+- Contraintes non-négociables (local-first, RGPD Art.9, sécurité pentester bloquant, design DataSaillance, no LLM)
+- Skill invocation chain `/spec → /vision → /tdd → /impl → /review → /commit`
+- 4 questions ouvertes (fenêtre circadienne, multi-user, Phase B, webapp unifiée)
+
+### 2026-05-06 `88c1d5e`
+docs(vision): VISION.md — principe fondateur, design DataSaillance, contraintes
+- Crée VISION.md depuis 99 messages utilisateurs extraits de 4 sessions JSONL
+- Principe fondateur : découverte Non-24 par la dataviz (15 ans non-diagnostiqué)
+- Contraintes hard C1/C2/C3, vocabulaire (drift/dette/régularité/radial clock/stacked timeline)
+- Design system DataSaillance : tokens warm paper, accent rust, Cairo, light+dark obligatoires
+- Phases de dev (0–3 ✅, 6 ✅, 4–5 en attente), questions ouvertes
 
 ---
 
