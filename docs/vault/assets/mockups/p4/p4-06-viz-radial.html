@@ -1,0 +1,292 @@
+<!doctype html>
+<!-- Nightfall · Phase 4 · Viz 2 — Radial Clock
+     Horloge 24h circulaire. Chaque arc = une nuit de sommeil (14 nuits superposées).
+     La dérive Non-24 produit un "arc rotatif" visible sur le cadran.
+     Arc le plus récent mis en valeur (orange). Les anciens en teal atténué.
+     DataSaillance dark tokens · OD mobile-app skill -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nightfall · Radial Clock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#191E22;--surface:#232E32;--fg:#F5F5F5;--muted:#9AA0A5;
+      --border:rgba(7,188,211,0.15);--accent:#D37C04;--accent-cool:#07BCD3;--accent-teal:#0E9EB0;
+      --font-display:'Playfair Display',Georgia,serif;
+      --font-body:'Inter',-apple-system,system-ui,sans-serif;
+      --font-mono:ui-monospace,'SF Mono',Menlo,monospace;
+      --fs-h1:26px;--fs-body:15px;--fs-meta:12px;--radius-card:18px;
+    }
+    *,*::before,*::after{box-sizing:border-box;}
+    html,body{margin:0;padding:0;height:100%;}
+    body{
+      background:radial-gradient(60% 80% at 50% 0%,rgba(7,188,211,0.07) 0%,#191E22 60%);
+      color:var(--fg);font-family:var(--font-body);font-size:var(--fs-body);
+      line-height:1.4;-webkit-font-smoothing:antialiased;
+      display:grid;place-items:center;padding:32px;
+    }
+    .stage-wrap{display:flex;flex-direction:column;align-items:center;gap:24px;}
+    .caption{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+    .caption strong{color:var(--fg);font-weight:500;}
+
+    .device{
+      position:relative;width:390px;height:844px;border-radius:56px;padding:12px;
+      background:linear-gradient(160deg,#2a2a2c 0%,#1a1a1c 50%,#0e0e10 100%);
+      box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 0 0 2px #000 inset,
+        0 28px 60px -12px rgba(0,0,0,.55),0 8px 20px -8px rgba(0,0,0,.45);
+      isolation:isolate;
+    }
+    .device::before,.device::after{content:'';position:absolute;width:3px;
+      background:linear-gradient(to bottom,transparent 0%,rgba(255,255,255,.06) 8%,transparent 16%,transparent 84%,rgba(255,255,255,.04) 92%,transparent 100%);
+      top:100px;bottom:100px;pointer-events:none;}
+    .device::before{left:-1px;}.device::after{right:-1px;}
+    .island{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:124px;height:36px;background:#000;border-radius:999px;z-index:5;}
+    .btn-rail{position:absolute;width:4px;background:#0a0a0c;border-radius:2px;}
+    .btn-rail.left-1{left:-3px;top:174px;height:32px;}
+    .btn-rail.left-2{left:-3px;top:220px;height:60px;}
+    .btn-rail.left-3{left:-3px;top:290px;height:60px;}
+    .btn-rail.right-1{right:-3px;top:250px;height:100px;}
+
+    .screen{position:relative;width:100%;height:100%;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;}
+    .statusbar{flex:0 0 47px;padding:18px 26px 0;display:flex;align-items:flex-start;justify-content:space-between;font-family:var(--font-body);font-size:15px;font-weight:600;color:var(--fg);letter-spacing:-.01em;}
+    .statusbar .right{display:inline-flex;align-items:center;gap:6px;}
+    .statusbar svg{width:17px;height:11px;fill:var(--fg);}
+    .statusbar .battery{width:25px;}
+    .content{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:4px 0 28px;}
+    .content::-webkit-scrollbar{display:none;}
+    .home-indicator{flex:0 0 28px;position:relative;}
+    .home-indicator::after{content:'';position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;background:var(--fg);border-radius:999px;opacity:.35;}
+
+    .pad{padding-inline:16px;}
+    .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--muted);}
+    .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);}
+
+    /* Radial SVG container */
+    .clock-wrap{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:16px;padding:16px;margin-inline:16px;
+    }
+  </style>
+</head>
+<body>
+<div class="stage-wrap">
+  <div class="caption"><strong>Nightfall</strong> · Radial Clock · Viz P4-06 — 14 nuits superposées · dérive visible</div>
+
+  <div class="device" data-od-id="device">
+    <span class="btn-rail left-1" aria-hidden></span>
+    <span class="btn-rail left-2" aria-hidden></span>
+    <span class="btn-rail left-3" aria-hidden></span>
+    <span class="btn-rail right-1" aria-hidden></span>
+    <span class="island" aria-hidden></span>
+
+    <div class="screen">
+      <div class="statusbar">
+        <span style="font-family:var(--font-mono)">9:41</span>
+        <span class="right">
+          <svg viewBox="0 0 17 11" aria-hidden><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="6" rx=".6"/><rect x="8" y="3" width="3" height="8" rx=".6"/><rect x="12" y="0" width="3" height="11" rx=".6"/></svg>
+          <svg viewBox="0 0 17 11" aria-hidden><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-.9 2.2-1.4 3.5-1.4 1.3 0 2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+          <svg class="battery" viewBox="0 0 25 11" aria-hidden><rect x=".5" y=".5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity=".45"/><rect x="22" y="3.5" width="1.5" height="4" rx=".4" fill="currentColor" fill-opacity=".45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+        </span>
+      </div>
+
+      <main class="content" data-od-id="content">
+
+        <!-- Header -->
+        <div style="padding:10px 16px 8px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <p class="meta" style="margin:0 0 2px;">RYTHME CIRCADIEN</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:var(--fs-h1);letter-spacing:-.02em;line-height:1.1;">Horloge 24h</h1>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <span style="padding:4px 9px;background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-family:var(--font-mono);">14j</span>
+            <span style="padding:4px 9px;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:999px;font-size:11px;font-family:var(--font-mono);">30j</span>
+          </div>
+        </div>
+
+        <!-- Radial clock SVG -->
+        <div class="clock-wrap" data-od-id="clock">
+          <p class="meta" style="margin:0 0 10px;text-align:center;">14 NUITS SUPERPOSÉES — arc orange = nuit dernière</p>
+
+          <!--
+            SVG 280×280. Centre = 140,140. Rayon externe = 124, rayon interne = 80.
+            0h = top (angle -90° = -π/2). Sens horaire.
+            angle(h) = (h/24)*360 - 90 degrés
+            arc path: M cx+r*cos(a1),cy+r*sin(a1)  A r,r 0 large-arc,1 cx+r*cos(a2),cy+r*sin(a2)
+                      L cx+ri*cos(a2),cy+ri*sin(a2) A ri,ri 0 large-arc,0 cx+ri*cos(a1),cy+ri*sin(a1) Z
+
+            Nuits (endorm → réveil), oldest→newest, teal atténué → orange:
+            N1:  22h00→05h00  deep teal   opacity .25
+            N2:  22h40→05h40             opacity .28
+            N3:  23h20→06h00             opacity .31
+            N4:  00h00→06h40             opacity .34
+            N5:  00h40→07h00             opacity .37
+            N6:  01h30→08h00             opacity .40
+            N7:  02h10→08h40             opacity .44
+            N8:  02h50→09h10             opacity .48
+            N9:  03h20→07h20 (insomnie)  opacity .52
+            N10: 03h40→10h00             opacity .56
+            N11: 03h40→10h20             opacity .60
+            N12: 04h10→10h40             opacity .65
+            N13: 04h30→11h00             ORANGE full — nuit sélectionnée
+
+            Les arcs SVG sont pré-calculés ci-dessous.
+            R_ext=124 R_int=82 cx=140 cy=140
+          -->
+          <svg viewBox="0 0 280 280" width="248" height="248" style="display:block;margin:0 auto;" aria-label="Radial sleep clock — 14 nights overlay">
+            <defs>
+              <!-- subtle glow for selected arc -->
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Background ring -->
+            <circle cx="140" cy="140" r="124" fill="none" stroke="rgba(245,245,245,0.04)" stroke-width="44"/>
+
+            <!-- Hour grid lines (every 3h = 45°) -->
+            <line x1="140" y1="16"  x2="140" y2="30"  stroke="rgba(7,188,211,0.2)" stroke-width="1"/>  <!-- 0h -->
+            <line x1="264" y1="140" x2="250" y2="140" stroke="rgba(7,188,211,0.2)" stroke-width="1"/>  <!-- 6h -->
+            <line x1="140" y1="264" x2="140" y2="250" stroke="rgba(7,188,211,0.2)" stroke-width="1"/>  <!-- 12h -->
+            <line x1="16"  y1="140" x2="30"  y2="140" stroke="rgba(7,188,211,0.2)" stroke-width="1"/>  <!-- 18h -->
+            <!-- 3h, 9h, 15h, 21h (45° offsets) -->
+            <line x1="227.8" y1="52.2" x2="217" y2="63"    stroke="rgba(7,188,211,0.1)" stroke-width="1"/>
+            <line x1="227.8" y1="227.8" x2="217" y2="217"  stroke="rgba(7,188,211,0.1)" stroke-width="1"/>
+            <line x1="52.2"  y1="227.8" x2="63"  y2="217"  stroke="rgba(7,188,211,0.1)" stroke-width="1"/>
+            <line x1="52.2"  y1="52.2"  x2="63"  y2="63"   stroke="rgba(7,188,211,0.1)" stroke-width="1"/>
+
+            <!-- Hour labels -->
+            <text x="140" y="10"  text-anchor="middle" fill="rgba(7,188,211,0.7)" font-size="9" font-family="ui-monospace,monospace">0h</text>
+            <text x="272" y="144" text-anchor="start"  fill="rgba(7,188,211,0.5)" font-size="9" font-family="ui-monospace,monospace">6h</text>
+            <text x="140" y="278" text-anchor="middle" fill="rgba(7,188,211,0.5)" font-size="9" font-family="ui-monospace,monospace">12h</text>
+            <text x="6"   y="144" text-anchor="start"  fill="rgba(7,188,211,0.5)" font-size="9" font-family="ui-monospace,monospace">18h</text>
+
+            <!--
+              Sleep arcs. Each arc = annular sector from sleep_start to sleep_end.
+              Using SVG path with A command. stroke-width approach (simpler than filled arcs):
+              stroke on circle at r=(82+124)/2=103, stroke-width=42, stroke-dasharray & dashoffset.
+              Circumference = 2π*103 ≈ 647. Each hour = 647/24 ≈ 26.96px.
+
+              arc_len(h1, h2) = (h2-h1)/24 * 647
+              dashoffset(h1)  = 647 - h1/24*647  (offset from top, clockwise)
+
+              Using stroke-dasharray="arc_len, 647" and stroke-dashoffset to rotate.
+              rotate(-90) centers 0h at top.
+            -->
+
+            <g transform="rotate(-90 140 140)">
+              <!-- N1: 22h→05h = 7h arc. start=22h, len=7h -->
+              <!-- arc_len=7/24*647=188.5  dashoffset=647-22/24*647=647-593.1=53.9 -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="188.5 647" stroke-dashoffset="-53.9" opacity=".12"/>
+
+              <!-- N2: 22h40→05h40. start=22.67h, len=7h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="188.5 647" stroke-dashoffset="-61.0" opacity=".15"/>
+
+              <!-- N3: 23h20→06h. start=23.33h, len=6h40=6.67h -->
+              <!-- arc=6.67/24*647=179.8  offset=647-23.33/24*647=647-628.4=18.6 ... wait this wraps around midnight, needs adjustment -->
+              <!-- For wrap-around arcs crossing 0h, I'll just use a longer arc representation -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="179.8 647" stroke-dashoffset="-68.1" opacity=".18"/>
+
+              <!-- N4: 0h→06h40. start=0h, len=6.67h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="179.8 647" stroke-dashoffset="0" opacity=".21"/>
+
+              <!-- N5: 0h40→07h. start=0.67h, len=6.33h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="170.5 647" stroke-dashoffset="-18.0" opacity=".25"/>
+
+              <!-- N6: 1h30→08h. start=1.5h, len=6.5h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="175.2 647" stroke-dashoffset="-40.4" opacity=".29"/>
+
+              <!-- N7: 2h10→08h40. start=2.17h, len=6.5h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="175.2 647" stroke-dashoffset="-58.4" opacity=".33"/>
+
+              <!-- N8: 2h50→09h10. start=2.83h, len=6.33h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="170.5 647" stroke-dashoffset="-76.3" opacity=".37"/>
+
+              <!-- N9: 3h20→07h20 (insomnie, 4h). start=3.33h, len=4h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#9AA0A5" stroke-width="42" stroke-dasharray="107.8 647" stroke-dashoffset="-89.7" opacity=".2"/>
+
+              <!-- N10: 3h40→10h. start=3.67h, len=6.33h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="170.5 647" stroke-dashoffset="-98.8" opacity=".42"/>
+
+              <!-- N11: 3h40→10h20. start=3.67h, len=6.67h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="179.8 647" stroke-dashoffset="-98.8" opacity=".47"/>
+
+              <!-- N12: 4h10→10h40. start=4.17h, len=6.5h -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#0E9EB0" stroke-width="42" stroke-dasharray="175.2 647" stroke-dashoffset="-112.3" opacity=".52"/>
+
+              <!-- N13 (hier): 4h30→11h. start=4.5h, len=6.5h — ACCENT ORANGE selected -->
+              <circle cx="140" cy="140" r="103" fill="none" stroke="#D37C04" stroke-width="44" stroke-dasharray="175.2 647" stroke-dashoffset="-121.3" opacity=".95" filter="url(#glow)"/>
+            </g>
+
+            <!-- Center info -->
+            <text x="140" y="132" text-anchor="middle" fill="#9AA0A5" font-size="9" font-family="ui-monospace,monospace">HIER</text>
+            <text x="140" y="148" text-anchor="middle" fill="#F5F5F5" font-size="18" font-weight="700" font-family="ui-monospace,monospace">6h18</text>
+            <text x="140" y="162" text-anchor="middle" fill="#D37C04" font-size="9" font-family="ui-monospace,monospace">04:30 → 10:48</text>
+
+            <!-- Start/end dots for selected arc -->
+            <!-- start at 4.5h: angle = 4.5/24*360 - 90 = 67.5 - 90 = -22.5° → x=140+103*cos(-22.5°)=140+95.1=235.1, y=140+103*sin(-22.5°)=140-39.3=100.7 -->
+            <circle cx="235" cy="101" r="4" fill="#D37C04"/>
+            <!-- end at 11h: angle = 11/24*360 - 90 = 165-90 = 75° → x=140+103*cos(75°)=140+26.7=166.7, y=140+103*sin(75°)=140+99.5=239.5 -->
+            <circle cx="167" cy="240" r="4" fill="#D37C04"/>
+          </svg>
+
+          <!-- Legend -->
+          <div style="display:flex;gap:14px;justify-content:center;margin-top:8px;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:var(--font-mono);">
+              <span style="width:12px;height:4px;border-radius:2px;background:var(--accent-teal);opacity:.7;display:inline-block;"></span>13 nuits</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:var(--font-mono);">
+              <span style="width:12px;height:4px;border-radius:2px;background:var(--muted);opacity:.5;display:inline-block;"></span>insomnie</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--accent);font-family:var(--font-mono);">
+              <span style="width:12px;height:4px;border-radius:2px;background:var(--accent);display:inline-block;"></span>hier</span>
+          </div>
+        </div>
+
+        <!-- Threshold metrics — computed values only -->
+        <div style="margin:12px 16px 0;background:var(--surface);border:1px solid rgba(7,188,211,0.2);border-radius:14px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="meta">STABILITÉ DE L'ARC (σ)</span>
+            <span style="font-size:10px;font-family:var(--font-mono);color:var(--accent);background:rgba(211,124,4,0.12);padding:2px 7px;border-radius:999px;">SEUIL &gt; 60 MIN · ACTIF</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;">
+            <div style="text-align:center;">
+              <div class="num" style="font-size:18px;color:var(--accent);">±2h14</div>
+              <p class="meta" style="margin:3px 0 0;font-size:10px;">écart-type début</p>
+            </div>
+            <div style="text-align:center;">
+              <div class="num" style="font-size:18px;color:var(--accent-teal);">±1h52</div>
+              <p class="meta" style="margin:3px 0 0;font-size:10px;">écart-type fin</p>
+            </div>
+            <div style="text-align:center;">
+              <div class="num" style="font-size:18px;color:var(--muted);">+43m</div>
+              <p class="meta" style="margin:3px 0 0;font-size:10px;">pente/nuit</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 16px 0;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px;text-align:center;">
+            <div class="num" style="font-size:18px;color:var(--accent);">22h</div>
+            <p class="meta" style="margin:2px 0 0;font-size:10px;">PLUS TÔT</p>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px;text-align:center;">
+            <div class="num" style="font-size:18px;color:var(--muted);">5h47</div>
+            <p class="meta" style="margin:2px 0 0;font-size:10px;">MOY. DURÉE</p>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px;text-align:center;">
+            <div class="num" style="font-size:18px;color:var(--accent-teal);">04h30</div>
+            <p class="meta" style="margin:2px 0 0;font-size:10px;">HIER DÉBUT</p>
+          </div>
+        </div>
+
+      </main>
+      <div class="home-indicator" aria-hidden></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
