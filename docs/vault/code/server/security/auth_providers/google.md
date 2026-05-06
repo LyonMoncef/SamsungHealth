@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/security/auth_providers/google.py
 git_blob: c2f0187045bc04ac1c6804ef159a4a7fc6fffd78
-last_synced: '2026-04-27T07:34:23Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 258
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/vision_keeper.py
 git_blob: 88aa2e6dc0ba2f0f40abbc9a4d3a72a01d79022f
-last_synced: '2026-05-06T07:20:59Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 25
 annotations: []
 imports:

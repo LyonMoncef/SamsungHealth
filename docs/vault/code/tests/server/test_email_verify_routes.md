@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_email_verify_routes.py
 git_blob: e150d0e85e0a76107dc3d1abe0b6f442f7dbed13
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 267
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/anchor_resolver.py
 git_blob: 8ca261ec0ed4d7d43f38f8fe5678ec0fa22c5644
-last_synced: '2026-04-23T10:49:29Z'
+last_synced: '2026-05-06T08:02:33Z'
 loc: 88
 annotations: []
 imports:

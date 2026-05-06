@@ -3,7 +3,7 @@ type: code-source
 language: css
 file_path: static/css/ds-tokens.css
 git_blob: 45c323d981b7069fcd817c833056764f9bf1ea81
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 75
 annotations: []
 imports: []

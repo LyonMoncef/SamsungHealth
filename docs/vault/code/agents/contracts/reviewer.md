@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/reviewer.py
 git_blob: a3577143f12069bfa675a1500ab613a679888a5d
-last_synced: '2026-04-23T10:49:29Z'
+last_synced: '2026-05-06T08:02:33Z'
 loc: 30
 annotations: []
 imports:

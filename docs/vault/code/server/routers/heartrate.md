@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/heartrate.py
 git_blob: 474b486f03949efc4e5211e06b3a268c971d4e79
-last_synced: '2026-04-27T17:56:06Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 76
 annotations: []
 imports:

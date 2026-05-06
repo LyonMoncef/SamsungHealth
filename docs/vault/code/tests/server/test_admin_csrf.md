@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_admin_csrf.py
 git_blob: 826ca9c16fae31dce9f4e1e16209a24a1d857e0f
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 160
 annotations: []
 imports:

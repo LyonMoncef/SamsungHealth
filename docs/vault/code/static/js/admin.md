@@ -3,7 +3,7 @@ type: code-source
 language: javascript
 file_path: static/js/admin.js
 git_blob: 7c9d2322a09aa2af7f9a234ea893cebb974cf08b
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 297
 annotations: []
 imports: []

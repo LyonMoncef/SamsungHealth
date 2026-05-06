@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/auth.py
 git_blob: 010a85aa81e8fe417361f5b3d25d1d4d5985ea93
-last_synced: '2026-05-01T12:19:09Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 807
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_admin_users_endpoint.py
 git_blob: 185bec72eea6b3efd788433317fc10b4778f5a6a
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 432
 annotations: []
 imports:

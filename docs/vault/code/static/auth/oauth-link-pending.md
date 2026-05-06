@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/auth/oauth-link-pending.html
 git_blob: 99fb3c572ecdeacfb68e748e33bc380e3e272f68
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 30
 annotations: []
 imports: []

@@ -66,12 +66,13 @@ Le master plan V2 liste 6 phases, ~6-8 semaines, avec pour chaque module une spe
 | `coder-backend` | Implémente code Python (routers, services, models) pour faire passer les tests | Sonnet | Read, Edit, Write (server/), Grep, Glob, Bash (run tests) | Write hors server/, Delete | `CodeBrief` | `CodeArtifact` |
 | `coder-android` | Implémente Kotlin/Compose (screens, Canvas, repositories) | Sonnet | Read, Edit, Write (android-app/), Grep, Glob, Bash (gradle) | Write hors android-app/ | `CodeBrief` | `CodeArtifact` |
 | `coder-frontend` | Implémente JS dashboard (static/) | Sonnet | Read, Edit, Write (static/), Grep, Glob, Bash (vitest) | Write hors static/ | `CodeBrief` | `CodeArtifact` |
-| `reviewer` | Vérifie parité spec ↔ code, sécurité, conventions. Ne modifie rien. | Sonnet | Read, Grep, Glob, Bash (read-only) | Write, Edit | `ReviewBrief` | `ReviewReport` |
+| ~~`reviewer`~~ | ~~Vérifie parité spec ↔ code~~. **Retiré 2026-05-06** — délégué au global `reviewer` (~/.claude/agents/reviewer.md). CLAUDE.md fournit le contexte projet. | — | — | — | — | — |
 | `documenter` | Met à jour HISTORY.md + feature table + codex entries Obsidian post-merge | Haiku | Read, Edit (docs/HISTORY/vault), Grep | Edit code, Bash | `DocBrief` | `DocArtifact` |
 | `git-steward` | **Toutes** les opérations git/gh + maintenance HISTORY.md/.gitignore — invoqué auto post-save + avant chaque commit/PR/checkpoint | Sonnet | Read, Bash (git/gh only), Edit (HISTORY.md/NOTES.md/.gitignore only) | Write, WebFetch, WebSearch | `GitOperationBrief` | `GitOperationReport` |
-| `pentester` | **Adversarial** — cherche vulnérabilités exploitables (SAST/SCA/secrets/semantic/RGPD ; DAST Phase B+ via sandbox). Ignore la spec, écrit POCs théoriques | Sonnet | Read, Write (work/ only), Grep, Glob, Bash (bandit/pip-audit/safety/semgrep/gitleaks) | Edit, WebFetch, curl/httpie/nmap | `PentestBrief` | `PentestReport` |
+| ~~`pentester`~~ | ~~Adversarial — SAST/SCA/secrets/RGPD~~. **Retiré 2026-05-06** — délégué au global `pentester` (~/.claude/agents/pentester.md) qui inclut scan RGPD + frontend React. Contrat `agents/contracts/pentester.py` conservé. | — | — | — | — | — |
 | `plan-keeper` | Détecte déviations plans ↔ livraisons (agents/skills/branches/structure) — read-only, propose patches plans, n'applique pas. Invoqué auto pré-commit + post-livraison + manuel `/align` | Sonnet | Read, Grep, Glob, Bash (read-only git) | Edit, Write, WebFetch | `PlanAuditBrief` | `PlanAuditReport` |
-| `code-cartographer` | **Phase A.5** — régénère notes vault `docs/vault/code/` depuis (code source + annotations). Parse via tree-sitter (Python/JS/Kotlin). Détecte marqueurs `@vault:<slug>`, résout ancres, gère orphans. Sync sens unique. Invoqué par hook pre-commit + skill `/sync-vault` + `/annotate` | Sonnet | Read, Write, Grep, Glob, Bash (tree-sitter, git read) | WebFetch, WebSearch | `CartographyBrief` / `AnnotationOpBrief` | `CartographyReport` / `AnnotationOpReport` |
+| `vision-keeper` | Évalue l'alignement d'un artefact (spec/plan/diff) avec VISION.md — verdict `aligned`/`drift_alert`/`vision_update_needed` + score 0-100. Invoqué après `/spec` ou via `/vision`. **Ajouté 2026-05-06** | Sonnet | Read, Bash (read-only) | Write, Edit, WebFetch | `VisionAuditBrief` | `VisionAuditResult` |
+| ~~`code-cartographer`~~ | ~~Phase A.5 — régénère notes vault~~. **Retiré 2026-05-06** — délégué au global `code-cartographer` (~/.claude/agents/code-cartographer.md, plus complet : Write tool + gestion orphans). Contrat `agents/contracts/cartographer.py` conservé. Skills `/sync-vault`, `/annotate`, `/anchor-review` inchangés. | — | — | — | — | — |
 | `logq-analyst` | Interroge logs via `logq` CLI pour diagnostic/debug, remonte un résumé | Haiku | Read, Bash (logq only) | Write, Edit | `LogQuery` | `LogReport` |
 | `migration-writer` | Rédige une révision Alembic depuis un brief de changement de schéma | Sonnet | Read, Write (alembic/versions/), Bash (alembic autogenerate) | Write hors alembic/ | `MigrationBrief` | `MigrationArtifact` |
 | `ui-parity-checker` | Compare screenshots browser (Playwright) vs Compose (Paparazzi), remonte diff % | Sonnet | Read, Bash (playwright, paparazzi) | Write, Edit | `ParityBrief` | `ParityReport` |
@@ -104,6 +105,7 @@ Réutiliser/adapter les skills DataSaillance + créer ceux spécifiques SamsungH
 | `/review <branch>` | Review complet : spec ↔ code, tests, sécurité, parité | reviewer + **pentester** (scope diff, quick) + ui-parity-checker | `/commit` ou `/impl` (si changes requested) |
 | `/pentest [--quick\|--lastdiffs\|--files\|--sandbox]` | **nouveau** — chasse vulnérabilités full-spectrum (SAST/SCA/secrets/semantic/RGPD ; DAST si --sandbox Phase B+) | pentester | `/impl` (block_merge), `/review` (warn), `/commit` (pass) |
 | `/align [--full\|--scope <path>]` | **nouveau** — audit cohérence plans ↔ livraisons (agents, skills, branches, structure) | plan-keeper | `/commit` (appliquer patches), `/impl` (refonte structurelle si block) |
+| `/vision <artifact-path> [--slug <slug>]` | **Ajouté 2026-05-06** — audit alignement spec/plan vs VISION.md (score 0-100, block si violation C1/LLM) | vision-keeper | `/tdd` (si aligned) |
 | `/sync-vault [--full\|--diff\|--check]` | **Phase A.5** — régénère notes `docs/vault/code/` depuis code source + annotations | code-cartographer | `/commit` |
 | `/annotate <slug> [--at <file:line>\|--range <file:start-end>\|edit\|delete]` | **Phase A.5** — CRUD annotations + injection/retrait marqueurs `@vault:<slug>` | code-cartographer | `/sync-vault --diff` |
 | `/anchor-review [<slug>]` | **Phase A.5** — résout annotations orphelines (marqueur perdu suite refactor) | code-cartographer | `/commit` |
@@ -132,13 +134,12 @@ SamsungHealth/
 │   │   ├── coder-backend.md
 │   │   ├── coder-android.md
 │   │   ├── coder-frontend.md
-│   │   ├── reviewer.md
 │   │   ├── documenter.md
 │   │   ├── git-steward.md               ← Phase A — gestion git/gh + HISTORY
-│   │   ├── pentester.md                 ← Phase A — vulns SAST/SCA/secrets/semantic/RGPD
 │   │   ├── plan-keeper.md               ← Phase A — détection déviations plans
-│   │   ├── code-cartographer.md         ← Phase A.5 — miroir code → vault avec annotations
-│   │   ├── annotation-suggester.md      ← Phase A.6 — suggère annotations sur diffs récents
+│   │   ├── vision-keeper.md             ← Ajouté 2026-05-06 — alignement VISION.md
+│   │   │   # Retirés 2026-05-06 (délégués aux globaux ~/.claude/agents/) :
+│   │   │   # reviewer.md, pentester.md, code-cartographer.md, annotation-suggester.md
 │   │   ├── logq-analyst.md
 │   │   ├── migration-writer.md
 │   │   └── ui-parity-checker.md
@@ -181,6 +182,7 @@ SamsungHealth/
 │   │   ├── git_steward.py               ← GitOperationBrief / GitOperationReport
 │   │   ├── pentester.py                 ← PentestBrief / PentestFinding / PentestReport
 │   │   ├── plan_keeper.py               ← PlanAuditBrief / PlanDeviation / PlanAuditReport
+│   │   ├── vision_keeper.py             ← VisionAuditBrief / VisionAuditResult (Ajouté 2026-05-06)
 │   │   ├── cartographer.py              ← Phase A.5 — CartographyBrief/Report + AnnotationOpBrief/Report + Annotation/AnchorLocation
 │   │   ├── annotation_suggester.py      ← Phase A.6 — AnnotationSuggestionBrief/Report + SuggestedAnnotation
 │   │   ├── migration_writer.py

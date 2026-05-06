@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/me.py
 git_blob: 597eae24fba619b71f4fa8a2dc33567a06799f8e
-last_synced: '2026-04-29T20:50:46Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 214
 annotations: []
 imports:
