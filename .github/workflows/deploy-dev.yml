@@ -94,6 +94,7 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-dev
+          # Write IMAGE_TAG first — --env-file .env.prod overrides shell env in compose interpolation
           sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
           docker compose -f docker-compose.prod.yml --env-file .env.prod pull web
           # Use run --rm (not exec) — works even if web container not yet started
