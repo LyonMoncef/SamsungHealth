@@ -94,8 +94,9 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-dev
-          export IMAGE_TAG="$IMAGE_TAG"
-          docker compose -f docker-compose.prod.yml pull web
+          # Write IMAGE_TAG first — --env-file .env.prod overrides shell env in compose interpolation
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
+          docker compose -f docker-compose.prod.yml --env-file .env.prod pull web
           # Use run --rm (not exec) — works even if web container not yet started
           CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
           EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
@@ -111,7 +112,6 @@ jobs:
             exit 1
           fi
           docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
-          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
           docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
           EOF
 
