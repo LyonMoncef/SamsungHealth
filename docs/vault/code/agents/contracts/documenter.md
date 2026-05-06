@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/contracts/documenter.py
 git_blob: a6e5bc238d1b80e6c36b7b2a950c2fb65ec9034a
-last_synced: '2026-04-23T10:49:29Z'
+last_synced: '2026-05-06T08:02:33Z'
 loc: 14
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_health_routes_auth.py
 git_blob: 01d9d13dd41a803e978e02e2b112e01066a4cc2c
-last_synced: '2026-04-26T16:48:28Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 184
 annotations: []
 imports:

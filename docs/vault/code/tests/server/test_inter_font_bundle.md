@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_inter_font_bundle.py
 git_blob: 17d753d5223b64fa05c0521ba28d427dbf20df01
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 112
 annotations: []
 imports:

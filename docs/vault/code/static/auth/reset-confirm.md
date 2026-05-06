@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/auth/reset-confirm.html
 git_blob: 500ead46d3c505e84cd99063500642c3a91bbfbe
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 42
 annotations: []
 imports: []

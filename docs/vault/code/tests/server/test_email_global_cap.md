@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_email_global_cap.py
 git_blob: e62b746023d31564935b8ed7855b286dc5ff58cc
-last_synced: '2026-04-27T17:56:06Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 183
 annotations: []
 imports:

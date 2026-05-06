@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_dashboard_rebrand.py
 git_blob: 14aa9cf7d959a94a9ddec09eb2658e611c710925
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 174
 annotations: []
 imports:

@@ -2,9 +2,9 @@
 type: spec
 title: "Phase 6 MVP — CI/CD multi-env (VPS perso)"
 slug: 2026-04-30-phase6-cicd-mvp
-status: ready
+status: delivered
 created: 2026-04-30
-delivered: null
+delivered: 2026-04-30
 priority: high
 related_plans:
   - 2026-04-23-plan-v2-refactor-master

@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/com/samsunghealth/data/HealthConnectManager.kt
 git_blob: ee28d72e213a5e484062b388062dd8b510fc9c56
-last_synced: '2026-04-23T10:49:30Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 188
 annotations: []
 imports: []

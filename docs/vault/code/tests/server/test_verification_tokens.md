@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_verification_tokens.py
 git_blob: c8ee00c71f06874c363fc8370ef1362919cea1d9
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 243
 annotations: []
 imports:

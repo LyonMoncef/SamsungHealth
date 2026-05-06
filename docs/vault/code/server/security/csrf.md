@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/security/csrf.py
 git_blob: 95d94f2955414a4fee1cdb86714494d387fe50a9
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 28
 annotations: []
 imports:

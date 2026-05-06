@@ -3,7 +3,7 @@ type: code-source
 language: css
 file_path: static/css/admin.css
 git_blob: aaf37b21fbe4869fb5c3f1d4a8f5a2751c8bb861
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 224
 annotations: []
 imports: []

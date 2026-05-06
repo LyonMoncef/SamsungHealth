@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_healthz.py
 git_blob: e332215ba5203ca663db5c0d48b5c8218a8ee9c8
-last_synced: '2026-04-30T20:33:28Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 98
 annotations: []
 imports: []

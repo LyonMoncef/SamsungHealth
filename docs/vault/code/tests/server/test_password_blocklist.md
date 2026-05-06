@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_password_blocklist.py
 git_blob: 5646b5b83aaf5b6e5a39e27162b232c502af9fdd
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 118
 annotations: []
 imports:
