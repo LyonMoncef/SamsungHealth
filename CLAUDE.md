@@ -112,6 +112,14 @@ Never commit to `main` or `dev` directly. Always: `feat/<scope>`, `fix/<scope>`,
 
 ---
 
+## Vault
+
+`docs/vault/` is the canonical vault — versioned in git alongside the code. Never treat the Windows Obsidian folder as a source of truth.
+
+The Windows path (`/mnt/c/Users/<user>/Documents/Obsidian/SamsungHealth/`) is a read-only mirror updated by the pre-commit hook when `CARTOGRAPHER_MIRROR_TO` is set in `.env.local`. It is opt-in, not required for any workflow. See `.env.local.example`.
+
+---
+
 ## Agent/skill system
 
 Skills generate a `brief.json` using Pydantic schemas in `agents/contracts/`. Agents read this brief from `${CLAUDE_PROJECT_DIR}/${WORK_DIR}/brief.json`. Before modifying a skill invocation chain, check the relevant contract in `agents/contracts/`.

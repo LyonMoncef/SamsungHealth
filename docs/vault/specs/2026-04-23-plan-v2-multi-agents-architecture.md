@@ -22,7 +22,7 @@ viz_primary: mermaid-gitgraph
 
 > **Master plan de la refonte** : `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md` (approuvé 2026-04-23)
 > Ce plan définit **comment** exécuter le master plan avec des agents à responsabilité unique.
-> Les specs vivent **dans le repo** (`docs/vault/specs/`) depuis Phase A.8 — vault Obsidian dédié `C:\Users\idsmf\Documents\Obsidian\SamsungHealth\` (séparé du PKM).
+> Les specs vivent **dans le repo** dans `docs/vault/` (source canonique, versionnée en git). Le dossier Windows est un miroir read-only optionnel pour navigation Obsidian (voir `.env.local.example`).
 
 ## Context
 
