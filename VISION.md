@@ -65,53 +65,57 @@ Pentester agent invoqué à chaque spec et chaque PR. Verdict bloquant si findin
 
 ## Design system — DataSaillance
 
-**Règle fondamentale** : Nightfall v2 abandonne son design original au profit des codes visuels standards DataSaillance. Cohérence avec l'écosystème (DataSaillance, HarnessGame, OpenDesign).
+**Règle fondamentale** : Nightfall v2 utilise la charte graphique DataSaillance issue de l'identité visuelle officielle. Cohérence avec l'écosystème (DataSaillance, HarnessGame).
 
 ### Référence
 
-- Palette et tokens : `../OpenDesign/apps/web/src/index.css`
-- Règles couleur : `../OpenDesign/craft/color.md`
-- Règles typo : `../OpenDesign/craft/typography.md`
-- Logos et polices : `../Vectorizer/IdentiteVisuelle/`
-- Méthodologie frontend : `../OpenDesign/` (global.css comme source d'autorité)
+- **Palette et logos (source de vérité)** : `../Vectorizer/IdentiteVisuelle/`
+- **Méthodologie CSS** : `../OpenDesign/` (structure global.css, organisation des fichiers) — pas les tokens couleur
+- **Polices** : `../Vectorizer/IdentiteVisuelle/Polices/` (Playfair Display) + Cairo via Google Fonts
 
-### Tokens (source of truth)
-
-**Light mode** :
-```css
---bg: #faf9f7          /* fond warm paper */
---bg-panel: #ffffff
---text: #1a1916
---text-muted: #74716b
---accent: #c96442      /* rust/burnt-sienna */
---border: #ebe8e1
-```
+### Tokens (source of truth — extraits des logos IdentiteVisuelle)
 
 **Dark mode** :
 ```css
---bg: #1a1917
---bg-panel: #222120
---text: #e8e4dc
---text-muted: #9a9690
---accent: #d97a56      /* rust éclairci */
---border: #333128
+--bg: #191e22           /* fond principal dark */
+--bg-panel: #232e32     /* surface / cards */
+--text: #e8eff2
+--text-muted: #7a9aaa
+--accent-teal: #0e9eb0  /* accent primaire */
+--accent-amber: #d37c04 /* accent secondaire / CTA */
+--accent-cyan: #3be5e7  /* accent tertiaire / highlights */
+--border: #2e3d44
+```
+
+**Light mode** :
+```css
+--bg: #ffffff
+--bg-panel: #f4f8fa
+--text: #191e22
+--text-muted: #81868b
+--accent-teal: #0e9eb0
+--accent-amber: #d37c04
+--accent-cyan: #3be5e7
+--border: #d0dde3
 ```
 
 ### Règles d'application
 
 - **Mode light ET dark obligatoires** — toggle utilisateur + respect du `prefers-color-scheme` OS
-- **Un seul accent** (`--accent` rust) — max 2 usages visibles par écran
+- **Accent teal** (`#0e9eb0`) pour les éléments primaires (liens, focus, sélection)
+- **Accent amber** (`#d37c04`) pour les CTA et actions principales
+- **Accent cyan** (`#3be5e7`) pour les highlights et visualisations de données
 - **Police** : Cairo (variable, 400/500/600/700) + fallback système
 - **Pas de gradients décoratifs** — surfaces plates, hiérarchie par poids et taille
 - **Pas de `#6366f1`** (indigo Tailwind) — anti-slop explicite
+- **Pas de glows/halos** — box-shadow décoratif interdit
 - Tracking uppercase : `letter-spacing: 0.06em` minimum — obligatoire
-- Headings 32px+ : tracking négatif (`-0.01em`)
 
 ### Ce que Nightfall v1 avait et qu'on abandonne
 
-- Fond noir pur `#000` / contrastes extrêmes → remplacé par neutrals chauds DataSaillance
+- Fond noir pur `#000` / contrastes extrêmes → remplacé par `#191e22`
 - Halos lumineux et glows décoratifs → supprimés
-- Palette propre à Nightfall (teintes froides, néon) → remplacée par accent rust DataSaillance
+- Couleurs aléatoires non issues de la charte → remplacées par tokens IdentiteVisuelle
 - Originalité visuelle du nom "Nightfall" → conservé comme nom produit, pas comme direction esthétique
 
 ---

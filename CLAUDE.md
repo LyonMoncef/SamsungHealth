@@ -102,7 +102,7 @@ Every Art.9 field must be AES-256-GCM encrypted at rest. Any new model field sto
 `pentester` agent runs on every spec and every PR via `/review`. A finding of severity ≥ HIGH blocks merge — it is not optional. Do not bypass with `--no-verify` or by skipping the review step.
 
 ### Design — DataSaillance tokens only
-No Nightfall original design (dark `#000`, neons, glows, cold palette). Use DataSaillance tokens from `../OpenDesign/apps/web/src/index.css`. Light **and** dark mode are both mandatory. Forbidden: `#6366f1` (indigo Tailwind), `linear-gradient` decorative, box-shadow glow effects, font other than Cairo.
+Token source of truth: `../Vectorizer/IdentiteVisuelle/` (logos + polices). OpenDesign is referenced for CSS structure only, not for color values. Dark mode palette: bg `#191e22`, surface `#232e32`, teal `#0e9eb0`, amber `#d37c04`, cyan `#3be5e7`. Light **and** dark mode are both mandatory. Forbidden: `#6366f1` (indigo Tailwind), `linear-gradient` decorative, box-shadow glow effects, font other than Cairo.
 
 ### No LLM on health data
 Nightfall is explicitly not an LLM wrapper. Do not add Claude/OpenAI/etc. calls that receive raw health fields as input. Visualization and pattern detection are algorithmic only.
