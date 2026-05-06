@@ -118,9 +118,8 @@ jobs:
       - name: Smoke test (loop, 60s max)
         id: smoke
         run: |
-          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << 'EOF'
           for i in $(seq 1 30); do
-            if curl -fs http://localhost:8001/healthz; then
+            if curl -fs https://sh.datasaillance.fr/healthz; then
               echo "healthz OK"
               exit 0
             fi
@@ -128,7 +127,6 @@ jobs:
           done
           echo "smoke test failed after 60s"
           exit 1
-          EOF
 
       - name: Auto-rollback on smoke failure (HIGH 4)
         if: failure() && steps.smoke.outcome == 'failure'
