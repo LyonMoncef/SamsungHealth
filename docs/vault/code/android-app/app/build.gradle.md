@@ -1,3 +1,26 @@
+---
+type: code-source
+language: kotlin
+file_path: android-app/app/build.gradle.kts
+git_blob: bca9efa2391c7f78325ff890e7353fb6cc230628
+last_synced: '2026-05-07T00:48:24Z'
+loc: 119
+annotations: []
+imports: []
+exports: []
+tags:
+- code
+- kotlin
+---
+
+# android-app/app/build.gradle.kts
+
+> [!info] Code mirror
+> Ce fichier est un **miroir auto-généré** de [`android-app/app/build.gradle.kts`](../../../android-app/app/build.gradle.kts).
+> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
+> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
+
+```kotlin
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -117,3 +140,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+```
+
+---
+
+## Appendix — symbols & navigation *(auto)*
