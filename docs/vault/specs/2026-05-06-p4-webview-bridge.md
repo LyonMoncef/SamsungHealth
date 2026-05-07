@@ -1,7 +1,7 @@
 ---
 title: "Phase 4 WebView Bridge"
 slug: 2026-05-06-p4-webview-bridge
-status: draft
+status: ready
 created: 2026-05-06
 phase: P4
 spec_type: feature
@@ -9,7 +9,10 @@ related_specs:
   - 2026-05-06-p4-android-shell
   - 2026-04-27-v2.3.3.2-frontend-nightfall
 implements: []
-tested_by: []
+tested_by:
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/webview/NightfallWebViewClientTest.kt
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/webview/NightfallJsInterfaceTest.kt
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/data/settings/SettingsDataStoreTest.kt
 branch: feat/p4-webview-bridge
 tags: [phase4, android, webview, bridge, javascript, security, theme]
 ---

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/webview/java/fr/datasaillance/nightfall/ui/screens/trends/TrendsScreen.kt
-git_blob: f6161ec66ef467e568a7aacde3dd89a1f76f7052
-last_synced: '2026-05-07T00:48:24Z'
-loc: 18
+git_blob: 5a1637781830dd92464191096499880557b7cef8
+last_synced: '2026-05-07T03:51:34Z'
+loc: 30
 annotations: []
 imports: []
 exports: []
@@ -23,21 +23,33 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.ui.screens.trends
 
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import fr.datasaillance.nightfall.data.auth.TokenDataStore
+import fr.datasaillance.nightfall.data.settings.SettingsDataStore
+import fr.datasaillance.nightfall.webview.WebViewScreen
 
 @Composable
-fun TrendsScreen() {
-    AndroidView(factory = { ctx ->
-        WebView(ctx).apply {
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            webViewClient = WebViewClient()
-            loadUrl("http://10.0.2.2:8001/trends")
-        }
-    })
+fun TrendsScreen(
+    tokenDataStore: TokenDataStore? = null,
+    settingsDataStore: SettingsDataStore? = null,
+    onOpenImport: () -> Unit = {},
+    onLogout: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    val token = remember(context) { tokenDataStore ?: TokenDataStore(context) }
+    val settings = remember(context) { settingsDataStore ?: SettingsDataStore(context) }
+    val backendUrl = settings.getBackendUrl().trimEnd('/')
+    WebViewScreen(
+        url = "$backendUrl/trends",
+        modifier = Modifier,
+        tokenDataStore = token,
+        settingsDataStore = settings,
+        onOpenImport = onOpenImport,
+        onLogout = onLogout,
+    )
 }
 ```
 
@@ -46,4 +58,4 @@ fun TrendsScreen() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `TrendsScreen` (function) — lines 8-18
+- `TrendsScreen` (function) — lines 11-30
