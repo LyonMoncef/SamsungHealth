@@ -71,7 +71,7 @@ Pentester agent invoqué à chaque spec et chaque PR. Verdict bloquant si findin
 
 - **Palette et logos (source de vérité)** : `../Vectorizer/IdentiteVisuelle/`
 - **Méthodologie CSS** : `../OpenDesign/` (structure global.css, organisation des fichiers) — pas les tokens couleur
-- **Polices** : `../Vectorizer/IdentiteVisuelle/Polices/` (Playfair Display) + Cairo via Google Fonts
+- **Polices** : `../Vectorizer/IdentiteVisuelle/Polices/` (Playfair Display pour les titres) + Inter via Google Fonts (UI body)
 
 ### Tokens (source of truth — extraits des logos IdentiteVisuelle)
 
@@ -105,7 +105,7 @@ Pentester agent invoqué à chaque spec et chaque PR. Verdict bloquant si findin
 - **Accent teal** (`#0e9eb0`) pour les éléments primaires (liens, focus, sélection)
 - **Accent amber** (`#d37c04`) pour les CTA et actions principales
 - **Accent cyan** (`#3be5e7`) pour les highlights et visualisations de données
-- **Police** : Cairo (variable, 400/500/600/700) + fallback système
+- **Police** : Playfair Display (titres/display) + Inter (UI body, 400/500/600/700) + fallback système
 - **Pas de gradients décoratifs** — surfaces plates, hiérarchie par poids et taille
 - **Pas de `#6366f1`** (indigo Tailwind) — anti-slop explicite
 - **Pas de glows/halos** — box-shadow décoratif interdit
