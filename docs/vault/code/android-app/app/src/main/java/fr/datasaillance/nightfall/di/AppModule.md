@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt
-git_blob: 1211e49a1bfe7903b4e590e752ed8cb3e924b484
-last_synced: '2026-05-07T00:48:24Z'
-loc: 9
+git_blob: 3c347ed626e0cb9476052e9f3783c920fbaec161
+last_synced: '2026-05-07T03:51:34Z'
+loc: 13
 annotations: []
 imports: []
 exports: []
@@ -25,10 +25,14 @@ package fr.datasaillance.nightfall.di
 
 import android.content.Context
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
+import fr.datasaillance.nightfall.data.settings.SettingsDataStore
 
 object AppModule {
     fun provideTokenDataStore(context: Context): TokenDataStore =
         TokenDataStore(context)
+
+    fun provideSettingsDataStore(context: Context): SettingsDataStore =
+        SettingsDataStore(context)
 }
 ```
 
@@ -37,4 +41,5 @@ object AppModule {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `provideTokenDataStore` (function) — lines 7-8
+- `provideTokenDataStore` (function) — lines 8-9
+- `provideSettingsDataStore` (function) — lines 11-12

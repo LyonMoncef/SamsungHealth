@@ -27,10 +27,22 @@
 | Phase 4 Android Shell | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/theme/NightfallTheme.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/network/BackendUrlStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt`, `android-app/app/build.gradle.kts` | [`7a71b2b`](#2026-05-07-7a71b2b) |
 | Phase 4 Android Auth Screens | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/RegisterScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/ForgotPasswordScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/AuthCallbackScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/AuthModels.kt` | [`e89d409`](#2026-05-07-e89d409) |
 | Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`4dcf071`](#2026-05-07-4dcf071) |
+| Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
 
 ---
 
 ## Changelog
+
+### 2026-05-07 `b7105b4`
+feat(android): Phase 4 WebView Bridge — NightfallWebViewClient, NightfallJsInterface, WebViewScreen, SettingsDataStore
+- NightfallWebViewClient.kt : WebViewClient avec shouldOverrideUrlLoading par URI parsing scheme+host+port (anti-homograph attack TA-WV-02) — CustomTabsIntent + FLAG_ACTIVITY_NEW_TASK pour externe ; onReceivedSslError handler.cancel() jamais proceed() (TA-WV-04) ; onReceivedHttpError 401/403 main frame → clearToken() + onLogout() (TA-WV-03) ; onPageFinished → injectAuth() (JSONObject.quote escaping) + injectTheme() (TA-WV-05/06)
+- NightfallJsInterface.kt : 3 @JavascriptInterface exactement — getAppVersion() → BuildConfig.VERSION_NAME, openImport() → Handler(mainLooper).post, onNightfallEvent(String) log-only avec guard 4096 chars (anti-DoS)
+- WebViewScreen.kt : AndroidView WebView — javaScriptEnabled, domStorageEnabled, setAllowFileAccess(false), setAllowContentAccess(false), MIXED_CONTENT_NEVER_ALLOW ; modifier.fillMaxSize() pour occuper tout l'espace parent ; backendOrigin calculé depuis SettingsDataStore via URI parsing
+- SettingsDataStore.kt : EncryptedSharedPreferences "nightfall_settings_prefs" (distinct de TokenDataStore D10) ; Robolectric guard "nightfall_test_settings_prefs" (plain prefs en JVM) ; getBackendUrl/setBackendUrl avec validation http://|https:// ; getThemePreference/setThemePreference avec validation enum {system,dark,light}
+- AppModule.kt : provideSettingsDataStore(context) ajouté
+- AndroidManifest.xml : <queries> block https+http pour Chrome Custom Tabs API 30+
+- SleepScreen/TrendsScreen/ActivityScreen (webview flavor) : wiring WebViewScreen avec tokenDataStore + settingsDataStore + onLogout
+- 34 tests RED → GREEN (NightfallWebViewClientTest 12, NightfallJsInterfaceTest 8, SettingsDataStoreTest 14) ; 97/97 total GREEN
 
 ### 2026-05-07 `4dcf071`
 feat: android: Phase 4 import SAF — ImportViewModel, CountingRequestBody, ImportRepository, ImportScreen stepper
