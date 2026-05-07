@@ -24,10 +24,30 @@
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
+| Phase 4 Android Shell | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/theme/NightfallTheme.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/network/BackendUrlStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt`, `android-app/app/build.gradle.kts` | [`7a71b2b`](#2026-05-07-7a71b2b) |
 
 ---
 
 ## Changelog
+
+### 2026-05-07 `021ab8e`
+fix: android: Inter + Playfair Display — remplace Cairo (non DS), fonts bundlées depuis static/assets/fonts
+- Cairo n'est pas dans le système typographique DataSaillance — remplacé par Inter (body/UI) + Playfair Display (titres) conformément à Vectorizer/design-system/typography.md
+- Variable fonts copiées depuis static/assets/fonts/ vers android-app/app/src/main/res/font/ (inter_variable.ttf + playfair_display_variable.ttf, licence OFL)
+- FontLoadingStrategy.OptionalLocal : fallback système si R.font ne peut pas être résolu (Paparazzi JVM renderer) — évite le crash, production non affectée
+- Spec p4-android-shell.md corrigée : D8 Cairo → Playfair Display + Inter, livrables et contrainte C4 mis à jour
+
+### 2026-05-07 `7a71b2b`
+feat: android: Phase 4 shell — fr.datasaillance.nightfall, navigation, theme, EncryptedSharedPreferences, configurable backend URL
+- Clean rewrite of android-app/ from com.samsunghealth → fr.datasaillance.nightfall (7 legacy files deleted)
+- NightfallTheme: Material3 dark/light color schemes with DataSaillance tokens (teal #0E9EB0, amber #D37C04, cyan #07BCD3)
+- NavGraph: Scaffold + NavHost with 7 destinations (login, sleep, trends, activity, profile, import, settings); startDestination conditional on hasToken
+- BottomNavBar: 4-tab NavigationBar (Sommeil, Tendances, Activité, Profil) + ProfileScreen with Paramètres nav entry
+- TokenDataStore: EncryptedSharedPreferences AES256-GCM; Robolectric-only plaintext path guarded by Build.FINGERPRINT check (unreachable in production — spec C2)
+- BackendUrlStore: EncryptedSharedPreferences-backed configurable backend URL, defaults to BuildConfig.DEFAULT_BACKEND_URL (http://10.0.2.2:8001 for debug)
+- NetworkModule.provideRetrofit() reads base URL from BackendUrlStore; SettingsScreen exposes URL editing UI
+- Build: namespace fr.datasaillance.nightfall, versionName 4.0.0, flavors webview+native (rendering dimension), security-crypto + timber + okhttp-logging deps added
+- 27/27 unit tests GREEN (Paparazzi, Robolectric, MockWebServer); Hilt deferred → issue #52 (Kotlin 2.x kapt incompatibility)
 
 ### 2026-05-06 `523a981`
 chore(project): CLAUDE.md — stack, contraintes C1/C2/C3, design DataSaillance, skill chain
