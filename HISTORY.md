@@ -25,10 +25,46 @@
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
 | Phase 4 Android Shell | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/theme/NightfallTheme.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/network/BackendUrlStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt`, `android-app/app/build.gradle.kts` | [`7a71b2b`](#2026-05-07-7a71b2b) |
+| Phase 4 Android Auth Screens | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/RegisterScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/ForgotPasswordScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/AuthCallbackScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/AuthModels.kt` | [`e89d409`](#2026-05-07-e89d409) |
+| Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`pending`](#2026-05-07-pending) |
 
 ---
 
 ## Changelog
+
+### 2026-05-07 `pending`
+feat: android: Phase 4 import SAF — ImportViewModel, CountingRequestBody, ImportRepository, ImportScreen stepper
+- ImportUiState.kt : sealed class Idle/Connecting/ConnectionFailed/Connected/Selecting/Uploading/Success/Error
+- ImportDataType.kt : enum SLEEP/HEART_RATE/STEPS/EXERCISE avec samsungFilenamePrefix, apiPath, labelRes, iconRes
+- ImportResult.kt : data class par type (inserted, skipped, errorMessage?)
+- CountingRequestBody.kt : OkHttp RequestBody avec CountingSink — onProgress(0f) appelé en début de writeTo (≥2 appels garantis pour petits payloads < segment OkIO)
+- ImportRepository.kt : interface mockable ; CsvEntry(uri, size) ; uploadCsv @Throws(IOException)
+- ImportRepositoryImpl.kt : extractCsvEntries via ZipInputStream avec ZIP bomb protection (200 Mo / 100 entrées max, IOException Archive trop grande) ; uploadCsv streamé via CountingRequestBody + dispatch Retrofit par type
+- ImportViewModel.kt : plain ViewModel (no Hilt — issue #52) ; checkConnection() set Connecting AVANT viewModelScope.launch (StandardTestDispatcher) ; startUpload() catch CancellationException re-throw + catch Exception par type pour succès partiel
+- ImportScreen.kt : SAF launcher rememberLauncherForActivityResult(OpenDocumentTree) → viewModel.startUpload ; ConnectedContent avec RgpdNoticeCard (surfaceVariant + border primary 4dp + AnnotatedString SemiBold URL) + bouton Sélectionner dossier ; collectAsStateWithLifecycle
+- ImportStep.kt : sealed class Connection/Selection/Upload pour stepper visuel
+- NightfallApi.kt : 4 endpoints @Multipart @POST ajoutés (importSleep/importHeartRate/importSteps/importExercise) + ImportApiResponse @Serializable
+- NavGraph.kt : route import construisant ImportViewModel(ImportRepositoryImpl(api))
+- build.gradle.kts : androidx.lifecycle:lifecycle-runtime-compose:2.8.7
+- 16 tests RED → GREEN (ImportViewModelTest 9 + CountingRequestBodyTest 7) ; 63/63 total GREEN
+- Spec p4-android-import.md : status ready, tested_by peuplé, backend endpoints hors scope Android PR
+
+### 2026-05-07 `e89d409`
+feat: android: Phase 4 auth — AuthViewModel, LoginScreen, RegisterScreen, ForgotPasswordScreen, OAuth Custom Tabs, accessibility
+- AuthViewModel (plain ViewModel, no Hilt — issue #52) : login/register/requestPasswordReset/storeTokenFromCallback/setLoginError ; Loading state synchrone avant viewModelScope.launch ; mapHttpError 401/403/409/400
+- AuthUiState.kt : sealed classes LoginUiState / RegisterUiState / ForgotPasswordUiState (Idle/Loading/Success/Error + Sent pour forgot) ; ForgotPasswordUiState.Error intentionnellement mort (anti-enum)
+- LoginScreen : AuthTextField email+password avec testTag field_email/field_password + contentDescription ; AuthPrimaryButton Se connecter testTag btn_login ; OutlinedButton Google OAuth (border Cyan500) testTag btn_google_oauth ; TextButton Mot de passe oublié testTag link_forgot_password
+- RegisterScreen : paramètre registrationToken: String? = null (injectable depuis Settings) ; validation inline mots de passe
+- ForgotPasswordScreen : formulaire remplacé par confirmation anti-enum sur ForgotPasswordUiState.Sent
+- AuthCallbackScreen : deep link nightfall://auth/callback ; setLoginError(Authentification Google échouée) + onFailure() si token absent
+- AuthTextField : toggle visibilité password (Icons.Filled.Visibility/VisibilityOff, contentDescription Afficher/Masquer)
+- AuthPrimaryButton : CircularProgressIndicator avec contentDescription Chargement en cours
+- NightfallApi : 4 endpoints auth ajoutés (login, register, requestPasswordReset, googleStart)
+- NetworkModule : CookieJar inline in-memory (JavaNetCookieJar non dispo sans okhttp-urlconnection)
+- AndroidManifest : intent-filter deep link nightfall://auth/callback autoVerify=true
+- build.gradle.kts : androidx.browser:browser:1.8.0 (Custom Tabs)
+- 20 tests RED → GREEN (AuthViewModelTest 11 + LoginScreenTest 4 + RegisterScreenTest 3 + ForgotPasswordScreenTest 2) ; 47/47 total GREEN
+- Spec p4-android-auth.md : status ready, tested_by peuplé, D7 CookieJar note, AuthModels package note, ForgotPasswordUiState.Error note, Cairo → Inter/Playfair Display
 
 ### 2026-05-07 `021ab8e`
 fix: android: Inter + Playfair Display — remplace Cairo (non DS), fonts bundlées depuis static/assets/fonts

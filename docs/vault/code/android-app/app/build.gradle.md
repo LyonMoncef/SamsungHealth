@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: 8d1a9c9824e0ba51d312a4319c7ac589d2032d54
-last_synced: '2026-05-07T02:02:39Z'
-loc: 122
+git_blob: 523fc31d70b5f0c1d8ad2550f524d8f7b628fbb5
+last_synced: '2026-05-07T03:10:49Z'
+loc: 123
 annotations: []
 imports: []
 exports: []
@@ -100,6 +100,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.5")
