@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: bca9efa2391c7f78325ff890e7353fb6cc230628
-last_synced: '2026-05-07T00:48:24Z'
-loc: 119
+git_blob: 523fc31d70b5f0c1d8ad2550f524d8f7b628fbb5
+last_synced: '2026-05-07T03:10:49Z'
+loc: 123
 annotations: []
 imports: []
 exports: []
@@ -100,6 +100,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.5")
@@ -116,6 +117,9 @@ dependencies {
 
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Browser (Custom Tabs for OAuth)
+    implementation("androidx.browser:browser:1.8.0")
 
     // Core
     implementation("androidx.core:core-ktx:1.15.0")

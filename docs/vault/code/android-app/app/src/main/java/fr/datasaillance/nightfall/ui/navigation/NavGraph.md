@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: 98d03f64aa735f1dc02df9a36e392f05b46108f8
-last_synced: '2026-05-07T00:48:24Z'
-loc: 108
+git_blob: 18548846e0244c8ab9de18641934a122078f921c
+last_synced: '2026-05-07T03:10:49Z'
+loc: 149
 annotations: []
 imports: []
 exports: []
@@ -23,17 +23,26 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.ui.navigation
 
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.ComposeNavigator
-import androidx.navigation.compose.DialogNavigator
+import fr.datasaillance.nightfall.data.http.NightfallApi
+import fr.datasaillance.nightfall.data.import_.CsvEntry
+import fr.datasaillance.nightfall.data.import_.ImportRepository
+import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
+import fr.datasaillance.nightfall.domain.import_.ImportDataType
+import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
 import fr.datasaillance.nightfall.ui.screens.import_.ImportScreen
 import fr.datasaillance.nightfall.ui.screens.login.LoginScreen
@@ -41,13 +50,15 @@ import fr.datasaillance.nightfall.ui.screens.profile.ProfileScreen
 import fr.datasaillance.nightfall.ui.screens.settings.SettingsScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.trends.TrendsScreen
+import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
     hasToken: Boolean,
     backendUrl: String = "",
-    onSaveUrl: (String) -> Unit = {}
+    onSaveUrl: (String) -> Unit = {},
+    api: NightfallApi? = null,
 ) {
     val startDestination = if (hasToken) NavDestination.Sleep.route else NavDestination.Login.route
 
@@ -103,7 +114,20 @@ fun NavGraph(
                     }
                 )
             }
-            composable(NavDestination.Import.route) { ImportScreen() }
+            composable(NavDestination.Import.route) {
+                val repository: ImportRepository = remember {
+                    if (api != null) {
+                        ImportRepositoryImpl(api)
+                    } else {
+                        NoOpImportRepository()
+                    }
+                }
+                val viewModel = remember { ImportViewModel(repository) }
+                ImportScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
             composable(NavDestination.Settings.route) {
                 SettingsScreen(
                     currentUrl = backendUrl,
@@ -112,6 +136,23 @@ fun NavGraph(
             }
         }
     }
+}
+
+private class NoOpImportRepository : ImportRepository {
+    override suspend fun pingBackend(): Boolean = false
+
+    override suspend fun extractCsvEntries(
+        contentResolver: ContentResolver,
+        treeUri: Uri,
+    ): Map<ImportDataType, CsvEntry> = emptyMap()
+
+    override suspend fun uploadCsv(
+        contentResolver: ContentResolver,
+        uri: Uri,
+        type: ImportDataType,
+        totalBytes: Long,
+        onProgress: (Float) -> Unit,
+    ): ImportResult = throw UnsupportedOperationException("No-op repository")
 }
 
 /**
@@ -136,5 +177,9 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 22-92
-- `ensureComposeNavigators` (function) — lines 100-108
+- `NavGraph` (function) — lines 32-116
+- `NoOpImportRepository` (class) — lines 118-133
+- `pingBackend` (function) — lines 119-119
+- `extractCsvEntries` (function) — lines 121-124
+- `uploadCsv` (function) — lines 126-132
+- `ensureComposeNavigators` (function) — lines 141-149

@@ -77,6 +77,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.5")
@@ -93,6 +94,9 @@ dependencies {
 
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Browser (Custom Tabs for OAuth)
+    implementation("androidx.browser:browser:1.8.0")
 
     // Core
     implementation("androidx.core:core-ktx:1.15.0")
