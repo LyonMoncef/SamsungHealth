@@ -1,14 +1,18 @@
 ---
 title: "Phase 4 Android Auth Screens"
 slug: 2026-05-06-p4-android-auth
-status: draft
+status: ready
 created: 2026-05-06
 phase: P4
 spec_type: ui
 related_specs:
   - 2026-05-06-p4-android-shell
 implements: []
-tested_by: []
+tested_by:
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModelTest.kt
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreenTest.kt
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/auth/RegisterScreenTest.kt
+  - android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/auth/ForgotPasswordScreenTest.kt
 branch: feat/p4-android-auth
 tags: [phase4, android, compose, auth, jwt, oauth, google, login]
 ---
@@ -59,7 +63,7 @@ Note : le refresh token est géré en cookie httpOnly par le backend (`/auth/ref
 | D4 | `AuthCallbackScreen` comme destination dédiée (pas un intercepteur Activity) | Le deep link `nightfall://auth/callback` est capturé par Navigation Compose via `deepLinks` — plus propre que `onNewIntent` dans `MainActivity` |
 | D5 | Custom Tabs pour le flow OAuth Google | Custom Tabs partage la session navigateur (cookies Google) sans ouvrir une WebView interne non sécurisée ; requis pour le PKCE implicit flow |
 | D6 | Appel `POST /auth/google/start` avant ouverture Custom Tabs | Le backend génère le state CSRF et l'URL Google avec nonce — le client ne forge pas l'URL lui-même |
-| D7 | `OkHttp CookieJar` (in-memory) pour le refresh cookie httpOnly | Le backend pose le cookie `refresh_token` sur `/auth/refresh` avec `httpOnly + SameSite=Strict` ; OkHttp doit pouvoir le renvoyer sur `/auth/refresh` sans que le code Kotlin y touche |
+| D7 | `OkHttp CookieJar` inline (in-memory) pour le refresh cookie httpOnly | Le backend pose le cookie `refresh_token` sur `/auth/refresh` avec `httpOnly + SameSite=Strict` ; OkHttp doit pouvoir le renvoyer sur `/auth/refresh` sans que le code Kotlin y touche. Note impl : `JavaNetCookieJar` (prescrit initialement) requiert `okhttp-urlconnection` non disponible dans le projet — un `CookieJar` anonyme `mutableMapOf<String, List<Cookie>>` est utilisé à la place ; sémantiquement équivalent pour un hôte unique |
 | D8 | Pas de `refresh_token` dans `TokenDataStore` | Le refresh token est httpOnly et géré par le cookie jar OkHttp — le stocker en clair en SharedPreferences violerait C2 |
 | D9 | Validation côté client minimale (email non-vide, password ≥ 1 char) avant envoi | Évite les 400 inutiles ; la vraie validation (force du mot de passe) reste serveur (`validate_password_strength`) |
 | D10 | Timeout réseau hérité du shell : 30s connect + 30s read | Défini dans `NetworkModule.kt` — pas de surcharge dans `AuthViewModel` |
@@ -92,6 +96,7 @@ android-app/app/src/main/java/fr/datasaillance/nightfall/
 data/
   http/
     NightfallApi.kt                 ← peupler avec AuthService (voir ci-dessous)
+    AuthModels.kt                   ← data classes auth (impl : dans data.http, non data.http.auth — flat package retenu)
   auth/
     TokenDataStore.kt               ← existant shell — pas modifié
 ```
@@ -166,6 +171,8 @@ sealed class ForgotPasswordUiState {
     object Loading : ForgotPasswordUiState()
     object Sent : ForgotPasswordUiState()           // affiche confirmation, pas de distinction
     data class Error(val message: String) : ForgotPasswordUiState()
+    // Note : Error n'est jamais émis par requestPasswordReset() (anti-enum — toujours Sent).
+    // Le variant est conservé dans la sealed class pour cohérence de pattern ; il est intentionnellement mort.
 }
 ```
 
@@ -269,15 +276,15 @@ Note : `mapHttpError` ne logue jamais les valeurs email/password — uniquement 
 | Lien / accent | `MaterialTheme.colorScheme.tertiary` (Cyan500) | `#07BCD3` |
 | Texte principal | `MaterialTheme.colorScheme.onBackground` | `#E8E4DC` (dark) / `#1A1916` (light) |
 | Erreur | `MaterialTheme.colorScheme.error` | Material 3 default |
-| Police | Cairo (tous styles) | — |
+| Police | Inter (corps/UI) + Playfair Display (titres) | — |
 
-Couleurs interdites dans ces écrans : `#6366f1`, tout `linear-gradient` décoratif, tout `box-shadow` type glow, toute police autre que Cairo.
+Couleurs interdites dans ces écrans : `#6366f1`, tout `linear-gradient` décoratif, tout `box-shadow` type glow, toute police autre que Inter/Playfair Display.
 
 ### LoginScreen
 
 Structure verticale centrée (`Column` + `Arrangement.Center`) :
 
-1. Logo/titre "Nightfall" en `MaterialTheme.typography.headlineMedium` (Cairo SemiBold)
+1. Logo/titre "Nightfall" en `MaterialTheme.typography.headlineMedium` (Playfair Display Bold)
 2. `AuthTextField` email (type `KeyboardType.Email`, `ImeAction.Next`)
 3. `AuthTextField` password (type `KeyboardType.Password`, toggle visibilité, `ImeAction.Done`)
 4. `AuthErrorMessage` — visible uniquement si `LoginUiState.Error` ; texte en `MaterialTheme.colorScheme.error`

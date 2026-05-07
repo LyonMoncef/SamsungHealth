@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: bca9efa2391c7f78325ff890e7353fb6cc230628
-last_synced: '2026-05-07T00:48:24Z'
-loc: 119
+git_blob: 8d1a9c9824e0ba51d312a4319c7ac589d2032d54
+last_synced: '2026-05-07T02:02:39Z'
+loc: 122
 annotations: []
 imports: []
 exports: []
@@ -116,6 +116,9 @@ dependencies {
 
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Browser (Custom Tabs for OAuth)
+    implementation("androidx.browser:browser:1.8.0")
 
     // Core
     implementation("androidx.core:core-ktx:1.15.0")

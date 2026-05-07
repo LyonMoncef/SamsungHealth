@@ -6,6 +6,9 @@ import fr.datasaillance.nightfall.data.http.AuthInterceptor
 import fr.datasaillance.nightfall.data.http.NightfallApi
 import fr.datasaillance.nightfall.data.network.BackendUrlStore
 import kotlinx.serialization.json.Json
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -19,6 +22,14 @@ object NetworkModule {
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .cookieJar(object : CookieJar {
+                private val cookieStore = mutableMapOf<String, List<Cookie>>()
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+                    cookieStore[url.host] = cookies
+                }
+                override fun loadForRequest(url: HttpUrl): List<Cookie> =
+                    cookieStore[url.host] ?: emptyList()
+            })
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

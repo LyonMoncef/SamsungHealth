@@ -94,6 +94,9 @@ dependencies {
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
 
+    // Browser (Custom Tabs for OAuth)
+    implementation("androidx.browser:browser:1.8.0")
+
     // Core
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")

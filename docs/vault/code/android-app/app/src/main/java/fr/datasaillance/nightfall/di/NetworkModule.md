@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt
-git_blob: 41c5a12a6a68b9fff89ad4344068125d0942bc8d
-last_synced: '2026-05-07T00:48:24Z'
-loc: 35
+git_blob: 00e2736b028ae943b310362287575b3d6d72aaab
+last_synced: '2026-05-07T02:02:39Z'
+loc: 46
 annotations: []
 imports: []
 exports: []
@@ -29,6 +29,9 @@ import fr.datasaillance.nightfall.data.http.AuthInterceptor
 import fr.datasaillance.nightfall.data.http.NightfallApi
 import fr.datasaillance.nightfall.data.network.BackendUrlStore
 import kotlinx.serialization.json.Json
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -42,6 +45,14 @@ object NetworkModule {
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .cookieJar(object : CookieJar {
+                private val cookieStore = mutableMapOf<String, List<Cookie>>()
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+                    cookieStore[url.host] = cookies
+                }
+                override fun loadForRequest(url: HttpUrl): List<Cookie> =
+                    cookieStore[url.host] ?: emptyList()
+            })
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
@@ -63,7 +74,9 @@ object NetworkModule {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `provideAuthInterceptor` (function) — lines 16-17
-- `provideOkHttpClient` (function) — lines 19-24
-- `provideRetrofit` (function) — lines 26-31
-- `provideNightfallApi` (function) — lines 33-34
+- `provideAuthInterceptor` (function) — lines 19-20
+- `provideOkHttpClient` (function) — lines 22-35
+- `saveFromResponse` (function) — lines 27-29
+- `loadForRequest` (function) — lines 30-31
+- `provideRetrofit` (function) — lines 37-42
+- `provideNightfallApi` (function) — lines 44-45

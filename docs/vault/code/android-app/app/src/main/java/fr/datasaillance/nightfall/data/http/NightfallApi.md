@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt
-git_blob: 3ff676ff6624b9cd7074cf4be2c6058e47fbecc1
-last_synced: '2026-05-07T00:48:24Z'
-loc: 9
+git_blob: e00c2ce51b9232acaada50a5ff6f07cf8aa0031d
+last_synced: '2026-05-07T02:02:39Z'
+loc: 24
 annotations: []
 imports: []
 exports: []
@@ -24,11 +24,26 @@ tags:
 package fr.datasaillance.nightfall.data.http
 
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.POST
 
 interface NightfallApi {
     @GET("health")
     suspend fun health(): Response<Unit>
+
+    @POST("auth/login")
+    suspend fun login(@Body body: LoginRequest): LoginResponse
+
+    @POST("auth/register")
+    suspend fun register(@Body body: RegisterRequest, @Header("X-Registration-Token") registrationToken: String?): RegisterResponse
+
+    @POST("auth/password/reset/request")
+    suspend fun requestPasswordReset(@Body body: PasswordResetRequest): StatusResponse
+
+    @POST("auth/google/start")
+    suspend fun googleStart(@Body body: GoogleStartRequest): GoogleStartResponse
 }
 ```
 
@@ -37,5 +52,9 @@ interface NightfallApi {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallApi` (class) — lines 6-9
-- `health` (function) — lines 7-8
+- `NightfallApi` (class) — lines 9-24
+- `health` (function) — lines 10-11
+- `login` (function) — lines 13-14
+- `register` (function) — lines 16-17
+- `requestPasswordReset` (function) — lines 19-20
+- `googleStart` (function) — lines 22-23
