@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt
-git_blob: 579fdac1e89910391d47d3042c98a2235f33c875
-last_synced: '2026-05-07T00:48:24Z'
-loc: 18
+git_blob: 71cf989e2df2a769d7316eec70e1a995411b1362
+last_synced: '2026-05-07T22:01:38Z'
+loc: 20
 annotations: []
 imports: []
 exports: []
@@ -27,13 +27,15 @@ sealed class NavDestination(
     val route: String,
     val label: String
 ) {
-    object Login    : NavDestination("login",    "Connexion")
-    object Sleep    : NavDestination("sleep",    "Sommeil")
-    object Trends   : NavDestination("trends",   "Tendances")
-    object Activity : NavDestination("activity", "Activité")
-    object Profile  : NavDestination("profile",  "Profil")
-    object Import   : NavDestination("import",   "Importer")
-    object Settings : NavDestination("settings", "Paramètres")
+    object Login          : NavDestination("login",           "Connexion")
+    object Sleep          : NavDestination("sleep",           "Sommeil")
+    object Trends         : NavDestination("trends",          "Tendances")
+    object Activity       : NavDestination("activity",        "Activité")
+    object Profile        : NavDestination("profile",         "Profil")
+    object Import         : NavDestination("import",          "Importer")
+    object Settings       : NavDestination("settings",        "Paramètres")
+    object Register       : NavDestination("register",        "Créer un compte")
+    object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
 
     companion object {
         fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)
@@ -46,5 +48,5 @@ sealed class NavDestination(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavDestination` (class) — lines 3-18
-- `bottomNavItems` (function) — lines 16-16
+- `NavDestination` (class) — lines 3-20
+- `bottomNavItems` (function) — lines 18-18

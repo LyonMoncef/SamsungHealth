@@ -29,10 +29,21 @@
 | Phase 4 Backend Import CSV multipart | `server/services/csv_import.py`, `server/routers/sleep.py`, `server/routers/heartrate.py`, `server/routers/steps.py`, `server/routers/exercise.py`, `tests/server/test_import_csv_multipart.py` | [`b11e00f`](#2026-05-07-b11e00f) |
 | Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`4dcf071`](#2026-05-07-4dcf071) |
 | Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
+| P5.0 LoginScreen natif | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt` | [`TBD`](#2026-05-08-TBD) |
 
 ---
 
 ## Changelog
+
+### 2026-05-08 `TBD`
+feat: (android): P5.0 LoginScreen natif — isFormValid, NavGraph wiring, AppModule.provideAuthViewModel
+- LoginScreen.kt — isFormValid = email.isNotBlank() && password.isNotBlank(), bouton Se connecter disabled si champs vides (TA-L-04)
+- NavGraph.kt — import stub ui.screens.login remplacé par ui.screens.auth.LoginScreen, AuthViewModel câblé via AppModule.provideAuthViewModel
+- NavDestination.kt — Register et ForgotPassword ajoutés
+- AppModule.kt — provideAuthViewModel(api, tokenDataStore) ajouté
+- Stub ui/screens/login/LoginScreen.kt supprimé (dead code)
+- Tests — NavGraphTest: TA-L-02 (login success → Sleep), LoginScreenTest: TA-L-06 (loading state disable behavioral), NavDestinationP5Test: Register/ForgotPassword routes
+- 110/110 tests GREEN
 
 ### 2026-05-07 `b11e00f`
 feat(backend): Phase 4 import CSV multipart — POST /api/sleep/import, /api/heartrate/import, /api/steps/import, /api/exercise/import

@@ -61,6 +61,7 @@ fun LoginScreen(
     }
 
     val isLoading = loginState is LoginUiState.Loading
+    val isFormValid = email.isNotBlank() && password.isNotBlank()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -123,6 +124,7 @@ fun LoginScreen(
                 text = "Se connecter",
                 onClick = { viewModel.login(email, password) },
                 isLoading = isLoading,
+                enabled = isFormValid && !isLoading,
                 modifier = Modifier.fillMaxWidth().semantics { testTag = "btn_login" }
             )
 
