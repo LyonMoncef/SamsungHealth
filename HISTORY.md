@@ -26,13 +26,13 @@
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
 | Phase 4 Android Shell | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/theme/NightfallTheme.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/network/BackendUrlStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt`, `android-app/app/build.gradle.kts` | [`7a71b2b`](#2026-05-07-7a71b2b) |
 | Phase 4 Android Auth Screens | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/RegisterScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/ForgotPasswordScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/AuthCallbackScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/AuthModels.kt` | [`e89d409`](#2026-05-07-e89d409) |
-| Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`pending`](#2026-05-07-pending) |
+| Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`4dcf071`](#2026-05-07-4dcf071) |
 
 ---
 
 ## Changelog
 
-### 2026-05-07 `pending`
+### 2026-05-07 `4dcf071`
 feat: android: Phase 4 import SAF — ImportViewModel, CountingRequestBody, ImportRepository, ImportScreen stepper
 - ImportUiState.kt : sealed class Idle/Connecting/ConnectionFailed/Connected/Selecting/Uploading/Success/Error
 - ImportDataType.kt : enum SLEEP/HEART_RATE/STEPS/EXERCISE avec samsungFilenamePrefix, apiPath, labelRes, iconRes
