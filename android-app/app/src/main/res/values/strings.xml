@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Sleep Sync</string>
+    <string name="app_name">Nightfall</string>
+    <string name="import_type_sleep">Sommeil</string>
+    <string name="import_type_heartrate">Fréquence cardiaque</string>
+    <string name="import_type_steps">Pas</string>
+    <string name="import_type_exercise">Exercice</string>
+    <string name="import_rgpd_notice">Ces données sont envoyées uniquement vers %1$s. Elles ne transitent par aucun serveur tiers. Aucune copie n\'est conservée sur cet appareil après l\'import.</string>
+    <string name="import_step_connection">Connexion</string>
+    <string name="import_step_selection">Sélection</string>
+    <string name="import_step_upload">Import</string>
 </resources>

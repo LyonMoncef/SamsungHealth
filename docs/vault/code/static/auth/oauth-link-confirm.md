@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/auth/oauth-link-confirm.html
 git_blob: a58f4b9410b216eddb41766f371c1f1d05513e65
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 34
 annotations: []
 imports: []

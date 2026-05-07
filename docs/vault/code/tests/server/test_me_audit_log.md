@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_me_audit_log.py
 git_blob: 1b10fd6832a00ab9d434558c6aba4634f8aa6d5e
-last_synced: '2026-04-28T23:12:43Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 372
 annotations: []
 imports:

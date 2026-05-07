@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_auth_routes.py
 git_blob: 5ed83b8605bbcc5eeb81bc11d525e6b6ac690dc8
-last_synced: '2026-04-27T17:56:06Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 284
 annotations: []
 imports:

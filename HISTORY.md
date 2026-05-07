@@ -4,6 +4,8 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Foundation docs — VISION.md + CLAUDE.md | `VISION.md`, `CLAUDE.md` | [`523a981`](#2026-05-06-523a981) |
+| Agent migration Phase 2+3 — suppressions locaux obsolètes + vision-keeper projet | `.claude/agents/vision-keeper.md`, `.claude/skills/vision/SKILL.md`, `agents/contracts/vision_keeper.py` | [`pending`](#pending) |
 | Phase 6 — MVP CI/CD VPS perso — Dockerfile multi-stage + GHCR + deploy-dev + deploy-prod (auto-rollback) + /healthz /readyz + requirements.lock + ci.yml security gates (pip-audit, gitleaks, docker-build smoke). Pentester ACCEPT_WITH_CAVEATS — 5 HIGH levés + 5 D décisions + 4 issues résiduelles (#issues). | `Dockerfile`, `docker-compose.prod.yml`, `.github/workflows/{ci,deploy-dev,deploy-prod}.yml`, `server/routers/health.py`, `server/main.py`, `tests/server/test_healthz.py`, `requirements.{in,lock}`, `.env.prod.example` | [`9b825b1`](#2026-04-30-9b825b1) |
 | Phase 3 — RGPD endpoints `/me/{export,erase,audit-log}` (Art. 15/17/20) — 2-step re-auth, cascade applicatif explicit 21 tables santé, anonymisation `auth_events` (HIGH 2), race lock `SELECT FOR UPDATE` (HIGH 4), OAuth-only nonce, filter `admin_*`, filename générique, atomic UPDATE...RETURNING, purpose CHECK enum, audit_event helper meta cap 4KB. Pentester verdict WARN tracé issue #22 (closed by PR). | `server/routers/me.py`, `server/security/{rgpd,audit}.py`, `server/db/models.py`, `server/main.py`, `alembic/versions/0009_phase3_rgpd_audit_meta_purpose_check.py`, `tests/server/test_me_{export,erase,audit_log}.py`, `.github/ISSUE_TEMPLATE/pentester-review.yml`, `NOTES.md` | [`94bdfca`](#2026-04-30-94bdfca) |
 | V2.3.3.3 — Auth finitions (Inter font + 4 pages admin UI + dashboard rebrand --ds-* + content-negotiation + last_login_ip HMAC + CSRF admin + trusted-types) | `static/admin/`, `static/assets/fonts/Inter-VariableFont_wght.ttf`, `static/css/admin.css`, `static/js/{admin,admin-auth,ds-colors}.js`, `static/dashboard.css`, `static/index.html`, `server/routers/admin.py`, `server/middleware/security_headers.py`, `server/security/rate_limit.py` | [`cab3ecb`](#2026-04-28-cab3ecb) |
@@ -22,6 +24,101 @@
 | Phase 2: Sleep stages + color-coded calendar + Android app | `server/`, `static/`, `scripts/`, `android-app/` | [`8d5cfb0`](#2026-02-16-8d5cfb0) |
 | Phase 1: Backend + DB + UI + Scripts | `server/`, `static/`, `scripts/`, `requirements.txt` | [`6200a93`](#2026-02-16-6200a93) |
 | Project scaffolding | `.gitignore`, `README.md`, `NOTES.md`, `HISTORY.md`, `ROADMAP.md` | [`6cc83dc`](#2026-02-16-6cc83dc) |
+| Phase 4 Android Shell | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/theme/NightfallTheme.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/network/BackendUrlStore.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt`, `android-app/app/build.gradle.kts` | [`7a71b2b`](#2026-05-07-7a71b2b) |
+| Phase 4 Android Auth Screens | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/RegisterScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/ForgotPasswordScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/AuthCallbackScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/AuthModels.kt` | [`e89d409`](#2026-05-07-e89d409) |
+| Phase 4 Backend Import CSV multipart | `server/services/csv_import.py`, `server/routers/sleep.py`, `server/routers/heartrate.py`, `server/routers/steps.py`, `server/routers/exercise.py`, `tests/server/test_import_csv_multipart.py` | [`b11e00f`](#2026-05-07-b11e00f) |
+| Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`4dcf071`](#2026-05-07-4dcf071) |
+| Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
+
+---
+
+## Changelog
+
+### 2026-05-07 `b11e00f`
+feat(backend): Phase 4 import CSV multipart — POST /api/sleep/import, /api/heartrate/import, /api/steps/import, /api/exercise/import
+- server/services/csv_import.py : module créé — parse_samsung_csv (ignore lignes #, DictReader), _parse_ts (YYYY-MM-DD HH:MM:SS.fff et sans ms), parse_sleep_rows/parse_heartrate_rows/parse_steps_rows/parse_exercise_rows ; agrégation heartrate+steps par slot horaire (date+hour) ; Counter par catégorie {missing_field, invalid_date, invalid_value} avec 1 seul _log.warning agrégé en fin ; idempotence via on_conflict_do_nothing (heartrate/steps/exercise) ou select préalable (sleep)
+- 4 routers : endpoint POST /api/*/import avec UploadFile, vérification taille 10 MB (HTTPException 413), filename logué tronqué à 255 chars (jamais utilisé pour accéder au FS), rate-limit @limiter.limit(_api_post_cap) réutilisé, réponse 200 {"inserted": N, "skipped": M}
+- Mapping exercise_type Samsung int → string métier (1001=running, 1002=cycling, 1007=walking, 1008=hiking, 3000=swimming, 90001=indoor_cycling, inconnu=samsung_N)
+- 29 tests RED → GREEN (TestAuth401 4, TestMissingFilePart 4, TestFileTooLarge 1, TestImportSleepNominal 2, TestImportHeartrateNominal 2, TestImportStepsNominal 2, TestImportExerciseNominal 3, TestImportEmptyCsv 2, TestImportInvalidEncoding 1, TestSecurityPathTraversal 1, TestMultiUserIsolation 1, TestCsvImportService 5, TestImportMalformedRow 1)
+
+### 2026-05-07 `b7105b4`
+feat(android): Phase 4 WebView Bridge — NightfallWebViewClient, NightfallJsInterface, WebViewScreen, SettingsDataStore
+- NightfallWebViewClient.kt : WebViewClient avec shouldOverrideUrlLoading par URI parsing scheme+host+port (anti-homograph attack TA-WV-02) — CustomTabsIntent + FLAG_ACTIVITY_NEW_TASK pour externe ; onReceivedSslError handler.cancel() jamais proceed() (TA-WV-04) ; onReceivedHttpError 401/403 main frame → clearToken() + onLogout() (TA-WV-03) ; onPageFinished → injectAuth() (JSONObject.quote escaping) + injectTheme() (TA-WV-05/06)
+- NightfallJsInterface.kt : 3 @JavascriptInterface exactement — getAppVersion() → BuildConfig.VERSION_NAME, openImport() → Handler(mainLooper).post, onNightfallEvent(String) log-only avec guard 4096 chars (anti-DoS)
+- WebViewScreen.kt : AndroidView WebView — javaScriptEnabled, domStorageEnabled, setAllowFileAccess(false), setAllowContentAccess(false), MIXED_CONTENT_NEVER_ALLOW ; modifier.fillMaxSize() pour occuper tout l'espace parent ; backendOrigin calculé depuis SettingsDataStore via URI parsing
+- SettingsDataStore.kt : EncryptedSharedPreferences "nightfall_settings_prefs" (distinct de TokenDataStore D10) ; Robolectric guard "nightfall_test_settings_prefs" (plain prefs en JVM) ; getBackendUrl/setBackendUrl avec validation http://|https:// ; getThemePreference/setThemePreference avec validation enum {system,dark,light}
+- AppModule.kt : provideSettingsDataStore(context) ajouté
+- AndroidManifest.xml : <queries> block https+http pour Chrome Custom Tabs API 30+
+- SleepScreen/TrendsScreen/ActivityScreen (webview flavor) : wiring WebViewScreen avec tokenDataStore + settingsDataStore + onLogout
+- 34 tests RED → GREEN (NightfallWebViewClientTest 12, NightfallJsInterfaceTest 8, SettingsDataStoreTest 14) ; 97/97 total GREEN
+
+### 2026-05-07 `4dcf071`
+feat: android: Phase 4 import SAF — ImportViewModel, CountingRequestBody, ImportRepository, ImportScreen stepper
+- ImportUiState.kt : sealed class Idle/Connecting/ConnectionFailed/Connected/Selecting/Uploading/Success/Error
+- ImportDataType.kt : enum SLEEP/HEART_RATE/STEPS/EXERCISE avec samsungFilenamePrefix, apiPath, labelRes, iconRes
+- ImportResult.kt : data class par type (inserted, skipped, errorMessage?)
+- CountingRequestBody.kt : OkHttp RequestBody avec CountingSink — onProgress(0f) appelé en début de writeTo (≥2 appels garantis pour petits payloads < segment OkIO)
+- ImportRepository.kt : interface mockable ; CsvEntry(uri, size) ; uploadCsv @Throws(IOException)
+- ImportRepositoryImpl.kt : extractCsvEntries via ZipInputStream avec ZIP bomb protection (200 Mo / 100 entrées max, IOException Archive trop grande) ; uploadCsv streamé via CountingRequestBody + dispatch Retrofit par type
+- ImportViewModel.kt : plain ViewModel (no Hilt — issue #52) ; checkConnection() set Connecting AVANT viewModelScope.launch (StandardTestDispatcher) ; startUpload() catch CancellationException re-throw + catch Exception par type pour succès partiel
+- ImportScreen.kt : SAF launcher rememberLauncherForActivityResult(OpenDocumentTree) → viewModel.startUpload ; ConnectedContent avec RgpdNoticeCard (surfaceVariant + border primary 4dp + AnnotatedString SemiBold URL) + bouton Sélectionner dossier ; collectAsStateWithLifecycle
+- ImportStep.kt : sealed class Connection/Selection/Upload pour stepper visuel
+- NightfallApi.kt : 4 endpoints @Multipart @POST ajoutés (importSleep/importHeartRate/importSteps/importExercise) + ImportApiResponse @Serializable
+- NavGraph.kt : route import construisant ImportViewModel(ImportRepositoryImpl(api))
+- build.gradle.kts : androidx.lifecycle:lifecycle-runtime-compose:2.8.7
+- 16 tests RED → GREEN (ImportViewModelTest 9 + CountingRequestBodyTest 7) ; 63/63 total GREEN
+- Spec p4-android-import.md : status ready, tested_by peuplé, backend endpoints hors scope Android PR
+
+### 2026-05-07 `e89d409`
+feat: android: Phase 4 auth — AuthViewModel, LoginScreen, RegisterScreen, ForgotPasswordScreen, OAuth Custom Tabs, accessibility
+- AuthViewModel (plain ViewModel, no Hilt — issue #52) : login/register/requestPasswordReset/storeTokenFromCallback/setLoginError ; Loading state synchrone avant viewModelScope.launch ; mapHttpError 401/403/409/400
+- AuthUiState.kt : sealed classes LoginUiState / RegisterUiState / ForgotPasswordUiState (Idle/Loading/Success/Error + Sent pour forgot) ; ForgotPasswordUiState.Error intentionnellement mort (anti-enum)
+- LoginScreen : AuthTextField email+password avec testTag field_email/field_password + contentDescription ; AuthPrimaryButton Se connecter testTag btn_login ; OutlinedButton Google OAuth (border Cyan500) testTag btn_google_oauth ; TextButton Mot de passe oublié testTag link_forgot_password
+- RegisterScreen : paramètre registrationToken: String? = null (injectable depuis Settings) ; validation inline mots de passe
+- ForgotPasswordScreen : formulaire remplacé par confirmation anti-enum sur ForgotPasswordUiState.Sent
+- AuthCallbackScreen : deep link nightfall://auth/callback ; setLoginError(Authentification Google échouée) + onFailure() si token absent
+- AuthTextField : toggle visibilité password (Icons.Filled.Visibility/VisibilityOff, contentDescription Afficher/Masquer)
+- AuthPrimaryButton : CircularProgressIndicator avec contentDescription Chargement en cours
+- NightfallApi : 4 endpoints auth ajoutés (login, register, requestPasswordReset, googleStart)
+- NetworkModule : CookieJar inline in-memory (JavaNetCookieJar non dispo sans okhttp-urlconnection)
+- AndroidManifest : intent-filter deep link nightfall://auth/callback autoVerify=true
+- build.gradle.kts : androidx.browser:browser:1.8.0 (Custom Tabs)
+- 20 tests RED → GREEN (AuthViewModelTest 11 + LoginScreenTest 4 + RegisterScreenTest 3 + ForgotPasswordScreenTest 2) ; 47/47 total GREEN
+- Spec p4-android-auth.md : status ready, tested_by peuplé, D7 CookieJar note, AuthModels package note, ForgotPasswordUiState.Error note, Cairo → Inter/Playfair Display
+
+### 2026-05-07 `021ab8e`
+fix: android: Inter + Playfair Display — remplace Cairo (non DS), fonts bundlées depuis static/assets/fonts
+- Cairo n'est pas dans le système typographique DataSaillance — remplacé par Inter (body/UI) + Playfair Display (titres) conformément à Vectorizer/design-system/typography.md
+- Variable fonts copiées depuis static/assets/fonts/ vers android-app/app/src/main/res/font/ (inter_variable.ttf + playfair_display_variable.ttf, licence OFL)
+- FontLoadingStrategy.OptionalLocal : fallback système si R.font ne peut pas être résolu (Paparazzi JVM renderer) — évite le crash, production non affectée
+- Spec p4-android-shell.md corrigée : D8 Cairo → Playfair Display + Inter, livrables et contrainte C4 mis à jour
+
+### 2026-05-07 `7a71b2b`
+feat: android: Phase 4 shell — fr.datasaillance.nightfall, navigation, theme, EncryptedSharedPreferences, configurable backend URL
+- Clean rewrite of android-app/ from com.samsunghealth → fr.datasaillance.nightfall (7 legacy files deleted)
+- NightfallTheme: Material3 dark/light color schemes with DataSaillance tokens (teal #0E9EB0, amber #D37C04, cyan #07BCD3)
+- NavGraph: Scaffold + NavHost with 7 destinations (login, sleep, trends, activity, profile, import, settings); startDestination conditional on hasToken
+- BottomNavBar: 4-tab NavigationBar (Sommeil, Tendances, Activité, Profil) + ProfileScreen with Paramètres nav entry
+- TokenDataStore: EncryptedSharedPreferences AES256-GCM; Robolectric-only plaintext path guarded by Build.FINGERPRINT check (unreachable in production — spec C2)
+- BackendUrlStore: EncryptedSharedPreferences-backed configurable backend URL, defaults to BuildConfig.DEFAULT_BACKEND_URL (http://10.0.2.2:8001 for debug)
+- NetworkModule.provideRetrofit() reads base URL from BackendUrlStore; SettingsScreen exposes URL editing UI
+- Build: namespace fr.datasaillance.nightfall, versionName 4.0.0, flavors webview+native (rendering dimension), security-crypto + timber + okhttp-logging deps added
+- 27/27 unit tests GREEN (Paparazzi, Robolectric, MockWebServer); Hilt deferred → issue #52 (Kotlin 2.x kapt incompatibility)
+
+### 2026-05-06 `523a981`
+chore(project): CLAUDE.md — stack, contraintes C1/C2/C3, design DataSaillance, skill chain
+- Crée CLAUDE.md projet : stack FastAPI/SQLAlchemy/pytest, key files, dev commands
+- Contraintes non-négociables (local-first, RGPD Art.9, sécurité pentester bloquant, design DataSaillance, no LLM)
+- Skill invocation chain `/spec → /vision → /tdd → /impl → /review → /commit`
+- 4 questions ouvertes (fenêtre circadienne, multi-user, Phase B, webapp unifiée)
+
+### 2026-05-06 `88c1d5e`
+docs(vision): VISION.md — principe fondateur, design DataSaillance, contraintes
+- Crée VISION.md depuis 99 messages utilisateurs extraits de 4 sessions JSONL
+- Principe fondateur : découverte Non-24 par la dataviz (15 ans non-diagnostiqué)
+- Contraintes hard C1/C2/C3, vocabulaire (drift/dette/régularité/radial clock/stacked timeline)
+- Design system DataSaillance : tokens warm paper, accent rust, Cairo, light+dark obligatoires
+- Phases de dev (0–3 ✅, 6 ✅, 4–5 en attente), questions ouvertes
 
 ---
 

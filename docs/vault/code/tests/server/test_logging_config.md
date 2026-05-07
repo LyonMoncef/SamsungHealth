@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_logging_config.py
 git_blob: 00e302f70eee51466b9da067002f6657a2c91aaf
-last_synced: '2026-04-26T14:46:49Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 163
 annotations: []
 imports:
