@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/security/auth_providers/__init__.py
 git_blob: dd28cdb1e00ae86bcc7433343a80eae2d2c02970
-last_synced: '2026-04-27T07:34:23Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 42
 annotations: []
 imports:

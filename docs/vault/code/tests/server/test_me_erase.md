@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_me_erase.py
 git_blob: 3f3a9fbbdadca11cb85f3ac86c65a8792723e990
-last_synced: '2026-04-29T20:50:46Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 579
 annotations: []
 imports:

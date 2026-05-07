@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_lockout.py
 git_blob: e9050fc3725de7665baaec24df9f31831ad34f81
-last_synced: '2026-04-27T17:56:06Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 517
 annotations: []
 imports:

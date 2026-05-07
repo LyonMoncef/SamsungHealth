@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/admin/pending-verifications.html
 git_blob: dddf701ac2a38dcb30f5cab9d6fa51c4da529a21
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 35
 annotations: []
 imports: []

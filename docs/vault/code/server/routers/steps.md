@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/steps.py
-git_blob: 2f24978f3234a378499deb0c177307c4bbf6238c
-last_synced: '2026-04-27T17:56:06Z'
-loc: 63
+git_blob: 2e35238b4d5d206b217cca8a19f0b1d348f68cbf
+last_synced: '2026-05-07T16:11:01Z'
+loc: 92
 annotations: []
 imports:
 - fastapi
@@ -17,6 +17,7 @@ imports:
 - server.models
 - server.security.auth
 - server.security.rate_limit
+- server.services.csv_import
 exports: []
 tags:
 - code
@@ -32,7 +33,7 @@ coverage_pct: 22.857142857142858
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -43,6 +44,7 @@ from server.logging_config import get_logger
 from server.models import StepsBulkIn, StepsHourlyOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
+from server.services.csv_import import MAX_CSV_BYTES, parse_samsung_csv, parse_steps_rows
 
 _log = get_logger(__name__)
 
@@ -77,6 +79,34 @@ def create_steps(
         else:
             skipped += 1
     db.commit()
+    return {"inserted": inserted, "skipped": skipped}
+
+
+@router.post("/import", status_code=200)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
+def import_steps(
+    request: Request,
+    response: Response,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    raw = file.file.read(MAX_CSV_BYTES + 1)
+    if len(raw) > MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="file_too_large")
+    try:
+        rows = parse_samsung_csv(raw)
+    except (UnicodeDecodeError, ValueError):
+        raise HTTPException(status_code=422, detail="invalid_csv_encoding")
+    inserted, skipped = parse_steps_rows(rows, current_user.id, db)
+    _log.info(
+        "csv_import.done",
+        endpoint="steps",
+        inserted=inserted,
+        skipped=skipped,
+        user_id=str(current_user.id),
+        filename=file.filename[:255] if file.filename else None,
+    )
     return {"inserted": inserted, "skipped": skipped}
 
 
@@ -117,3 +147,4 @@ def get_steps(
 - `server.models`
 - `server.security.auth`
 - `server.security.rate_limit`
+- `server.services.csv_import`

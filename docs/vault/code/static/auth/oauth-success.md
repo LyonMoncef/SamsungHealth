@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/auth/oauth-success.html
 git_blob: 7c5422623a1daf039fe0badfadd06ec7017f34c4
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 31
 annotations: []
 imports: []

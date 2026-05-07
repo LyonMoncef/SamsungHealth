@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_admin_pending_verifications.py
 git_blob: 26e758acf58f9a1494295c7a9fd1fe4bd755fc19
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 132
 annotations: []
 imports:

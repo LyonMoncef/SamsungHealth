@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/routers/static_pages.py
 git_blob: fc48a0b4c5a7dccd29a81eec7f98694b9392d08d
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 86
 annotations: []
 imports:

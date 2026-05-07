@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: agents/cartographer/coverage_map.py
 git_blob: 0806443a75fa81684b276329eaa9f07b97f643f3
-last_synced: '2026-04-23T10:49:29Z'
+last_synced: '2026-05-06T08:02:33Z'
 loc: 200
 annotations: []
 imports:

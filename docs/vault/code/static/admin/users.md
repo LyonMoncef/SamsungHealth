@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/admin/users.html
 git_blob: af405231cd0704b584c45af1776bdafef594d936
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 48
 annotations: []
 imports: []

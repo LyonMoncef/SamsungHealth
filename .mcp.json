@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "android-test-runner": {
+      "command": "/home/tats/MyPersonalProjects/SamsungHealth/.venv/bin/python",
+      "args": ["agents/mcp/android_test_runner/server.py"]
+    }
+  }
+}

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_oauth_redaction.py
 git_blob: e3373719fa63623cfb353767c8b3538fdd9d8c7c
-last_synced: '2026-04-27T07:34:24Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 53
 annotations: []
 imports: []

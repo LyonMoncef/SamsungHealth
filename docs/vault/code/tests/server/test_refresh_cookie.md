@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_refresh_cookie.py
 git_blob: 48cc89de8dc506ed8679afe29584716732208e76
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 329
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_admin_pages.py
 git_blob: c9607e18f4a7482994730662298488a1272ae060
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 310
 annotations: []
 imports:

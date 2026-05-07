@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_admin_lock.py
 git_blob: d61119e4f0550393ff28f9f15c225c466c6a7153
-last_synced: '2026-04-27T17:56:06Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 218
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_cli.py
 git_blob: b4c0dc6f1ffd6cfbffca18e62fd74b5194e71f1a
-last_synced: '2026-04-23T10:49:30Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 173
 annotations: []
 imports:

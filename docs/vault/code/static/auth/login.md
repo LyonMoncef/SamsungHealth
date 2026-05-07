@@ -3,7 +3,7 @@ type: code-source
 language: html
 file_path: static/auth/login.html
 git_blob: 343ad9bdfa16ca85454b90bd153e7b360b311c27
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 43
 annotations: []
 imports: []

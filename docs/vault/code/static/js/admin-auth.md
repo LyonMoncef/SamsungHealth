@@ -3,7 +3,7 @@ type: code-source
 language: javascript
 file_path: static/js/admin-auth.js
 git_blob: e57f6c7ff05f1dde3a28a08e43a2cf656745f166
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 62
 annotations: []
 imports: []

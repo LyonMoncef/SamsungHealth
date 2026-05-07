@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_host_header_injection.py
 git_blob: 987121fa93561b2957e9918082a19001ec4aa77c
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 78
 annotations: []
 imports:

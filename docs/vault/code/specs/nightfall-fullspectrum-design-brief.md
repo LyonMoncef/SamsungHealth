@@ -2,7 +2,7 @@
 type: spec-summary
 slug: nightfall-fullspectrum-design-brief
 original_type: spec
-status: ready
+status: superseded
 source: ../../specs/nightfall-fullspectrum-design-brief
 ---
 

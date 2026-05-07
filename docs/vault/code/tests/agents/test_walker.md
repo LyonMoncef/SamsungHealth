@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_walker.py
 git_blob: 55b459455a9bd8ddf7dcfaec473e79db60ea2ec1
-last_synced: '2026-04-23T10:49:30Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 101
 annotations: []
 imports:

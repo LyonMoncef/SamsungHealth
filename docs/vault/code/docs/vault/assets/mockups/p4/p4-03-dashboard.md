@@ -1,0 +1,276 @@
+---
+type: code-source
+language: html
+file_path: docs/vault/assets/mockups/p4/p4-03-dashboard.html
+git_blob: 876c352b1e39c6a309007a0d4e1db5bd92aff116
+last_synced: '2026-05-06T10:22:17Z'
+loc: 248
+annotations: []
+imports: []
+exports: []
+tags:
+- code
+- html
+---
+
+# docs/vault/assets/mockups/p4/p4-03-dashboard.html
+
+> [!info] Code mirror
+> Ce fichier est un **miroir auto-généré** de [`docs/vault/assets/mockups/p4/p4-03-dashboard.html`](../../../docs/vault/assets/mockups/p4/p4-03-dashboard.html).
+> Code = source de vérité. Annotations dans `docs/vault/annotations/`.
+> Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
+
+```html
+<!doctype html>
+<!-- Nightfall · Phase 4 · Screen 3 — Dashboard (WebView shell)
+     DataSaillance dark mode tokens · OD mobile-app skill · Archetype F (Focus adapted) -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nightfall · Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #191E22;
+      --surface: #232E32;
+      --fg:      #F5F5F5;
+      --muted:   #9AA0A5;
+      --border:  rgba(7, 188, 211, 0.15);
+      --accent:  #D37C04;
+      --accent-cool: #07BCD3;
+      --accent-teal: #0E9EB0;
+
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body:    'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-mono:    ui-monospace, 'SF Mono', Menlo, monospace;
+
+      --fs-h1: 26px; --fs-h2: 20px; --fs-h3: 16px; --fs-body: 15px; --fs-meta: 12px;
+      --radius-card: 18px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      background: radial-gradient(60% 80% at 50% 0%, rgba(211, 124, 4, 0.06) 0%, #191E22 60%);
+      color: var(--fg); font-family: var(--font-body); font-size: var(--fs-body);
+      line-height: 1.4; -webkit-font-smoothing: antialiased;
+      display: grid; place-items: center; padding: 32px;
+    }
+    .stage { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+    .caption { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .caption strong { color: var(--fg); font-weight: 500; }
+
+    .device {
+      position: relative; width: 390px; height: 844px; border-radius: 56px; padding: 12px;
+      background: linear-gradient(160deg, #2a2a2c 0%, #1a1a1c 50%, #0e0e10 100%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 0 2px #000 inset, 0 28px 60px -12px rgba(0,0,0,0.55), 0 8px 20px -8px rgba(0,0,0,0.45);
+      isolation: isolate;
+    }
+    .device::before, .device::after {
+      content: ''; position: absolute; width: 3px;
+      background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.06) 8%, transparent 16%, transparent 84%, rgba(255,255,255,0.04) 92%, transparent 100%);
+      top: 100px; bottom: 100px; pointer-events: none;
+    }
+    .device::before { left: -1px; } .device::after { right: -1px; }
+    .island { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 124px; height: 36px; background: #000; border-radius: 999px; z-index: 5; }
+    .btn-rail { position: absolute; width: 4px; background: #0a0a0c; border-radius: 2px; }
+    .btn-rail.left-1  { left: -3px; top: 174px; height: 32px; }
+    .btn-rail.left-2  { left: -3px; top: 220px; height: 60px; }
+    .btn-rail.left-3  { left: -3px; top: 290px; height: 60px; }
+    .btn-rail.right-1 { right: -3px; top: 250px; height: 100px; }
+
+    .screen { position: relative; width: 100%; height: 100%; background: var(--bg); border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; }
+    .statusbar { flex: 0 0 47px; padding: 18px 26px 0; display: flex; align-items: flex-start; justify-content: space-between; font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em; }
+    .statusbar .right { display: inline-flex; align-items: center; gap: 6px; }
+    .statusbar svg { width: 17px; height: 11px; fill: var(--fg); }
+    .statusbar .battery { width: 25px; }
+    .content { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 8px 0 4px; }
+    .content::-webkit-scrollbar { display: none; }
+    .tabbar {
+      flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, 1fr);
+      padding: 8px 8px 4px; border-top: 1px solid rgba(7,188,211,0.12);
+      background: rgba(35, 46, 50, 0.95); backdrop-filter: blur(20px);
+    }
+    .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; color: var(--muted); font-size: 10px; letter-spacing: 0.02em; }
+    .tab.active { color: var(--accent); }
+    .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .tab.active svg { stroke-width: 2.2; }
+    .home-indicator { flex: 0 0 26px; position: relative; }
+    .home-indicator::after { content: ''; position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); width: 134px; height: 5px; background: var(--fg); border-radius: 999px; opacity: 0.35; }
+
+    .pad { padding-inline: 20px; }
+    .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .meta { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 16px; }
+
+    /* Sleep hero card */
+    .sleep-card {
+      background: linear-gradient(135deg, #1a2830 0%, #232E32 100%);
+      border: 1px solid rgba(7, 188, 211, 0.25); border-radius: 20px;
+      padding: 20px;
+    }
+    .sleep-duration { font-size: 48px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.03em; line-height: 1; color: var(--fg); }
+    .sleep-duration span { font-size: 20px; color: var(--muted); font-weight: 400; }
+
+    /* Stage bar */
+    .stage-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; gap: 2px; }
+    .stage-segment { border-radius: 999px; }
+
+    /* Mini stat card */
+    .mini-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+
+    /* Hypnogram placeholder */
+    .hypnogram {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 14px 14px 10px;
+    }
+    .hyp-chart {
+      height: 52px; position: relative;
+      display: flex; align-items: flex-end; gap: 2px;
+    }
+    .hyp-bar { border-radius: 3px 3px 0 0; flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="caption"><strong>Nightfall</strong> · Dashboard WebView shell — Phase 4 · Mockup P4-03</div>
+
+    <div class="device" data-od-id="device">
+      <span class="btn-rail left-1" aria-hidden></span>
+      <span class="btn-rail left-2" aria-hidden></span>
+      <span class="btn-rail left-3" aria-hidden></span>
+      <span class="btn-rail right-1" aria-hidden></span>
+      <span class="island" aria-hidden></span>
+
+      <div class="screen">
+        <div class="statusbar">
+          <span style="font-family: var(--font-mono);">9:41</span>
+          <span class="right">
+            <svg viewBox="0 0 17 11" aria-hidden><rect x="0" y="7" width="3" height="4" rx="0.6"/><rect x="4" y="5" width="3" height="6" rx="0.6"/><rect x="8" y="3" width="3" height="8" rx="0.6"/><rect x="12" y="0" width="3" height="11" rx="0.6"/></svg>
+            <svg viewBox="0 0 17 11" aria-hidden><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg class="battery" viewBox="0 0 25 11" aria-hidden><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span>
+        </div>
+
+        <main class="content" data-od-id="content">
+          <!-- Header -->
+          <div style="padding: 8px 20px 12px; display: flex; align-items: center; justify-content: space-between;" data-od-id="header">
+            <div>
+              <p style="margin: 0 0 2px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);">Mer · 6 Mai 2026</p>
+              <h1 style="margin: 0; font-family: var(--font-display); font-size: var(--fs-h1); letter-spacing: -0.02em; line-height: 1.1;">Bonjour.</h1>
+            </div>
+            <button style="width: 36px; height: 36px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); display: grid; place-items: center; cursor: pointer;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+            </button>
+          </div>
+
+          <!-- Sleep hero card -->
+          <section class="pad" style="margin-top: 4px;" data-od-id="sleep-hero">
+            <div class="sleep-card">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <p class="meta" style="margin: 0;">NUIT DERNIÈRE</p>
+                <span style="font-size: 12px; color: var(--accent-cool); font-family: var(--font-mono);">22h14 → 04h32</span>
+              </div>
+              <div class="sleep-duration">6h18<span>m</span></div>
+              <p style="margin: 4px 0 14px; font-size: 12px; color: var(--muted);">−42 min vs moyenne · SpO₂ moy. 87%</p>
+
+              <!-- Stage bar -->
+              <div class="stage-bar" style="margin-bottom: 10px;">
+                <div class="stage-segment" style="background: var(--accent); flex: 2;"></div>
+                <div class="stage-segment" style="background: var(--accent-teal); flex: 3;"></div>
+                <div class="stage-segment" style="background: var(--accent-cool); flex: 1.5;"></div>
+                <div class="stage-segment" style="background: rgba(130,133,135,0.4); flex: 0.5;"></div>
+              </div>
+              <div style="display: flex; gap: 12px; font-size: 11px; font-family: var(--font-mono);">
+                <span style="color: var(--accent);">● Léger 2h14</span>
+                <span style="color: var(--accent-teal);">● Profond 2h58</span>
+                <span style="color: var(--accent-cool);">● REM 58m</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Mini stats row -->
+          <section class="pad" style="margin-top: 12px;" data-od-id="mini-stats">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+              <div class="mini-stat">
+                <p class="meta" style="margin: 0 0 4px;">FC REP</p>
+                <div class="num" style="font-size: 20px; color: var(--accent);">56</div>
+                <p style="margin: 2px 0 0; font-size: 11px; color: var(--muted);">bpm</p>
+              </div>
+              <div class="mini-stat">
+                <p class="meta" style="margin: 0 0 4px;">SPO₂ MIN</p>
+                <div class="num" style="font-size: 20px; color: rgba(211,124,4,0.8);">84%</div>
+                <p style="margin: 2px 0 0; font-size: 11px; color: var(--muted);">nuit</p>
+              </div>
+              <div class="mini-stat">
+                <p class="meta" style="margin: 0 0 4px;">PAS</p>
+                <div class="num" style="font-size: 20px; color: var(--accent-teal);">4.2k</div>
+                <p style="margin: 2px 0 0; font-size: 11px; color: var(--muted);">hier</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Hypnogram -->
+          <section class="pad" style="margin-top: 12px;" data-od-id="hypnogram">
+            <div class="hypnogram">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <p class="meta" style="margin: 0;">HYPNOGRAMME</p>
+                <span style="font-size: 11px; color: var(--accent-cool); font-family: var(--font-mono);">6 nuits</span>
+              </div>
+              <div class="hyp-chart">
+                <!-- Simplified hypnogram bars (7 nights, varying pattern) -->
+                <div class="hyp-bar" style="background: var(--accent-teal); height: 70%;"></div>
+                <div class="hyp-bar" style="background: var(--accent); height: 50%;"></div>
+                <div class="hyp-bar" style="background: var(--accent-teal); height: 80%;"></div>
+                <div class="hyp-bar" style="background: rgba(130,133,135,0.3); height: 35%;"></div>
+                <div class="hyp-bar" style="background: var(--accent-teal); height: 85%;"></div>
+                <div class="hyp-bar" style="background: var(--accent); height: 45%;"></div>
+                <div class="hyp-bar" style="background: var(--accent-cool); height: 65%;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--muted); font-family: var(--font-mono);">
+                <span>Lu</span><span>Ma</span><span>Me</span><span>Je</span><span>Ve</span><span>Sa</span><span>Di</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- WebView label (explains the architecture) -->
+          <section class="pad" style="margin-top: 12px; margin-bottom: 4px;" data-od-id="webview-note">
+            <div style="background: rgba(7,188,211,0.05); border: 1px solid rgba(7,188,211,0.1); border-radius: 10px; padding: 10px 12px; display: flex; gap: 8px; align-items: center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cool)" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              <span style="font-size: 11px; color: var(--muted); font-family: var(--font-mono);">WebView flavor — static/ bundled · JWT auto-injecté</span>
+            </div>
+          </section>
+        </main>
+
+        <!-- Tab bar -->
+        <nav class="tabbar" data-od-id="tabbar">
+          <a class="tab active">
+            <svg viewBox="0 0 24 24"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+            Sommeil
+          </a>
+          <a class="tab">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Tendances
+          </a>
+          <a class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Activité
+          </a>
+          <a class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+            Profil
+          </a>
+        </nav>
+
+        <div class="home-indicator" aria-hidden></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+```
+
+---
+
+## Appendix — symbols & navigation *(auto)*

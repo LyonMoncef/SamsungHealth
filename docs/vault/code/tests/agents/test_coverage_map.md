@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/agents/test_coverage_map.py
 git_blob: 93842c9f71662e875645d5b2f646996d7b08dffb
-last_synced: '2026-04-23T10:49:30Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 180
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_email_hash_salt.py
 git_blob: 357d2d8ace8653c964ea5dc44af80a8960d26afe
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 70
 annotations: []
 imports:

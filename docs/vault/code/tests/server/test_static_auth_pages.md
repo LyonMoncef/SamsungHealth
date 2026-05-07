@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_static_auth_pages.py
 git_blob: f847c18fa56090cb497171acba3acfd4a0e68e6a
-last_synced: '2026-04-27T20:51:40Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 493
 annotations: []
 imports:

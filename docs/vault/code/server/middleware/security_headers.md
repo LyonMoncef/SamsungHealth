@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/middleware/security_headers.py
 git_blob: 29afa8ed9ed6b6802d92a2d876db23d19953ab90
-last_synced: '2026-05-01T12:19:09Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 117
 annotations: []
 imports:

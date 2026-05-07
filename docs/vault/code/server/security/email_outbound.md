@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/security/email_outbound.py
 git_blob: ed4649e5794ea9b899d3ee359f8a55836e336a14
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 150
 annotations: []
 imports:

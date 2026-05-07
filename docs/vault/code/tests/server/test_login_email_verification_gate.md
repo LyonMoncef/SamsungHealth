@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_login_email_verification_gate.py
 git_blob: 1e3f18b06140999890a37302a46b8147279e2b44
-last_synced: '2026-04-26T22:07:14Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 88
 annotations: []
 imports:

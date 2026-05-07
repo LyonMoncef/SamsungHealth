@@ -1,5 +1,11 @@
 # Roadmap
 
+> **ATTENTION — pré-V2 archivé.** Ce document décrit l'architecture originale (SQLite, single-user, Phases 1-3).
+> La refonte V2 est pilotée par `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md`.
+> Phases V2 : P0 infra/Postgres ✅ · P1 auth ✅ · P2 data layer ✅ · P3 RGPD ✅ · P6 CI/CD ✅ · P4 Android ⏳ · P5 Compose Canvas ⏳
+>
+> **Historique pré-V2 (archivé) :**
+
 ## Phase 1 — Backend + Database + Visualization
 
 ### 1.1 Project scaffolding

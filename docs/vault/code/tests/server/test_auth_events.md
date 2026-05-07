@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_auth_events.py
 git_blob: ab8530f7bcde8129e0b8f19720cbde78e07be582
-last_synced: '2026-04-26T16:48:28Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 144
 annotations: []
 imports:

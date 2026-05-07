@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/security/rate_limit.py
 git_blob: f1b027424c1215ec48e7c01247d5dfcd78c6fa97
-last_synced: '2026-04-28T14:04:54Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 283
 annotations: []
 imports:

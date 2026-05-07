@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: server/security/auth.py
 git_blob: e01323a1be7a7eff5f0bccb9733f9146b0a9ce9c
-last_synced: '2026-04-27T07:34:23Z'
+last_synced: '2026-05-06T08:02:34Z'
 loc: 453
 annotations: []
 imports:

@@ -3,7 +3,7 @@ type: code-source
 language: python
 file_path: tests/server/test_rate_limit.py
 git_blob: b971b11ac9bb016d731d8b4bbc19ac60792e0940
-last_synced: '2026-04-27T17:56:06Z'
+last_synced: '2026-05-06T08:02:35Z'
 loc: 359
 annotations: []
 imports:
