@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt
-git_blob: 71cf989e2df2a769d7316eec70e1a995411b1362
-last_synced: '2026-05-07T22:01:38Z'
-loc: 20
+git_blob: 2cd3ca72191b4ba548477d97b73f85b81a765ec3
+last_synced: '2026-05-08T02:44:56Z'
+loc: 24
 annotations: []
 imports: []
 exports: []
@@ -37,6 +37,10 @@ sealed class NavDestination(
     object Register       : NavDestination("register",        "Créer un compte")
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
 
+    object Hypnogram : NavDestination("hypnogram/{sessionId}", "Hypnogramme") {
+        fun route(sessionId: String) = "hypnogram/$sessionId"
+    }
+
     companion object {
         fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)
     }
@@ -48,5 +52,6 @@ sealed class NavDestination(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavDestination` (class) — lines 3-20
-- `bottomNavItems` (function) — lines 18-18
+- `NavDestination` (class) — lines 3-24
+- `route` (function) — lines 18-18
+- `bottomNavItems` (function) — lines 22-22

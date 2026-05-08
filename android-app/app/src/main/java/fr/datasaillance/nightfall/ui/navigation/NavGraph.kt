@@ -9,11 +9,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.di.AppModule
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
@@ -40,6 +42,7 @@ import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
 import fr.datasaillance.nightfall.ui.screens.import_.ImportScreen
 import fr.datasaillance.nightfall.ui.screens.profile.ProfileScreen
 import fr.datasaillance.nightfall.ui.screens.settings.SettingsScreen
+import fr.datasaillance.nightfall.ui.screens.hypnogram.HypnogramScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.trends.TrendsScreen
 import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
@@ -52,6 +55,7 @@ import retrofit2.Response
 fun NavGraph(
     navController: NavHostController,
     hasToken: Boolean,
+    sleepViewModel: SleepViewModel? = null,
     backendUrl: String = "",
     onSaveUrl: (String) -> Unit = {},
     api: NightfallApi? = null,
@@ -70,6 +74,8 @@ fun NavGraph(
     // TestNavHostController only registers TestNavigator by default; without this,
     // NavHost + composable{} throws ClassCastException under Robolectric.
     ensureComposeNavigators(navController)
+
+    val resolvedSleepVm = sleepViewModel ?: remember { SleepViewModel(NoOpSleepRepository()) }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -130,8 +136,23 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Sleep.route) {
-                val sleepViewModel = remember { SleepViewModel(NoOpSleepRepository()) }
-                SleepScreen(viewModel = sleepViewModel, onSessionClick = {})
+                SleepScreen(
+                    viewModel = resolvedSleepVm,
+                    onSessionClick = { sessionId ->
+                        navController.navigate(NavDestination.Hypnogram.route(sessionId))
+                    }
+                )
+            }
+            composable(
+                route = NavDestination.Hypnogram.route,
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                HypnogramScreen(
+                    sessionId = sessionId,
+                    sleepViewModel = resolvedSleepVm,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(NavDestination.Trends.route)   { TrendsScreen() }
             composable(NavDestination.Activity.route) { ActivityScreen() }

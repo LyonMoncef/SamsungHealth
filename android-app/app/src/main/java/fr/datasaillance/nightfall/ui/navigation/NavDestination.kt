@@ -14,6 +14,10 @@ sealed class NavDestination(
     object Register       : NavDestination("register",        "Créer un compte")
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
 
+    object Hypnogram : NavDestination("hypnogram/{sessionId}", "Hypnogramme") {
+        fun route(sessionId: String) = "hypnogram/$sessionId"
+    }
+
     companion object {
         fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)
     }
