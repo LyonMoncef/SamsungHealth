@@ -826,3 +826,87 @@ class TestCsvImportService:
         )
         rows = parse_samsung_csv(raw)
         assert rows == [], f"Header seul → list vide attendue, got {rows}"
+
+    # spec: §Format réel Samsung Health — BOM + ligne metadata
+    def test_parse_samsung_csv_handles_bom_and_metadata_line(self):
+        """parse_samsung_csv gère le BOM UTF-8 et la ligne metadata Samsung Health.
+
+        Les exports Samsung Health commencent par :
+        - BOM (\\xef\\xbb\\xbf)
+        - Ligne metadata : namespace,user_id,version (ex: com.samsung.shealth.sleep,12345,11)
+        - Ligne headers : noms de colonnes réels
+        - Lignes données
+        """
+        from server.services.csv_import import parse_samsung_csv  # noqa: PLC0415
+
+        # Simule le format exact d'un export Samsung Health
+        raw = (
+            b"\xef\xbb\xbf"  # BOM UTF-8
+            b"com.samsung.shealth.sleep,12345,11\n"  # metadata line
+            b"com.samsung.health.sleep.start_time,com.samsung.health.sleep.end_time\n"  # vrais headers
+            b"2026-04-20 23:15:00.000,2026-04-21 07:30:00.000\n"
+        )
+        rows = parse_samsung_csv(raw)
+        assert len(rows) == 1, f"1 ligne de données attendue, got {len(rows)}"
+        assert "com.samsung.health.sleep.start_time" in rows[0], (
+            f"Colonne start_time absente après skip metadata, keys={list(rows[0].keys())}"
+        )
+        assert rows[0]["com.samsung.health.sleep.start_time"] == "2026-04-20 23:15:00.000"
+
+    # spec: §Format réel Samsung Health — steps avec day_time ms epoch
+    def test_import_steps_real_format_with_day_time_ms(self, client_pg_ready, schema_ready, engine):
+        """CSV steps au format réel Samsung Health (day_time ms epoch, colonne count).
+
+        Le format réel utilise 'count' et 'day_time' (timestamp ms) au lieu de
+        com.samsung.health.step_daily_trend.start_time / count.
+        day_time=1703203200000 → 2023-12-22 00:00:00 UTC (hour=0)
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import sessionmaker
+        from server.db.models import StepsHourly  # noqa: PLC0415
+
+        # Format réel : BOM + metadata + headers courts + day_time en ms
+        raw = (
+            b"\xef\xbb\xbf"
+            b"com.samsung.shealth.step_daily_trend,12345,6\n"
+            b"count,day_time\n"
+            b"3000,1703203200000\n"  # 2023-12-22 00:00:00 UTC, 3000 steps
+            b"2500,1703206800000\n"  # 2023-12-22 01:00:00 UTC, 2500 steps
+        )
+        r = client_pg_ready.post(
+            "/api/steps/import",
+            files={"file": ("steps.csv", raw, "text/csv")},
+        )
+        assert r.status_code == 200, f"Import steps real format devrait 200, got {r.status_code}: {r.text}"
+        body = r.json()
+        assert body.get("inserted") == 2, f"inserted attendu=2, got {body}"
+
+        Session = sessionmaker(bind=engine, expire_on_commit=False)
+        with Session() as sess:
+            rows = sess.execute(select(StepsHourly).order_by(StepsHourly.hour)).scalars().all()
+        assert len(rows) == 2
+        assert rows[0].step_count == 3000
+        assert rows[1].step_count == 2500
+
+    # spec: §Format réel Samsung Health — heart_rate avec BPM en float ("104.0")
+    def test_import_heartrate_real_format_handles_float_bpm(self, client_pg_ready):
+        """CSV heart_rate avec valeurs BPM en float ("104.0") → parsé correctement.
+
+        Samsung Health exporte les BPM comme floats ("104.0") alors que le parser
+        doit produire des entiers (round(float(...))).
+        """
+        raw = (
+            b"# Samsung Health\n"
+            b"com.samsung.health.heart_rate.start_time,"
+            b"com.samsung.health.heart_rate.heart_rate,"
+            b"com.samsung.health.heart_rate.min,"
+            b"com.samsung.health.heart_rate.max\n"
+            b"2026-04-20 22:00:00.000,104.0,58.0,120.0\n"
+        )
+        r = client_pg_ready.post(
+            "/api/heartrate/import",
+            files={"file": ("hr.csv", raw, "text/csv")},
+        )
+        assert r.status_code == 200, f"Float BPM devrait être accepté, got {r.status_code}: {r.text}"
+        body = r.json()
+        assert body.get("inserted") == 1, f"inserted attendu=1, got {body}"
