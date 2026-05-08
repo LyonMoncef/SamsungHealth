@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt
-git_blob: 3f989123930d5deec5041d161889cc1dc163e6c3
-last_synced: '2026-05-07T03:10:49Z'
-loc: 46
+git_blob: 24d697e593df03b66599a41347b48275f055c5f1
+last_synced: '2026-05-08T01:27:05Z'
+loc: 56
 annotations: []
 imports: []
 exports: []
@@ -23,6 +23,7 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.data.http
 
+import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -31,6 +32,7 @@ import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Query
 
 @kotlinx.serialization.Serializable
 data class ImportApiResponse(val inserted: Int, val skipped: Int)
@@ -50,6 +52,14 @@ interface NightfallApi {
 
     @POST("auth/google/start")
     suspend fun googleStart(@Body body: GoogleStartRequest): GoogleStartResponse
+
+    @GET("api/sleep")
+    suspend fun getSleepSessions(
+        @Header("Authorization") token: String,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("include_stages") includeStages: Boolean = true
+    ): List<SleepSessionResponse>
 
     @Multipart
     @POST("api/sleep/import")
@@ -74,14 +84,15 @@ interface NightfallApi {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportApiResponse` (class) — lines 12-13
-- `NightfallApi` (class) — lines 15-46
-- `health` (function) — lines 16-17
-- `login` (function) — lines 19-20
-- `register` (function) — lines 22-23
-- `requestPasswordReset` (function) — lines 25-26
-- `googleStart` (function) — lines 28-29
-- `importSleep` (function) — lines 31-33
-- `importHeartRate` (function) — lines 35-37
-- `importSteps` (function) — lines 39-41
-- `importExercise` (function) — lines 43-45
+- `ImportApiResponse` (class) — lines 14-15
+- `NightfallApi` (class) — lines 17-56
+- `health` (function) — lines 18-19
+- `login` (function) — lines 21-22
+- `register` (function) — lines 24-25
+- `requestPasswordReset` (function) — lines 27-28
+- `googleStart` (function) — lines 30-31
+- `getSleepSessions` (function) — lines 33-39
+- `importSleep` (function) — lines 41-43
+- `importHeartRate` (function) — lines 45-47
+- `importSteps` (function) — lines 49-51
+- `importExercise` (function) — lines 53-55

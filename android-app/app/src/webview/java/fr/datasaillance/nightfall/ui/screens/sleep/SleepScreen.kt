@@ -6,10 +6,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.settings.SettingsDataStore
+import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.webview.WebViewScreen
 
 @Composable
 fun SleepScreen(
+    viewModel: SleepViewModel? = null,
+    onSessionClick: (String) -> Unit = {},
     tokenDataStore: TokenDataStore? = null,
     settingsDataStore: SettingsDataStore? = null,
     onOpenImport: () -> Unit = {},
