@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: server/services/csv_import.py
-git_blob: 493c47c175a6ddfc7c17405627d740ae75cdd3c3
-last_synced: '2026-05-07T16:11:01Z'
+git_blob: 07536df7b743b244123b5dc3a09c83dadce71f7c
+last_synced: '2026-05-08T05:09:05Z'
 loc: 218
 annotations: []
 imports:
@@ -54,7 +54,7 @@ from server.logging_config import get_logger
 
 _log = get_logger(__name__)
 
-MAX_CSV_BYTES = 10 * 1024 * 1024
+MAX_CSV_BYTES = 100 * 1024 * 1024
 
 _EXERCISE_TYPE_MAP: dict[int, str] = {
     1001: "running",
