@@ -193,28 +193,31 @@ class TestMissingFilePart:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# TA-03 — Fichier > 10 MB → 413
+# TA-03 — Fichier > MAX_CSV_BYTES → 413
 # ══════════════════════════════════════════════════════════════════════════
 
 class TestFileTooLarge:
 
-    # spec: TA-03 — Fichier > 10 MB → 413
-    def test_413_when_file_exceeds_10mb(self, client_pg_ready):
-        """POST un fichier de 10 MB + 1 octet → 413.
+    # spec: TA-03 — Fichier > MAX_CSV_BYTES → 413
+    def test_413_when_file_exceeds_limit(self, client_pg_ready):
+        """POST un fichier de MAX_CSV_BYTES + 1 octet → 413.
 
-        spec: TA-03 §Codes HTTP "Fichier > 10 MB → 413"
+        spec: TA-03 §Codes HTTP "Fichier > MAX_CSV_BYTES → 413"
         spec: §Décisions techniques "Vérification de taille avant lecture"
-        MAX_CSV_BYTES = 10 * 1024 * 1024 ; si > MAX → HTTPException(413)
+        si len(raw) > MAX_CSV_BYTES → HTTPException(413)
         """
-        # 10 MB + 1 octet — la vérification de taille se fait avant le parsing
-        oversized = b"x" * (10 * 1024 * 1024 + 1)
+        from server.services.csv_import import MAX_CSV_BYTES  # noqa: PLC0415
+
+        # Contenu CSV valide (lignes courtes) pour éviter _csv.Error sur les gros champs
+        row = b"a,b\n"
+        oversized = row * (MAX_CSV_BYTES // len(row) + 1)
         r = client_pg_ready.post(
             "/api/sleep/import",
             files={"file": ("big.csv", oversized, "text/csv")},
         )
         # spec: TA-03 — 413 attendu
         assert r.status_code == 413, (
-            f"Fichier > 10 MB devrait retourner 413, got {r.status_code}"
+            f"Fichier > MAX_CSV_BYTES devrait retourner 413, got {r.status_code}"
         )
 
 
@@ -797,16 +800,16 @@ class TestCsvImportService:
         with pytest.raises((UnicodeDecodeError, ValueError)):
             parse_samsung_csv(non_utf8)
 
-    # spec: §MAX_CSV_BYTES = 10 * 1024 * 1024
-    def test_max_csv_bytes_constant_is_10_mb(self):
-        """La constante MAX_CSV_BYTES doit valoir exactement 10 * 1024 * 1024.
+    # spec: §MAX_CSV_BYTES = 100 * 1024 * 1024
+    def test_max_csv_bytes_constant_is_100_mb(self):
+        """La constante MAX_CSV_BYTES doit valoir exactement 100 * 1024 * 1024.
 
-        spec: §Contrats d'interface "MAX_CSV_BYTES = 10 * 1024 * 1024"
+        spec: §Contrats d'interface "MAX_CSV_BYTES = 100 * 1024 * 1024"
         """
         from server.services.csv_import import MAX_CSV_BYTES  # noqa: PLC0415
 
-        assert MAX_CSV_BYTES == 10 * 1024 * 1024, (
-            f"MAX_CSV_BYTES attendu={10 * 1024 * 1024}, got {MAX_CSV_BYTES}"
+        assert MAX_CSV_BYTES == 100 * 1024 * 1024, (
+            f"MAX_CSV_BYTES attendu={100 * 1024 * 1024}, got {MAX_CSV_BYTES}"
         )
 
     # spec: §parse_samsung_csv — header présent mais 0 lignes données
