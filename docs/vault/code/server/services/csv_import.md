@@ -2,13 +2,14 @@
 type: code-source
 language: python
 file_path: server/services/csv_import.py
-git_blob: 493c47c175a6ddfc7c17405627d740ae75cdd3c3
-last_synced: '2026-05-07T16:11:01Z'
-loc: 218
+git_blob: f68e8e245582c46fcf1acdf47fe829929e1a1415
+last_synced: '2026-05-08T05:21:27Z'
+loc: 220
 annotations: []
 imports:
 - csv
 - io
+- sys
 - collections
 - datetime
 - uuid
@@ -41,6 +42,7 @@ from __future__ import annotations
 
 import csv
 import io
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from uuid import UUID
@@ -54,7 +56,7 @@ from server.logging_config import get_logger
 
 _log = get_logger(__name__)
 
-MAX_CSV_BYTES = 10 * 1024 * 1024
+MAX_CSV_BYTES = 100 * 1024 * 1024
 
 _EXERCISE_TYPE_MAP: dict[int, str] = {
     1001: "running",
@@ -67,6 +69,7 @@ _EXERCISE_TYPE_MAP: dict[int, str] = {
 
 
 def parse_samsung_csv(raw_bytes: bytes) -> list[dict]:
+    csv.field_size_limit(sys.maxsize)
     text = raw_bytes.decode("utf-8")
     lines = [ln for ln in text.splitlines() if not ln.startswith("#")]
     if not lines:
@@ -262,16 +265,17 @@ def parse_exercise_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[i
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `parse_samsung_csv` (function) — lines 30-36
-- `_parse_ts` (function) — lines 39-45
-- `parse_sleep_rows` (function) — lines 48-84
-- `parse_heartrate_rows` (function) — lines 87-135
-- `parse_steps_rows` (function) — lines 138-172
-- `parse_exercise_rows` (function) — lines 175-218
+- `parse_samsung_csv` (function) — lines 31-38
+- `_parse_ts` (function) — lines 41-47
+- `parse_sleep_rows` (function) — lines 50-86
+- `parse_heartrate_rows` (function) — lines 89-137
+- `parse_steps_rows` (function) — lines 140-174
+- `parse_exercise_rows` (function) — lines 177-220
 
 ### Imports
 - `csv`
 - `io`
+- `sys`
 - `collections`
 - `datetime`
 - `uuid`

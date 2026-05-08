@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from uuid import UUID
@@ -15,7 +16,7 @@ from server.logging_config import get_logger
 
 _log = get_logger(__name__)
 
-MAX_CSV_BYTES = 10 * 1024 * 1024
+MAX_CSV_BYTES = 100 * 1024 * 1024
 
 _EXERCISE_TYPE_MAP: dict[int, str] = {
     1001: "running",
@@ -28,6 +29,7 @@ _EXERCISE_TYPE_MAP: dict[int, str] = {
 
 
 def parse_samsung_csv(raw_bytes: bytes) -> list[dict]:
+    csv.field_size_limit(sys.maxsize)
     text = raw_bytes.decode("utf-8")
     lines = [ln for ln in text.splitlines() if not ln.startswith("#")]
     if not lines:
