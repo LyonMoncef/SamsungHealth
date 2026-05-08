@@ -29,6 +29,8 @@ import fr.datasaillance.nightfall.data.http.StatusResponse
 import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
+import fr.datasaillance.nightfall.data.sleep.SleepRepository
+import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
@@ -42,6 +44,7 @@ import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.trends.TrendsScreen
 import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
+import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import okhttp3.MultipartBody
 import retrofit2.Response
 
@@ -126,7 +129,10 @@ fun NavGraph(
                     onBack = { navController.popBackStack() }
                 )
             }
-            composable(NavDestination.Sleep.route)    { SleepScreen() }
+            composable(NavDestination.Sleep.route) {
+                val sleepViewModel = remember { SleepViewModel(NoOpSleepRepository()) }
+                SleepScreen(viewModel = sleepViewModel, onSessionClick = {})
+            }
             composable(NavDestination.Trends.route)   { TrendsScreen() }
             composable(NavDestination.Activity.route) { ActivityScreen() }
             composable(NavDestination.Profile.route) {
@@ -164,6 +170,11 @@ fun NavGraph(
     }
 }
 
+private class NoOpSleepRepository : SleepRepository {
+    override suspend fun getSessions(): Result<List<SleepSessionResponse>> =
+        Result.success(emptyList())
+}
+
 private class NoOpImportRepository : ImportRepository {
     override suspend fun pingBackend(): Boolean = false
 
@@ -191,6 +202,7 @@ private class NoOpNightfallApi : NightfallApi {
     override suspend fun importHeartRate(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importSteps(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importExercise(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
+    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
 }
 
 /**
