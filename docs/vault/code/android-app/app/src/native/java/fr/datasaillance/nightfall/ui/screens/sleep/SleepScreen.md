@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt
-git_blob: db3d26570568a69df9d5762fc6f26b1bbe5d6e95
-last_synced: '2026-05-08T01:27:05Z'
-loc: 129
+git_blob: 41096a17a046057614c39d6f095fe4ab19c8cc65
+last_synced: '2026-05-08T06:09:46Z'
+loc: 132
 annotations: []
 imports: []
 exports: []
@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -55,6 +56,8 @@ fun SleepScreen(
     onSessionClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.loadSessions() }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -157,4 +160,4 @@ fun SleepScreen(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SleepScreen` (function) — lines 29-129
+- `SleepScreen` (function) — lines 30-132

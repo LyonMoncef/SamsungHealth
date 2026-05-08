@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt
-git_blob: 58de67aea204eea8b2f605bb8e206e90048a0718
-last_synced: '2026-05-07T03:10:49Z'
+git_blob: 402ce27d6b3ad731a7e6822a94e87a2b055f3f5a
+last_synced: '2026-05-08T06:09:46Z'
 loc: 124
 annotations: []
 imports: []
@@ -88,7 +88,7 @@ class ImportRepositoryImpl(
 
                 val name = entry.name.substringAfterLast('/')
                 val matchingType = ImportDataType.entries.firstOrNull { type ->
-                    name.startsWith(type.samsungFilenamePrefix) && name.endsWith(".csv")
+                    type.samsungFilenamePrefixes.any { prefix -> name.startsWith(prefix) } && name.endsWith(".csv")
                 }
 
                 if (matchingType != null && matchingType !in result) {
@@ -134,7 +134,7 @@ class ImportRepositoryImpl(
             totalBytes = totalBytes,
             onProgress = onProgress,
         )
-        val part = MultipartBody.Part.createFormData("file", "${type.samsungFilenamePrefix}.csv", countingBody)
+        val part = MultipartBody.Part.createFormData("file", "${type.samsungFilenamePrefixes.first()}.csv", countingBody)
 
         val response: ImportApiResponse = when (type) {
             ImportDataType.SLEEP -> api.importSleep(part)

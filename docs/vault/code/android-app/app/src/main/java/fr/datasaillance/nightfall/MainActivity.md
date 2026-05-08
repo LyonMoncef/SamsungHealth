@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt
-git_blob: 6065cecbb47b55ff40d7ca3d70946ce6549ab17d
-last_synced: '2026-05-07T00:48:24Z'
-loc: 31
+git_blob: c3823caef11e9ef2747cebc9965f96678700e771
+last_synced: '2026-05-08T06:09:46Z'
+loc: 48
 annotations: []
 imports: []
 exports: []
@@ -28,14 +28,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.navigation.compose.rememberNavController
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
+import fr.datasaillance.nightfall.data.http.NightfallApi
 import fr.datasaillance.nightfall.data.network.BackendUrlStore
+import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
+import fr.datasaillance.nightfall.di.NetworkModule
 import fr.datasaillance.nightfall.ui.navigation.NavGraph
 import fr.datasaillance.nightfall.ui.theme.NightfallTheme
+import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 
 class MainActivity : ComponentActivity() {
 
     private val tokenDataStore by lazy { TokenDataStore(this) }
     private val backendUrlStore by lazy { BackendUrlStore(this) }
+
+    private val api: NightfallApi by lazy {
+        val authInterceptor = NetworkModule.provideAuthInterceptor(tokenDataStore)
+        val okHttpClient = NetworkModule.provideOkHttpClient(authInterceptor)
+        val retrofit = NetworkModule.provideRetrofit(okHttpClient, backendUrlStore)
+        NetworkModule.provideNightfallApi(retrofit)
+    }
+
+    private val sleepViewModel: SleepViewModel by lazy {
+        SleepViewModel(SleepRepositoryImpl(api, tokenDataStore))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +60,8 @@ class MainActivity : ComponentActivity() {
                 NavGraph(
                     navController = navController,
                     hasToken      = tokenDataStore.hasToken(),
+                    api           = api,
+                    sleepViewModel = sleepViewModel,
                     backendUrl    = backendUrlStore.getUrl(),
                     onSaveUrl     = { url -> backendUrlStore.saveUrl(url) }
                 )
@@ -59,5 +76,5 @@ class MainActivity : ComponentActivity() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `MainActivity` (class) — lines 12-31
-- `onCreate` (function) — lines 17-30
+- `MainActivity` (class) — lines 16-48
+- `onCreate` (function) — lines 32-47

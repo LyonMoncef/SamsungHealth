@@ -31,10 +31,20 @@
 | Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
 | P5.0 LoginScreen natif | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt` | [`2ccecfe`](#2026-05-08-2ccecfe) |
 | P5.1 SleepScreen Night Cards | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepNightCard.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/SleepViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt` | [`54e9e54`](#2026-05-08-54e9e54) |
+| P5.2 Hypnogramme | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/hypnogram/HypnogramScreen.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/hypnogram/HypnogramCanvas.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt` | [`05aa974`](#2026-05-08-05aa974) |
 
 ---
 
 ## Changelog
+
+### 2026-05-08 `05aa974`
+feat: P5.2 HypnogramScreen — canvas stages + nav depuis SleepNightCard
+- Ajout NavDestination.Hypnogram avec route paramétrée 'hypnogram/{sessionId}' et helper route(sessionId)
+- NavGraph : sleepViewModel hoisted au niveau NavGraph (Sleep + Hypnogram partagent la même instance)
+- HypnogramCanvas.kt : buildSegments() pur (gap-filling AWAKE), Canvas 80dp, couleurs fixes DEEP/LIGHT/REM/AWAKE
+- HypnogramScreen.kt : 3 états (not_found/no_stages/full), TopAppBar + back, HypnogramLegend, HypnogramKpis
+- Review fixes : Timber.w conditionné à SleepUiState.Success, legend AWAKE implicite, KPI typography headlineLarge/headlineMedium
+- 16 tests RED→GREEN : Paparazzi x2 + Robolectric x9 + JVM purs x5 (TA-H-01 à TA-H-12)
 
 ### 2026-05-08 `54e9e54`
 feat: (android): P5.1 SleepScreen Night Cards — SleepViewModel, barre colorée, OffsetDateTime

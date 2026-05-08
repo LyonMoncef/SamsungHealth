@@ -52,7 +52,7 @@ fun ImportScreen(
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { viewModel.startUpload(context.contentResolver, it) }
     }
@@ -98,7 +98,7 @@ fun ImportScreen(
                 )
             }
             is ImportUiState.Connected -> ConnectedContent(
-                onSelectFolder = { launcher.launch(null) },
+                onSelectFolder = { launcher.launch(arrayOf("*/*")) },
                 padding = padding,
             )
             is ImportUiState.Selecting -> Box(
@@ -225,7 +225,7 @@ private fun ConnectedContent(
             onClick = onSelectFolder,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Sélectionner le dossier Samsung Health")
+            Text("Sélectionner le fichier ZIP Samsung Health")
         }
     }
 }
@@ -265,7 +265,7 @@ private fun SelectingContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Sélectionnez le dossier Samsung Health…")
+        Text("Sélectionnez le fichier ZIP Samsung Health…")
     }
 }
 

@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt
-git_blob: 3103a4b1522e3e6ef7195f24301304182da21f28
-last_synced: '2026-05-07T03:10:49Z'
+git_blob: d733c816c6cdc663e3e7971f5574b51586894972
+last_synced: '2026-05-08T06:09:46Z'
 loc: 365
 annotations: []
 imports: []
@@ -75,7 +75,7 @@ fun ImportScreen(
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { viewModel.startUpload(context.contentResolver, it) }
     }
@@ -121,7 +121,7 @@ fun ImportScreen(
                 )
             }
             is ImportUiState.Connected -> ConnectedContent(
-                onSelectFolder = { launcher.launch(null) },
+                onSelectFolder = { launcher.launch(arrayOf("*/*")) },
                 padding = padding,
             )
             is ImportUiState.Selecting -> Box(
@@ -248,7 +248,7 @@ private fun ConnectedContent(
             onClick = onSelectFolder,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Sélectionner le dossier Samsung Health")
+            Text("Sélectionner le fichier ZIP Samsung Health")
         }
     }
 }
@@ -288,7 +288,7 @@ private fun SelectingContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Sélectionnez le dossier Samsung Health…")
+        Text("Sélectionnez le fichier ZIP Samsung Health…")
     }
 }
 

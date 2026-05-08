@@ -24,7 +24,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "4.0.0"
-        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"http://10.0.2.2:8001\"")
+        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"https://sh-dev.datasaillance.fr\"")
     }
 
     buildTypes {
