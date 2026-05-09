@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: 523fc31d70b5f0c1d8ad2550f524d8f7b628fbb5
-last_synced: '2026-05-07T03:10:49Z'
-loc: 123
+git_blob: 6bee501736f61c9e8d3fca9d12678e3c6ee16467
+last_synced: '2026-05-09T15:08:38Z'
+loc: 132
 annotations: []
 imports: []
 exports: []
@@ -26,6 +26,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.devtools.ksp")
     id("app.cash.paparazzi")
 }
 
@@ -47,7 +48,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "4.0.0"
-        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"http://10.0.2.2:8001\"")
+        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"https://sh-dev.datasaillance.fr\"")
     }
 
     buildTypes {
@@ -108,6 +109,13 @@ dependencies {
     // Security / Crypto
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    // Local DB — Room + SQLCipher (Phase A local-first migration)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+
     // Retrofit + kotlinx-serialization
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -138,6 +146,7 @@ dependencies {
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("androidx.room:room-testing:2.6.1")
 
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
