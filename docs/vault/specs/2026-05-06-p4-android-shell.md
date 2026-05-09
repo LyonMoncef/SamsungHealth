@@ -48,7 +48,7 @@ La Phase 4 est un clean rewrite. Le répertoire `android-app/` est conservé com
 | D5 | `EncryptedDataStore` (`androidx.security.crypto`) pour le JWT | Le JWT donne accès aux données Art.9 — C2 interdit SharedPreferences en clair |
 | D6 | Retrofit + OkHttp + `AuthInterceptor` | Intercepteur unique qui injecte `Authorization: Bearer <token>` sur toutes les requêtes |
 | D7 | `NightfallTheme` : MaterialTheme M3 wrappé, tokens DataSaillance | Cf. spec rebrand 2026-04-26 ; primary=teal, secondary=amber, tertiary=cyan |
-| D8 | Polices **Playfair Display** (titres) + **Inter** (UI/body) bundlées via `res/font/` | Système canonique DataSaillance (cf. `Vectorizer/design-system/typography.md`) — variable fonts copiées depuis `static/assets/fonts/` ; Cairo n'est pas dans le système DS |
+| D8 | Police **système** ( = Roboto sur Android) — pas de font bundlée dans l'APK | Playfair Display ne passe pas à l'échelle mobile native ; Roboto est la police plateforme Android |
 | D9 | Timber pour le logging | Pas de `Log.d` directs ; Timber.plant en `DebugTree` uniquement dans `webview` debug build |
 | D10 | Paparazzi pour screenshot tests des composables | Tests offline (pas d'émulateur) ; couvre `NightfallTheme` light + dark, `BottomNavBar`, états écrans |
 | D11 | `minSdk = 28`, `targetSdk = 35`, `compileSdk = 35` | Conservé par rapport au proto ; `EncryptedDataStore` requiert API 23+ — OK |
@@ -118,7 +118,7 @@ android-app/
           ui/
             theme/
               Color.kt                     ← constantes couleur DataSaillance
-              Type.kt                      ← Cairo typography scale
+              Type.kt                      ← typography scale (police système)
               NightfallTheme.kt            ← MaterialTheme M3 wrappé light+dark
             navigation/
               NavGraph.kt                  ← NavHost + toutes les routes
@@ -235,7 +235,7 @@ fun NightfallTheme(
 }
 ```
 
-Les polices sont chargées via `FontFamily` depuis `res/font/` (variable fonts bundlées). Le fichier `ui/theme/Type.kt` définit `NightfallTypography: Typography` avec Playfair Display pour les titres (displayLarge → titleLarge) et Inter pour l'UI/body (titleMedium → labelSmall).
+Le fichier `ui/theme/Type.kt` définit `NightfallTypography: Typography` avec la police système ( = Roboto) pour tous les styles — tailles et graisses personnalisées, aucune font bundlée.
 
 ### TokenDataStore
 
@@ -347,7 +347,7 @@ L'URL backend (`baseUrl`) est lue depuis `TokenDataStore`/settings et injectée 
 ### Theme
 
 - [ ] `ui/theme/Color.kt` — constantes couleur DataSaillance (dark + light)
-- [ ] `ui/theme/Type.kt` — `NightfallTypography` avec Playfair Display (titres) + Inter (UI/body)
+- [ ] `ui/theme/Type.kt` — `NightfallTypography` avec police système (tailles/graisses uniquement, pas de `FontFamily` custom)
 - [ ] `ui/theme/NightfallTheme.kt` — `MaterialTheme` M3 wrappé, dark/light `colorScheme`, `typography`
 
 ### Navigation
@@ -399,7 +399,7 @@ L'URL backend (`baseUrl`) est lue depuis `TokenDataStore`/settings et injectée 
 | **C1** Local-first | Aucun appel vers un service tiers — Retrofit cible uniquement `backendUrl` configurable par l'utilisateur (VPS personnel) |
 | **C2** Chiffrement | JWT stocké dans `EncryptedSharedPreferences` AES256-GCM — pas de `SharedPreferences` en clair, pas de `datastore-preferences` non chiffré |
 | **C3** Sécurité | `network_security_config.xml` : cleartext limité à `10.0.2.2` ; TLS requis partout ailleurs. Pentester agent passe avant merge |
-| **C4** Design | Tokens DataSaillance uniquement — `NightfallTheme` sans `#6366f1`, sans neons, sans `linear-gradient` décoratif, polices Playfair Display + Inter |
+| **C4** Design | Tokens DataSaillance uniquement — `NightfallTheme` sans `#6366f1`, sans neons, sans `linear-gradient` décoratif, police système (Roboto) |
 | **C5** No LLM | Aucun appel LLM — le shell ne traite aucune donnée santé directement |
 
 ---

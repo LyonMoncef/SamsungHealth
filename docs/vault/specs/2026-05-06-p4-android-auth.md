@@ -276,15 +276,15 @@ Note : `mapHttpError` ne logue jamais les valeurs email/password — uniquement 
 | Lien / accent | `MaterialTheme.colorScheme.tertiary` (Cyan500) | `#07BCD3` |
 | Texte principal | `MaterialTheme.colorScheme.onBackground` | `#E8E4DC` (dark) / `#1A1916` (light) |
 | Erreur | `MaterialTheme.colorScheme.error` | Material 3 default |
-| Police | Inter (corps/UI) + Playfair Display (titres) | — |
+| Police | Système (Roboto) — héritée de `NightfallTheme` | — |
 
-Couleurs interdites dans ces écrans : `#6366f1`, tout `linear-gradient` décoratif, tout `box-shadow` type glow, toute police autre que Inter/Playfair Display.
+Couleurs interdites dans ces écrans : `#6366f1`, tout `linear-gradient` décoratif, tout `box-shadow` type glow, toute font custom bundlée (police système uniquement).
 
 ### LoginScreen
 
 Structure verticale centrée (`Column` + `Arrangement.Center`) :
 
-1. Logo/titre "Nightfall" en `MaterialTheme.typography.headlineMedium` (Playfair Display Bold)
+1. Logo/titre "Nightfall" en `MaterialTheme.typography.headlineMedium` (Bold)
 2. `AuthTextField` email (type `KeyboardType.Email`, `ImeAction.Next`)
 3. `AuthTextField` password (type `KeyboardType.Password`, toggle visibilité, `ImeAction.Done`)
 4. `AuthErrorMessage` — visible uniquement si `LoginUiState.Error` ; texte en `MaterialTheme.colorScheme.error`

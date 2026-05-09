@@ -444,7 +444,7 @@ La carte `RgpdNoticeCard` est affichée entre l'étape Connexion confirmée et l
 | Icône type import "ignoré" | `colorScheme.onSurface` opacité 38% |
 | `LinearProgressIndicator` | `color = colorScheme.primary`, `trackColor = colorScheme.surfaceVariant` |
 | Indicateur étape active | `colorScheme.secondary` (Amber600 `#D37C04`) |
-| Police | Inter (corps/UI) + Playfair Display (titres) — héritées de `NightfallTheme` |
+| Police | Système (Roboto) — héritée de `NightfallTheme` |
 | Interdits | `#6366f1`, `linear-gradient` décoratif, `box-shadow` glow |
 
 Light et dark mode sont tous les deux couverts via `NightfallTheme` — aucun `if (darkTheme)` inline dans `ImportScreen.kt`.
@@ -562,7 +562,7 @@ Light et dark mode sont tous les deux couverts via `NightfallTheme` — aucun `i
 | **C1** Local-first | `ImportRepository` ne cible que `backendUrl` de l'utilisateur. Aucun appel vers Firebase, S3, Supabase ou tout autre tiers. La vérification est testée via `TA-10` |
 | **C2** Chiffrement / pas de cache en clair | Aucune copie des CSV sur le stockage de l'app (`TA-10`). Transit TLS obligatoire sauf émulateur (`D11`). Les données Art.9 sont chiffrées à l'écriture côté backend (responsabilité des routers FastAPI existants) |
 | **C3** Sécurité | Pentester agent passe avant merge. Points d'attention : injection de chemin via URI SAF, dépassement mémoire via ZIP bomb (voir note ci-dessous), absence de validation de type MIME côté Android |
-| **C4** Design DataSaillance | Tokens teal/amber/cyan via `NightfallTheme`. Aucun `#6366f1`, aucun gradient décoratif. Police Inter + Playfair Display |
+| **C4** Design DataSaillance | Tokens teal/amber/cyan via `NightfallTheme`. Aucun `#6366f1`, aucun gradient décoratif. Police système (Roboto) |
 | **C5** No LLM | Aucun appel LLM dans tout ce module |
 
 **Note sécurité ZIP bomb** : si le fichier sélectionné est un ZIP, `ImportRepository.extractCsvEntries` doit implémenter une limite de décompression (ex : 200 Mo décompressés max, ou 10 entrées max) pour éviter un `OutOfMemoryError` volontaire. Cette limite est à définir avec le coder-android et à documenter dans le PR.
