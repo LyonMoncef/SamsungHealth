@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt
-git_blob: 5302471b968ad69b32309fc6d75c0d22884bf421
-last_synced: '2026-05-07T03:10:49Z'
-loc: 17
+git_blob: 2b4245948793246660c4ba9702a109980ed4d7ee
+last_synced: '2026-05-09T03:55:38Z'
+loc: 20
 annotations: []
 imports: []
 exports: []
@@ -35,7 +35,10 @@ sealed class ImportUiState {
         val completedTypes: List<ImportDataType>,
         val skippedTypes: List<ImportDataType>,
     ) : ImportUiState()
-    data class Success(val results: List<ImportResult>) : ImportUiState()
+    data class Success(
+        val results: List<ImportResult>,
+        val missingTypes: List<ImportDataType> = emptyList(),
+    ) : ImportUiState()
     data class Error(val message: String, val retryable: Boolean) : ImportUiState()
 }
 ```
@@ -45,8 +48,8 @@ sealed class ImportUiState {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportUiState` (class) — lines 3-17
+- `ImportUiState` (class) — lines 3-20
 - `ConnectionFailed` (class) — lines 6-6
 - `Uploading` (class) — lines 9-14
-- `Success` (class) — lines 15-15
-- `Error` (class) — lines 16-16
+- `Success` (class) — lines 15-18
+- `Error` (class) — lines 19-19

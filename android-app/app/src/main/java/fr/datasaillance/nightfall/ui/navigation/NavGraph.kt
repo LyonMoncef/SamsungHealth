@@ -128,14 +128,14 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Import.route) {
-                val repository: ImportRepository = remember {
+                val repository: ImportRepository = remember(api) {
                     if (api != null) {
                         ImportRepositoryImpl(api)
                     } else {
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember { ImportViewModel(repository) }
+                val viewModel = remember(repository) { ImportViewModel(repository) }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },

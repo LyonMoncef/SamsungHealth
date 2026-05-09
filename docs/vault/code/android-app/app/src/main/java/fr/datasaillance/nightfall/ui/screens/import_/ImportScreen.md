@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt
-git_blob: 3103a4b1522e3e6ef7195f24301304182da21f28
-last_synced: '2026-05-07T03:10:49Z'
-loc: 365
+git_blob: f1369528bcc94fa603b2c33a5321edae24a775e9
+last_synced: '2026-05-09T03:55:38Z'
+loc: 379
 annotations: []
 imports: []
 exports: []
@@ -75,7 +75,7 @@ fun ImportScreen(
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { viewModel.startUpload(context.contentResolver, it) }
     }
@@ -121,7 +121,7 @@ fun ImportScreen(
                 )
             }
             is ImportUiState.Connected -> ConnectedContent(
-                onSelectFolder = { launcher.launch(null) },
+                onSelectFolder = { launcher.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) },
                 padding = padding,
             )
             is ImportUiState.Selecting -> Box(
@@ -153,6 +153,7 @@ fun ImportScreen(
             ) {
                 SuccessContent(
                     results = state.results,
+                    missingTypes = state.missingTypes,
                     onDone = {
                         viewModel.reset()
                         onNavigateBack()
@@ -248,7 +249,7 @@ private fun ConnectedContent(
             onClick = onSelectFolder,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Sélectionner le dossier Samsung Health")
+            Text("Sélectionner l'archive Samsung Health (.zip)")
         }
     }
 }
@@ -288,7 +289,7 @@ private fun SelectingContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Sélectionnez le dossier Samsung Health…")
+        Text("Sélectionnez l'archive Samsung Health…")
     }
 }
 
@@ -324,6 +325,7 @@ private fun UploadingContent(
 @Composable
 private fun SuccessContent(
     results: List<fr.datasaillance.nightfall.domain.import_.ImportResult>,
+    missingTypes: List<fr.datasaillance.nightfall.domain.import_.ImportDataType>,
     onDone: () -> Unit,
 ) {
     Column(
@@ -346,7 +348,19 @@ private fun SuccessContent(
                 if (result.errorMessage != null) {
                     Text("Erreur", color = MaterialTheme.colorScheme.error)
                 } else {
-                    Text("${result.inserted} insérés, ${result.skipped} ignorés")
+                    Text("${result.inserted} nouveaux · ${result.skipped} déjà présents")
+                }
+            }
+        }
+        if (missingTypes.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            missingTypes.forEach { type ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(type.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Absent du ZIP", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -393,13 +407,13 @@ private fun ErrorContent(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportScreen` (function) — lines 45-154
-- `IdleContent` (function) — lines 156-172
-- `ConnectingContent` (function) — lines 174-185
-- `ConnectionFailedContent` (function) — lines 187-204
-- `ConnectedContent` (function) — lines 206-231
-- `RgpdNoticeCard` (function) — lines 233-259
-- `SelectingContent` (function) — lines 261-270
-- `UploadingContent` (function) — lines 272-299
-- `SuccessContent` (function) — lines 301-335
-- `ErrorContent` (function) — lines 337-365
+- `ImportScreen` (function) — lines 45-155
+- `IdleContent` (function) — lines 157-173
+- `ConnectingContent` (function) — lines 175-186
+- `ConnectionFailedContent` (function) — lines 188-205
+- `ConnectedContent` (function) — lines 207-232
+- `RgpdNoticeCard` (function) — lines 234-260
+- `SelectingContent` (function) — lines 262-271
+- `UploadingContent` (function) — lines 273-300
+- `SuccessContent` (function) — lines 302-349
+- `ErrorContent` (function) — lines 351-379

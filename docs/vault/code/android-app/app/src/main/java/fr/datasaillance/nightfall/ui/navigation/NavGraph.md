@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: 99d7bd5d7787df7f1322dbea0a789186ea3434e4
-last_synced: '2026-05-09T02:10:36Z'
+git_blob: e26bcff3b3aa77b1c1afbb4c1b3d4a0685675297
+last_synced: '2026-05-09T03:55:38Z'
 loc: 185
 annotations: []
 imports: []
@@ -151,14 +151,14 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Import.route) {
-                val repository: ImportRepository = remember {
+                val repository: ImportRepository = remember(api) {
                     if (api != null) {
                         ImportRepositoryImpl(api)
                     } else {
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember { ImportViewModel(repository) }
+                val viewModel = remember(repository) { ImportViewModel(repository) }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },

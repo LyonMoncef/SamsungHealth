@@ -89,7 +89,7 @@ class ImportViewModel(
                     )
                 }
             }
-            _uiState.value = ImportUiState.Success(results)
+            _uiState.value = ImportUiState.Success(results, missingTypes = skipped.toList())
         }
     }
 

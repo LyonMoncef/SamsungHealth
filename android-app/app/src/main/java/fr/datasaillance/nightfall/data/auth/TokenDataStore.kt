@@ -14,16 +14,7 @@ class TokenDataStore(context: Context) {
         // must propagate (no silent fallback — spec C2).
         context.getSharedPreferences("nightfall_test_prefs", Context.MODE_PRIVATE)
     } else {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            context,
-            "nightfall_secure_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        openEncryptedPrefs(context, "nightfall_secure_prefs")
     }
 
     fun saveToken(token: String) = prefs.edit().putString(KEY_JWT, token).apply()
@@ -33,5 +24,26 @@ class TokenDataStore(context: Context) {
 
     companion object {
         private const val KEY_JWT = "jwt_access_token"
+    }
+}
+
+private fun openEncryptedPrefs(
+    context: Context,
+    name: String,
+): android.content.SharedPreferences {
+    fun buildMasterKey() = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+    fun create(key: MasterKey) = EncryptedSharedPreferences.create(
+        context, name, key,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+    )
+    return try {
+        create(buildMasterKey())
+    } catch (e: Exception) {
+        // AEADBadTagException on reinstall: AndroidKeyStore key invalidated → wipe stale prefs and start fresh
+        context.deleteSharedPreferences(name)
+        create(buildMasterKey())
     }
 }

@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt
-git_blob: 3f989123930d5deec5041d161889cc1dc163e6c3
-last_synced: '2026-05-07T03:10:49Z'
+git_blob: a43e5738c3535541062d5940911b385dce0d6cc2
+last_synced: '2026-05-09T03:55:38Z'
 loc: 46
 annotations: []
 imports: []
@@ -36,7 +36,7 @@ import retrofit2.http.Part
 data class ImportApiResponse(val inserted: Int, val skipped: Int)
 
 interface NightfallApi {
-    @GET("health")
+    @GET("healthz")
     suspend fun health(): Response<Unit>
 
     @POST("auth/login")

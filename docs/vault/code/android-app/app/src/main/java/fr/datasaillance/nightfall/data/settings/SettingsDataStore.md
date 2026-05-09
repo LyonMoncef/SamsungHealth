@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt
-git_blob: 5f0ce14acb0b18e15555329af9ce872a258c1acf
-last_synced: '2026-05-09T02:10:36Z'
-loc: 55
+git_blob: df60a9f0c0c5f27525716cbf093b425e6af03507
+last_synced: '2026-05-09T03:55:38Z'
+loc: 67
 annotations: []
 imports: []
 exports: []
@@ -47,13 +47,25 @@ class SettingsDataStore(context: Context) {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
-            context,
-            "nightfall_settings_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        try {
+            EncryptedSharedPreferences.create(
+                context,
+                "nightfall_settings_prefs",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            context.deleteSharedPreferences("nightfall_settings_prefs")
+            val freshKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+            EncryptedSharedPreferences.create(
+                context,
+                "nightfall_settings_prefs",
+                freshKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
     }
 
     fun getBackendUrl(): String =
@@ -83,8 +95,8 @@ class SettingsDataStore(context: Context) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SettingsDataStore` (class) — lines 9-55
-- `getBackendUrl` (function) — lines 36-37
-- `setBackendUrl` (function) — lines 39-44
-- `getThemePreference` (function) — lines 46-47
-- `setThemePreference` (function) — lines 49-54
+- `SettingsDataStore` (class) — lines 9-67
+- `getBackendUrl` (function) — lines 48-49
+- `setBackendUrl` (function) — lines 51-56
+- `getThemePreference` (function) — lines 58-59
+- `setThemePreference` (function) — lines 61-66
