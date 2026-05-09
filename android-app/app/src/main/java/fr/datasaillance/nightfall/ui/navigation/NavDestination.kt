@@ -13,8 +13,11 @@ sealed class NavDestination(
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")
     object Settings : NavDestination("settings", "Paramètres")
-    object Hypnogram : NavDestination("hypnogram/{sessionId}", "Hypnogramme") {
-        fun route(id: String): String = "hypnogram/$id"
+    object Hypnogram : NavDestination("hypnogram/{sessionId}?date={date}", "Hypnogramme") {
+        // date facultative (ISO yyyy-MM-dd) — quand fournie, on fetch uniquement cette nuit
+        // au lieu de télécharger tout l'historique sleep_sessions du user.
+        fun route(id: String, date: String? = null): String =
+            if (date != null) "hypnogram/$id?date=$date" else "hypnogram/$id"
     }
 
     companion object {

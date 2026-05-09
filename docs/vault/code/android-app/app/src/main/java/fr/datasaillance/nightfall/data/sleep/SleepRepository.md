@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepRepository.kt
-git_blob: 364919410d349ed4baeb81b851d72150ee1c7d95
-last_synced: '2026-05-09T04:03:35Z'
-loc: 5
+git_blob: 8afdf07ec5313001294fbc9c250c660af2fadb10
+last_synced: '2026-05-09T14:31:04Z'
+loc: 10
 annotations: []
 imports: []
 exports: []
@@ -23,8 +23,13 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.data.sleep
 
+import java.time.LocalDate
+
 interface SleepRepository {
-    suspend fun getSessions(): Result<List<SleepSessionResponse>>
+    suspend fun getSessions(
+        from: LocalDate? = null,
+        to: LocalDate? = null,
+    ): Result<List<SleepSessionResponse>>
 }
 ```
 
@@ -33,5 +38,5 @@ interface SleepRepository {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SleepRepository` (class) — lines 3-5
-- `getSessions` (function) — lines 4-4
+- `SleepRepository` (class) — lines 5-10
+- `getSessions` (function) — lines 6-9

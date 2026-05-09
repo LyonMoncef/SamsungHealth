@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/HypnogramViewModel.kt
-git_blob: ea4e5479bc273af0f644f239ba66a90ce852a087
-last_synced: '2026-05-09T08:38:11Z'
-loc: 92
+git_blob: 083db3585a42a6107d943419db94b21083dc6ed4
+last_synced: '2026-05-09T14:31:04Z'
+loc: 102
 annotations: []
 imports: []
 exports: []
@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.IOException
+import java.time.LocalDate
 import java.time.OffsetDateTime
 
 sealed class HypnogramUiState {
@@ -45,7 +46,8 @@ sealed class HypnogramUiState {
 
 class HypnogramViewModel(
     private val sessionId: String,
-    private val repository: SleepRepository
+    private val repository: SleepRepository,
+    private val hintDate: String? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HypnogramUiState>(HypnogramUiState.Idle)
@@ -62,8 +64,16 @@ class HypnogramViewModel(
         viewModelScope.launch {
             yield()
             try {
-                Timber.d("scope=hypno_vm session_id=$sessionId loading")
-                val result = repository.getSessions()
+                Timber.d("scope=hypno_vm session_id=$sessionId hint_date=$hintDate loading")
+                // Si une hint date est fournie (via nav arg) on cadre la requête sur cette nuit
+                // au lieu de fetcher tout l'historique. Fenêtre [date-1, date+1] pour couvrir
+                // les sessions à cheval sur minuit.
+                val parsedHint = hintDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                val result = if (parsedHint != null) {
+                    repository.getSessions(from = parsedHint.minusDays(1), to = parsedHint.plusDays(1))
+                } else {
+                    repository.getSessions()
+                }
                 if (result.isFailure) {
                     val code = (result.exceptionOrNull() as? retrofit2.HttpException)?.code()
                     if (code != null) Timber.w("scope=hypno_vm http_code=$code")
@@ -120,10 +130,10 @@ class HypnogramViewModel(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `HypnogramUiState` (class) — lines 16-21
-- `Success` (class) — lines 19-19
-- `Error` (class) — lines 20-20
-- `HypnogramViewModel` (class) — lines 23-92
-- `retry` (function) — lines 35-35
-- `loadSession` (function) — lines 37-81
-- `mapError` (function) — lines 83-91
+- `HypnogramUiState` (class) — lines 17-22
+- `Success` (class) — lines 20-20
+- `Error` (class) — lines 21-21
+- `HypnogramViewModel` (class) — lines 24-102
+- `retry` (function) — lines 37-37
+- `loadSession` (function) — lines 39-91
+- `mapError` (function) — lines 93-101
