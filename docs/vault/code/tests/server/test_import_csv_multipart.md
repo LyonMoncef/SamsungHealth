@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_import_csv_multipart.py
-git_blob: d022225937e4128a2da30d891fe106e8791eca75
-last_synced: '2026-05-07T16:11:01Z'
-loc: 825
+git_blob: 142722ae9a8fdb6f1f525f02562f1eecc9defbc8
+last_synced: '2026-05-09T13:21:34Z'
+loc: 1055
 annotations: []
 imports:
 - pytest
@@ -13,12 +13,14 @@ exports:
 - _heartrate_csv
 - _steps_csv
 - _exercise_csv
+- _sleep_stage_csv
 - _register_and_login
 - TestAuth401
 - TestMissingFilePart
 - TestFileTooLarge
 - TestImportSleepNominal
 - TestImportSleepMalformedRow
+- TestImportSleepStage
 - TestImportHeartrateNominal
 - TestImportStepsNominal
 - TestImportExerciseNominal
@@ -143,6 +145,20 @@ def _exercise_csv(rows: list[str] | None = None) -> bytes:
     return "\n".join(lines).encode("utf-8")
 
 
+def _sleep_stage_csv(rows: list[str] | None = None) -> bytes:
+    """Construit un CSV sleep_stage Samsung Health minimal — 1ère ligne metadata.
+
+    Format réel Samsung : line 1 = `com.samsung.health.sleep_stage,<userId>,<v>`
+    skipée par parse_samsung_csv. Headers SANS préfixe.
+    """
+    metadata = "com.samsung.health.sleep_stage,12345,7"
+    header = "start_time,end_time,stage"
+    lines = [metadata, header]
+    if rows is not None:
+        lines.extend(rows)
+    return "\n".join(lines).encode("utf-8")
+
+
 def _register_and_login(client, email: str) -> str:
     """Register + login → return access_token (Bearer).
 
@@ -235,28 +251,31 @@ class TestMissingFilePart:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# TA-03 — Fichier > 10 MB → 413
+# TA-03 — Fichier > MAX_CSV_BYTES → 413
 # ══════════════════════════════════════════════════════════════════════════
 
 class TestFileTooLarge:
 
-    # spec: TA-03 — Fichier > 10 MB → 413
-    def test_413_when_file_exceeds_10mb(self, client_pg_ready):
-        """POST un fichier de 10 MB + 1 octet → 413.
+    # spec: TA-03 — Fichier > MAX_CSV_BYTES → 413
+    def test_413_when_file_exceeds_limit(self, client_pg_ready):
+        """POST un fichier de MAX_CSV_BYTES + 1 octet → 413.
 
-        spec: TA-03 §Codes HTTP "Fichier > 10 MB → 413"
+        spec: TA-03 §Codes HTTP "Fichier > MAX_CSV_BYTES → 413"
         spec: §Décisions techniques "Vérification de taille avant lecture"
-        MAX_CSV_BYTES = 10 * 1024 * 1024 ; si > MAX → HTTPException(413)
+        si len(raw) > MAX_CSV_BYTES → HTTPException(413)
         """
-        # 10 MB + 1 octet — la vérification de taille se fait avant le parsing
-        oversized = b"x" * (10 * 1024 * 1024 + 1)
+        from server.services.csv_import import MAX_CSV_BYTES  # noqa: PLC0415
+
+        # Contenu CSV valide (lignes courtes) pour éviter _csv.Error sur les gros champs
+        row = b"a,b\n"
+        oversized = row * (MAX_CSV_BYTES // len(row) + 1)
         r = client_pg_ready.post(
             "/api/sleep/import",
             files={"file": ("big.csv", oversized, "text/csv")},
         )
         # spec: TA-03 — 413 attendu
         assert r.status_code == 413, (
-            f"Fichier > 10 MB devrait retourner 413, got {r.status_code}"
+            f"Fichier > MAX_CSV_BYTES devrait retourner 413, got {r.status_code}"
         )
 
 
@@ -356,6 +375,135 @@ class TestImportSleepMalformedRow:
         # spec: TA-06 — inserted=2, skipped=1
         assert body.get("inserted") == 2, f"inserted attendu=2, got {body}"
         assert body.get("skipped") == 1, f"skipped attendu=1 (ligne malformée), got {body}"
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Sleep stage import — /api/sleep/import-stages
+# ══════════════════════════════════════════════════════════════════════════
+
+class TestImportSleepStage:
+    """Couvre parse_sleep_stage_rows : matching session, codes 40001-40004,
+    perf (single SELECT for sessions, batch insert), idempotence."""
+
+    def _seed_session(self, client_pg_ready, start: str, end: str) -> None:
+        # Pré-condition : la session sleep doit exister pour que les stages matchent.
+        sleep_csv = _sleep_csv([f"{start},{end}"])
+        r = client_pg_ready.post(
+            "/api/sleep/import",
+            files={"file": ("sleep.csv", sleep_csv, "text/csv")},
+        )
+        assert r.status_code == 200
+
+    def test_import_stages_nominal_links_to_existing_session(self, client_pg_ready, schema_ready, engine):
+        self._seed_session(client_pg_ready, "2026-04-20 23:15:00.000", "2026-04-21 07:30:00.000")
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",  # LIGHT
+            "2026-04-21 00:30:00.000,2026-04-21 02:00:00.000,40003",  # DEEP
+            "2026-04-21 02:00:00.000,2026-04-21 03:00:00.000,40004",  # REM
+            "2026-04-21 03:00:00.000,2026-04-21 07:30:00.000,40002",  # LIGHT
+        ])
+        r = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["inserted"] == 4, body
+        assert body["skipped"] == 0, body
+
+    def test_import_stages_skips_unknown_stage_code(self, client_pg_ready, schema_ready, engine):
+        self._seed_session(client_pg_ready, "2026-04-20 23:15:00.000", "2026-04-21 07:30:00.000")
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",
+            "2026-04-21 00:30:00.000,2026-04-21 02:00:00.000,99999",  # unknown
+        ])
+        r = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["inserted"] == 1
+        assert body["skipped"] == 1
+
+    def test_import_stages_skips_when_no_matching_session(self, client_pg_ready, schema_ready, engine):
+        # Pas de session seedée — tous les stages skip
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",
+        ])
+        r = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["inserted"] == 0
+        assert body["skipped"] == 1
+
+    def test_import_stages_idempotent_second_import_returns_zero_inserted(self, client_pg_ready, schema_ready, engine):
+        self._seed_session(client_pg_ready, "2026-04-20 23:15:00.000", "2026-04-21 07:30:00.000")
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",
+            "2026-04-21 00:30:00.000,2026-04-21 02:00:00.000,40003",
+        ])
+        r1 = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r1.status_code == 200
+        assert r1.json()["inserted"] == 2
+
+        r2 = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r2.status_code == 200
+        body = r2.json()
+        assert body["inserted"] == 0
+        assert body["skipped"] == 2
+
+    def test_import_stages_perf_single_select_for_sessions(self, client_pg_ready, schema_ready, engine):
+        """Garde-fou contre une régression vers N+1 SELECT.
+
+        Pour 50 stages contenus dans 2 sessions, on s'attend à ≤ 5 SELECTs sur sleep_sessions
+        (idéalement 1 — le bulk loader). Avant fix: ~50 SELECTs.
+        """
+        self._seed_session(client_pg_ready, "2026-04-20 23:00:00.000", "2026-04-21 08:00:00.000")
+        self._seed_session(client_pg_ready, "2026-04-21 23:00:00.000", "2026-04-22 08:00:00.000")
+
+        # 50 stages alternant entre les 2 nuits
+        stage_rows = []
+        for i in range(25):
+            t1 = f"2026-04-20 23:{i:02d}:00.000"
+            t2 = f"2026-04-20 23:{i:02d}:30.000"
+            stage_rows.append(f"{t1},{t2},40002")
+            t3 = f"2026-04-21 23:{i:02d}:00.000"
+            t4 = f"2026-04-21 23:{i:02d}:30.000"
+            stage_rows.append(f"{t3},{t4},40002")
+        stage_csv = _sleep_stage_csv(stage_rows)
+
+        select_count = {"n": 0}
+
+        from sqlalchemy import event
+
+        @event.listens_for(engine, "before_cursor_execute")
+        def _track(conn, cursor, statement, params, context, executemany):
+            if "FROM sleep_sessions" in statement and "SELECT" in statement.upper():
+                select_count["n"] += 1
+
+        try:
+            r = client_pg_ready.post(
+                "/api/sleep/import-stages",
+                files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", _track)
+
+        assert r.status_code == 200
+        assert r.json()["inserted"] == 50
+        assert select_count["n"] <= 5, (
+            f"N+1 SELECT regression : got {select_count['n']} SELECTs on sleep_sessions for 50 stages"
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -839,16 +987,16 @@ class TestCsvImportService:
         with pytest.raises((UnicodeDecodeError, ValueError)):
             parse_samsung_csv(non_utf8)
 
-    # spec: §MAX_CSV_BYTES = 10 * 1024 * 1024
-    def test_max_csv_bytes_constant_is_10_mb(self):
-        """La constante MAX_CSV_BYTES doit valoir exactement 10 * 1024 * 1024.
+    # spec: §MAX_CSV_BYTES = 100 * 1024 * 1024
+    def test_max_csv_bytes_constant_is_100_mb(self):
+        """La constante MAX_CSV_BYTES doit valoir exactement 100 * 1024 * 1024.
 
-        spec: §Contrats d'interface "MAX_CSV_BYTES = 10 * 1024 * 1024"
+        spec: §Contrats d'interface "MAX_CSV_BYTES = 100 * 1024 * 1024"
         """
         from server.services.csv_import import MAX_CSV_BYTES  # noqa: PLC0415
 
-        assert MAX_CSV_BYTES == 10 * 1024 * 1024, (
-            f"MAX_CSV_BYTES attendu={10 * 1024 * 1024}, got {MAX_CSV_BYTES}"
+        assert MAX_CSV_BYTES == 100 * 1024 * 1024, (
+            f"MAX_CSV_BYTES attendu={100 * 1024 * 1024}, got {MAX_CSV_BYTES}"
         )
 
     # spec: §parse_samsung_csv — header présent mais 0 lignes données
@@ -865,6 +1013,90 @@ class TestCsvImportService:
         )
         rows = parse_samsung_csv(raw)
         assert rows == [], f"Header seul → list vide attendue, got {rows}"
+
+    # spec: §Format réel Samsung Health — BOM + ligne metadata
+    def test_parse_samsung_csv_handles_bom_and_metadata_line(self):
+        """parse_samsung_csv gère le BOM UTF-8 et la ligne metadata Samsung Health.
+
+        Les exports Samsung Health commencent par :
+        - BOM (\\xef\\xbb\\xbf)
+        - Ligne metadata : namespace,user_id,version (ex: com.samsung.shealth.sleep,12345,11)
+        - Ligne headers : noms de colonnes réels
+        - Lignes données
+        """
+        from server.services.csv_import import parse_samsung_csv  # noqa: PLC0415
+
+        # Simule le format exact d'un export Samsung Health
+        raw = (
+            b"\xef\xbb\xbf"  # BOM UTF-8
+            b"com.samsung.shealth.sleep,12345,11\n"  # metadata line
+            b"com.samsung.health.sleep.start_time,com.samsung.health.sleep.end_time\n"  # vrais headers
+            b"2026-04-20 23:15:00.000,2026-04-21 07:30:00.000\n"
+        )
+        rows = parse_samsung_csv(raw)
+        assert len(rows) == 1, f"1 ligne de données attendue, got {len(rows)}"
+        assert "com.samsung.health.sleep.start_time" in rows[0], (
+            f"Colonne start_time absente après skip metadata, keys={list(rows[0].keys())}"
+        )
+        assert rows[0]["com.samsung.health.sleep.start_time"] == "2026-04-20 23:15:00.000"
+
+    # spec: §Format réel Samsung Health — steps avec day_time ms epoch
+    def test_import_steps_real_format_with_day_time_ms(self, client_pg_ready, schema_ready, engine):
+        """CSV steps au format réel Samsung Health (day_time ms epoch, colonne count).
+
+        Le format réel utilise 'count' et 'day_time' (timestamp ms) au lieu de
+        com.samsung.health.step_daily_trend.start_time / count.
+        day_time=1703203200000 → 2023-12-22 00:00:00 UTC (hour=0)
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import sessionmaker
+        from server.db.models import StepsHourly  # noqa: PLC0415
+
+        # Format réel : BOM + metadata + headers courts + day_time en ms
+        raw = (
+            b"\xef\xbb\xbf"
+            b"com.samsung.shealth.step_daily_trend,12345,6\n"
+            b"count,day_time\n"
+            b"3000,1703203200000\n"  # 2023-12-22 00:00:00 UTC, 3000 steps
+            b"2500,1703206800000\n"  # 2023-12-22 01:00:00 UTC, 2500 steps
+        )
+        r = client_pg_ready.post(
+            "/api/steps/import",
+            files={"file": ("steps.csv", raw, "text/csv")},
+        )
+        assert r.status_code == 200, f"Import steps real format devrait 200, got {r.status_code}: {r.text}"
+        body = r.json()
+        assert body.get("inserted") == 2, f"inserted attendu=2, got {body}"
+
+        Session = sessionmaker(bind=engine, expire_on_commit=False)
+        with Session() as sess:
+            rows = sess.execute(select(StepsHourly).order_by(StepsHourly.hour)).scalars().all()
+        assert len(rows) == 2
+        assert rows[0].step_count == 3000
+        assert rows[1].step_count == 2500
+
+    # spec: §Format réel Samsung Health — heart_rate avec BPM en float ("104.0")
+    def test_import_heartrate_real_format_handles_float_bpm(self, client_pg_ready):
+        """CSV heart_rate avec valeurs BPM en float ("104.0") → parsé correctement.
+
+        Samsung Health exporte les BPM comme floats ("104.0") alors que le parser
+        doit produire des entiers (round(float(...))).
+        """
+        raw = (
+            b"# Samsung Health\n"
+            b"com.samsung.health.heart_rate.start_time,"
+            b"com.samsung.health.heart_rate.heart_rate,"
+            b"com.samsung.health.heart_rate.min,"
+            b"com.samsung.health.heart_rate.max\n"
+            b"2026-04-20 22:00:00.000,104.0,58.0,120.0\n"
+        )
+        r = client_pg_ready.post(
+            "/api/heartrate/import",
+            files={"file": ("hr.csv", raw, "text/csv")},
+        )
+        assert r.status_code == 200, f"Float BPM devrait être accepté, got {r.status_code}: {r.text}"
+        body = r.json()
+        assert body.get("inserted") == 1, f"inserted attendu=1, got {body}"
 ```
 
 ---
@@ -876,20 +1108,22 @@ class TestCsvImportService:
 - `_heartrate_csv` (function) — lines 46-63
 - `_steps_csv` (function) — lines 66-81
 - `_exercise_csv` (function) — lines 84-101
-- `_register_and_login` (function) — lines 104-117
-- `TestAuth401` (class) — lines 124-147
-- `TestMissingFilePart` (class) — lines 154-192
-- `TestFileTooLarge` (class) — lines 199-218
-- `TestImportSleepNominal` (class) — lines 225-287
-- `TestImportSleepMalformedRow` (class) — lines 294-316
-- `TestImportHeartrateNominal` (class) — lines 323-398
-- `TestImportStepsNominal` (class) — lines 405-468
-- `TestImportExerciseNominal` (class) — lines 475-572
-- `TestImportEmptyCsv` (class) — lines 579-616
-- `TestImportInvalidEncoding` (class) — lines 623-646
-- `TestSecurityPathTraversal` (class) — lines 653-675
-- `TestMultiUserIsolation` (class) — lines 682-739
-- `TestCsvImportService` (class) — lines 746-825
+- `_sleep_stage_csv` (function) — lines 104-115
+- `_register_and_login` (function) — lines 118-131
+- `TestAuth401` (class) — lines 138-161
+- `TestMissingFilePart` (class) — lines 168-206
+- `TestFileTooLarge` (class) — lines 213-235
+- `TestImportSleepNominal` (class) — lines 242-304
+- `TestImportSleepMalformedRow` (class) — lines 311-333
+- `TestImportSleepStage` (class) — lines 340-462
+- `TestImportHeartrateNominal` (class) — lines 469-544
+- `TestImportStepsNominal` (class) — lines 551-614
+- `TestImportExerciseNominal` (class) — lines 621-718
+- `TestImportEmptyCsv` (class) — lines 725-762
+- `TestImportInvalidEncoding` (class) — lines 769-792
+- `TestSecurityPathTraversal` (class) — lines 799-821
+- `TestMultiUserIsolation` (class) — lines 828-885
+- `TestCsvImportService` (class) — lines 892-1055
 
 ### Imports
 - `pytest`
@@ -899,12 +1133,14 @@ class TestCsvImportService:
 - `_heartrate_csv`
 - `_steps_csv`
 - `_exercise_csv`
+- `_sleep_stage_csv`
 - `_register_and_login`
 - `TestAuth401`
 - `TestMissingFilePart`
 - `TestFileTooLarge`
 - `TestImportSleepNominal`
 - `TestImportSleepMalformedRow`
+- `TestImportSleepStage`
 - `TestImportHeartrateNominal`
 - `TestImportStepsNominal`
 - `TestImportExerciseNominal`

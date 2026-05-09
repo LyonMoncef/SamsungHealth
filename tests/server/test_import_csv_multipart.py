@@ -101,6 +101,20 @@ def _exercise_csv(rows: list[str] | None = None) -> bytes:
     return "\n".join(lines).encode("utf-8")
 
 
+def _sleep_stage_csv(rows: list[str] | None = None) -> bytes:
+    """Construit un CSV sleep_stage Samsung Health minimal — 1ère ligne metadata.
+
+    Format réel Samsung : line 1 = `com.samsung.health.sleep_stage,<userId>,<v>`
+    skipée par parse_samsung_csv. Headers SANS préfixe.
+    """
+    metadata = "com.samsung.health.sleep_stage,12345,7"
+    header = "start_time,end_time,stage"
+    lines = [metadata, header]
+    if rows is not None:
+        lines.extend(rows)
+    return "\n".join(lines).encode("utf-8")
+
+
 def _register_and_login(client, email: str) -> str:
     """Register + login → return access_token (Bearer).
 
@@ -317,6 +331,135 @@ class TestImportSleepMalformedRow:
         # spec: TA-06 — inserted=2, skipped=1
         assert body.get("inserted") == 2, f"inserted attendu=2, got {body}"
         assert body.get("skipped") == 1, f"skipped attendu=1 (ligne malformée), got {body}"
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Sleep stage import — /api/sleep/import-stages
+# ══════════════════════════════════════════════════════════════════════════
+
+class TestImportSleepStage:
+    """Couvre parse_sleep_stage_rows : matching session, codes 40001-40004,
+    perf (single SELECT for sessions, batch insert), idempotence."""
+
+    def _seed_session(self, client_pg_ready, start: str, end: str) -> None:
+        # Pré-condition : la session sleep doit exister pour que les stages matchent.
+        sleep_csv = _sleep_csv([f"{start},{end}"])
+        r = client_pg_ready.post(
+            "/api/sleep/import",
+            files={"file": ("sleep.csv", sleep_csv, "text/csv")},
+        )
+        assert r.status_code == 200
+
+    def test_import_stages_nominal_links_to_existing_session(self, client_pg_ready, schema_ready, engine):
+        self._seed_session(client_pg_ready, "2026-04-20 23:15:00.000", "2026-04-21 07:30:00.000")
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",  # LIGHT
+            "2026-04-21 00:30:00.000,2026-04-21 02:00:00.000,40003",  # DEEP
+            "2026-04-21 02:00:00.000,2026-04-21 03:00:00.000,40004",  # REM
+            "2026-04-21 03:00:00.000,2026-04-21 07:30:00.000,40002",  # LIGHT
+        ])
+        r = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["inserted"] == 4, body
+        assert body["skipped"] == 0, body
+
+    def test_import_stages_skips_unknown_stage_code(self, client_pg_ready, schema_ready, engine):
+        self._seed_session(client_pg_ready, "2026-04-20 23:15:00.000", "2026-04-21 07:30:00.000")
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",
+            "2026-04-21 00:30:00.000,2026-04-21 02:00:00.000,99999",  # unknown
+        ])
+        r = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["inserted"] == 1
+        assert body["skipped"] == 1
+
+    def test_import_stages_skips_when_no_matching_session(self, client_pg_ready, schema_ready, engine):
+        # Pas de session seedée — tous les stages skip
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",
+        ])
+        r = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["inserted"] == 0
+        assert body["skipped"] == 1
+
+    def test_import_stages_idempotent_second_import_returns_zero_inserted(self, client_pg_ready, schema_ready, engine):
+        self._seed_session(client_pg_ready, "2026-04-20 23:15:00.000", "2026-04-21 07:30:00.000")
+        stage_csv = _sleep_stage_csv([
+            "2026-04-20 23:15:00.000,2026-04-21 00:30:00.000,40002",
+            "2026-04-21 00:30:00.000,2026-04-21 02:00:00.000,40003",
+        ])
+        r1 = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r1.status_code == 200
+        assert r1.json()["inserted"] == 2
+
+        r2 = client_pg_ready.post(
+            "/api/sleep/import-stages",
+            files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+        )
+        assert r2.status_code == 200
+        body = r2.json()
+        assert body["inserted"] == 0
+        assert body["skipped"] == 2
+
+    def test_import_stages_perf_single_select_for_sessions(self, client_pg_ready, schema_ready, engine):
+        """Garde-fou contre une régression vers N+1 SELECT.
+
+        Pour 50 stages contenus dans 2 sessions, on s'attend à ≤ 5 SELECTs sur sleep_sessions
+        (idéalement 1 — le bulk loader). Avant fix: ~50 SELECTs.
+        """
+        self._seed_session(client_pg_ready, "2026-04-20 23:00:00.000", "2026-04-21 08:00:00.000")
+        self._seed_session(client_pg_ready, "2026-04-21 23:00:00.000", "2026-04-22 08:00:00.000")
+
+        # 50 stages alternant entre les 2 nuits
+        stage_rows = []
+        for i in range(25):
+            t1 = f"2026-04-20 23:{i:02d}:00.000"
+            t2 = f"2026-04-20 23:{i:02d}:30.000"
+            stage_rows.append(f"{t1},{t2},40002")
+            t3 = f"2026-04-21 23:{i:02d}:00.000"
+            t4 = f"2026-04-21 23:{i:02d}:30.000"
+            stage_rows.append(f"{t3},{t4},40002")
+        stage_csv = _sleep_stage_csv(stage_rows)
+
+        select_count = {"n": 0}
+
+        from sqlalchemy import event
+
+        @event.listens_for(engine, "before_cursor_execute")
+        def _track(conn, cursor, statement, params, context, executemany):
+            if "FROM sleep_sessions" in statement and "SELECT" in statement.upper():
+                select_count["n"] += 1
+
+        try:
+            r = client_pg_ready.post(
+                "/api/sleep/import-stages",
+                files={"file": ("sleep_stage.csv", stage_csv, "text/csv")},
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", _track)
+
+        assert r.status_code == 200
+        assert r.json()["inserted"] == 50
+        assert select_count["n"] <= 5, (
+            f"N+1 SELECT regression : got {select_count['n']} SELECTs on sleep_sessions for 50 stages"
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════
