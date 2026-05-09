@@ -114,7 +114,7 @@ jobs:
             exit 1
           fi
           docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
-          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
+          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate web
           EOF
 
       - name: Smoke test (loop, 60s max)
