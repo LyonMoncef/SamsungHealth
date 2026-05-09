@@ -60,10 +60,9 @@ fun NavGraph(
     onSaveUrl: (String) -> Unit = {},
     api: NightfallApi? = null,
     tokenDataStore: TokenDataStore? = null,
-    authViewModel: AuthViewModel? = null,
 ) {
     val startDestination = if (hasToken) NavDestination.Sleep.route else NavDestination.Login.route
-    val resolvedAuthViewModel = authViewModel ?: remember(api, tokenDataStore) {
+    val authViewModel = remember(api, tokenDataStore) {
         if (api != null && tokenDataStore != null) AuthViewModel(api, tokenDataStore) else null
     }
 
@@ -99,9 +98,9 @@ fun NavGraph(
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(NavDestination.Login.route) {
-                if (resolvedAuthViewModel != null) {
+                if (authViewModel != null) {
                     LoginScreen(
-                        viewModel            = resolvedAuthViewModel,
+                        viewModel            = authViewModel,
                         onLoginSuccess       = {
                             navController.navigate(NavDestination.Sleep.route) {
                                 popUpTo(NavDestination.Login.route) { inclusive = true }
@@ -113,9 +112,9 @@ fun NavGraph(
                 }
             }
             composable(NavDestination.Register.route) {
-                if (resolvedAuthViewModel != null) {
+                if (authViewModel != null) {
                     RegisterScreen(
-                        viewModel        = resolvedAuthViewModel,
+                        viewModel        = authViewModel,
                         onRegisterSuccess = {
                             navController.navigate(NavDestination.Login.route) {
                                 popUpTo(NavDestination.Register.route) { inclusive = true }
@@ -125,9 +124,9 @@ fun NavGraph(
                 }
             }
             composable(NavDestination.ForgotPassword.route) {
-                if (resolvedAuthViewModel != null) {
+                if (authViewModel != null) {
                     ForgotPasswordScreen(
-                        viewModel = resolvedAuthViewModel,
+                        viewModel = authViewModel,
                         onBack    = { navController.popBackStack() },
                     )
                 }
@@ -175,7 +174,7 @@ fun NavGraph(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
                     onLogout   = {
-                        resolvedAuthViewModel?.logout()
+                        authViewModel?.logout()
                         navController.navigate(NavDestination.Login.route) {
                             popUpTo(NavDestination.Sleep.route) { inclusive = true }
                         }
