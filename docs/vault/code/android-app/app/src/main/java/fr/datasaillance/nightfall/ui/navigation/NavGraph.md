@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: f30caf03537af9ccc83d3653d7458a9e1397c042
-last_synced: '2026-05-09T08:38:11Z'
-loc: 268
+git_blob: 746313483e3255e10d40d6204879d3d4fbe09549
+last_synced: '2026-05-09T14:31:04Z'
+loc: 283
 annotations: []
 imports: []
 exports: []
@@ -172,9 +172,17 @@ fun NavGraph(
             }
             composable(
                 route = NavDestination.Hypnogram.route,
-                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.StringType },
+                    navArgument("date") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                )
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val dateArg = backStackEntry.arguments?.getString("date")
                 val hypnogramRepository: SleepRepository = remember(api, tokenDataStore) {
                     if (api != null && tokenDataStore != null) {
                         SleepRepositoryImpl(api, tokenDataStore)
@@ -182,8 +190,8 @@ fun NavGraph(
                         NoOpSleepRepository()
                     }
                 }
-                val hypnogramViewModel = remember(sessionId, hypnogramRepository) {
-                    HypnogramViewModel(sessionId, hypnogramRepository)
+                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
+                    HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
                 }
                 HypnogramScreen(
                     viewModel = hypnogramViewModel,
@@ -199,7 +207,12 @@ fun NavGraph(
                     }
                 }
                 val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
-                TimelineScreen(viewModel = timelineViewModel)
+                TimelineScreen(
+                    viewModel = timelineViewModel,
+                    onOpenHypnogram = { sessionId, isoDate ->
+                        navController.navigate(NavDestination.Hypnogram.route(sessionId, isoDate))
+                    },
+                )
             }
             composable(NavDestination.Activity.route) { ActivityScreen() }
             composable(NavDestination.Profile.route) {
@@ -239,8 +252,10 @@ fun NavGraph(
 }
 
 private class NoOpSleepRepository : SleepRepository {
-    override suspend fun getSessions(): Result<List<SleepSessionResponse>> =
-        Result.success(emptyList())
+    override suspend fun getSessions(
+        from: java.time.LocalDate?,
+        to: java.time.LocalDate?,
+    ): Result<List<SleepSessionResponse>> = Result.success(emptyList())
 }
 
 private class NoOpImportRepository : ImportRepository {
@@ -296,23 +311,23 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 57-216
-- `NoOpSleepRepository` (class) — lines 218-221
-- `getSessions` (function) — lines 219-220
-- `NoOpImportRepository` (class) — lines 223-238
-- `pingBackend` (function) — lines 224-224
-- `extractCsvEntries` (function) — lines 226-229
-- `uploadCsv` (function) — lines 231-237
-- `NoOpNightfallApi` (class) — lines 240-252
-- `health` (function) — lines 241-241
-- `login` (function) — lines 242-242
-- `register` (function) — lines 243-243
-- `requestPasswordReset` (function) — lines 244-244
-- `googleStart` (function) — lines 245-245
-- `getSleepSessions` (function) — lines 246-246
-- `importSleep` (function) — lines 247-247
-- `importHeartRate` (function) — lines 248-248
-- `importSteps` (function) — lines 249-249
-- `importExercise` (function) — lines 250-250
-- `importSleepStages` (function) — lines 251-251
-- `ensureComposeNavigators` (function) — lines 260-268
+- `NavGraph` (function) — lines 57-229
+- `NoOpSleepRepository` (class) — lines 231-236
+- `getSessions` (function) — lines 232-235
+- `NoOpImportRepository` (class) — lines 238-253
+- `pingBackend` (function) — lines 239-239
+- `extractCsvEntries` (function) — lines 241-244
+- `uploadCsv` (function) — lines 246-252
+- `NoOpNightfallApi` (class) — lines 255-267
+- `health` (function) — lines 256-256
+- `login` (function) — lines 257-257
+- `register` (function) — lines 258-258
+- `requestPasswordReset` (function) — lines 259-259
+- `googleStart` (function) — lines 260-260
+- `getSleepSessions` (function) — lines 261-261
+- `importSleep` (function) — lines 262-262
+- `importHeartRate` (function) — lines 263-263
+- `importSteps` (function) — lines 264-264
+- `importExercise` (function) — lines 265-265
+- `importSleepStages` (function) — lines 266-266
+- `ensureComposeNavigators` (function) — lines 275-283

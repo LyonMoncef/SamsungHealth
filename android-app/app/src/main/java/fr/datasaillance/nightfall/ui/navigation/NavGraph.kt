@@ -149,9 +149,17 @@ fun NavGraph(
             }
             composable(
                 route = NavDestination.Hypnogram.route,
-                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.StringType },
+                    navArgument("date") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                )
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val dateArg = backStackEntry.arguments?.getString("date")
                 val hypnogramRepository: SleepRepository = remember(api, tokenDataStore) {
                     if (api != null && tokenDataStore != null) {
                         SleepRepositoryImpl(api, tokenDataStore)
@@ -159,8 +167,8 @@ fun NavGraph(
                         NoOpSleepRepository()
                     }
                 }
-                val hypnogramViewModel = remember(sessionId, hypnogramRepository) {
-                    HypnogramViewModel(sessionId, hypnogramRepository)
+                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
+                    HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
                 }
                 HypnogramScreen(
                     viewModel = hypnogramViewModel,
@@ -176,7 +184,12 @@ fun NavGraph(
                     }
                 }
                 val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
-                TimelineScreen(viewModel = timelineViewModel)
+                TimelineScreen(
+                    viewModel = timelineViewModel,
+                    onOpenHypnogram = { sessionId, isoDate ->
+                        navController.navigate(NavDestination.Hypnogram.route(sessionId, isoDate))
+                    },
+                )
             }
             composable(NavDestination.Activity.route) { ActivityScreen() }
             composable(NavDestination.Profile.route) {
@@ -216,8 +229,10 @@ fun NavGraph(
 }
 
 private class NoOpSleepRepository : SleepRepository {
-    override suspend fun getSessions(): Result<List<SleepSessionResponse>> =
-        Result.success(emptyList())
+    override suspend fun getSessions(
+        from: java.time.LocalDate?,
+        to: java.time.LocalDate?,
+    ): Result<List<SleepSessionResponse>> = Result.success(emptyList())
 }
 
 private class NoOpImportRepository : ImportRepository {
