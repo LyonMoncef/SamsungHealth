@@ -4,7 +4,9 @@ sealed class NavDestination(
     val route: String,
     val label: String
 ) {
-    object Login    : NavDestination("login",    "Connexion")
+    object Login          : NavDestination("login",           "Connexion")
+    object Register       : NavDestination("register",        "Créer un compte")
+    object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
     object Sleep    : NavDestination("sleep",    "Sommeil")
     object Trends   : NavDestination("trends",   "Tendances")
     object Activity : NavDestination("activity", "Activité")

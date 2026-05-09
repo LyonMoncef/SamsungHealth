@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt
-git_blob: 6065cecbb47b55ff40d7ca3d70946ce6549ab17d
-last_synced: '2026-05-07T00:48:24Z'
-loc: 31
+git_blob: 639be917c40feb46c9c2d5e312034cc89b127495
+last_synced: '2026-05-09T02:10:36Z'
+loc: 40
 annotations: []
 imports: []
 exports: []
@@ -29,6 +29,7 @@ import androidx.activity.compose.setContent
 import androidx.navigation.compose.rememberNavController
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.network.BackendUrlStore
+import fr.datasaillance.nightfall.di.NetworkModule
 import fr.datasaillance.nightfall.ui.navigation.NavGraph
 import fr.datasaillance.nightfall.ui.theme.NightfallTheme
 
@@ -36,6 +37,12 @@ class MainActivity : ComponentActivity() {
 
     private val tokenDataStore by lazy { TokenDataStore(this) }
     private val backendUrlStore by lazy { BackendUrlStore(this) }
+    private val api by lazy {
+        val interceptor = NetworkModule.provideAuthInterceptor(tokenDataStore)
+        val client      = NetworkModule.provideOkHttpClient(interceptor)
+        val retrofit    = NetworkModule.provideRetrofit(client, backendUrlStore)
+        NetworkModule.provideNightfallApi(retrofit)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,10 +50,12 @@ class MainActivity : ComponentActivity() {
             NightfallTheme {
                 val navController = rememberNavController()
                 NavGraph(
-                    navController = navController,
-                    hasToken      = tokenDataStore.hasToken(),
-                    backendUrl    = backendUrlStore.getUrl(),
-                    onSaveUrl     = { url -> backendUrlStore.saveUrl(url) }
+                    navController  = navController,
+                    hasToken       = tokenDataStore.hasToken(),
+                    backendUrl     = backendUrlStore.getUrl(),
+                    onSaveUrl      = { url -> backendUrlStore.saveUrl(url) },
+                    api            = api,
+                    tokenDataStore = tokenDataStore,
                 )
             }
         }
@@ -59,5 +68,5 @@ class MainActivity : ComponentActivity() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `MainActivity` (class) — lines 12-31
-- `onCreate` (function) — lines 17-30
+- `MainActivity` (class) — lines 13-40
+- `onCreate` (function) — lines 24-39

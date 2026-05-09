@@ -14,6 +14,7 @@ import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.http.NightfallApi
 import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
@@ -21,12 +22,15 @@ import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
+import fr.datasaillance.nightfall.ui.screens.auth.ForgotPasswordScreen
+import fr.datasaillance.nightfall.ui.screens.auth.LoginScreen
+import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
 import fr.datasaillance.nightfall.ui.screens.import_.ImportScreen
-import fr.datasaillance.nightfall.ui.screens.login.LoginScreen
 import fr.datasaillance.nightfall.ui.screens.profile.ProfileScreen
 import fr.datasaillance.nightfall.ui.screens.settings.SettingsScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.trends.TrendsScreen
+import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 
 @Composable
@@ -36,8 +40,12 @@ fun NavGraph(
     backendUrl: String = "",
     onSaveUrl: (String) -> Unit = {},
     api: NightfallApi? = null,
+    tokenDataStore: TokenDataStore? = null,
 ) {
     val startDestination = if (hasToken) NavDestination.Sleep.route else NavDestination.Login.route
+    val authViewModel = remember(api, tokenDataStore) {
+        if (api != null && tokenDataStore != null) AuthViewModel(api, tokenDataStore) else null
+    }
 
     // Adds ComposeNavigator/DialogNavigator to the navigator provider when absent.
     // TestNavHostController only registers TestNavigator by default; without this,
@@ -71,11 +79,38 @@ fun NavGraph(
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(NavDestination.Login.route) {
-                LoginScreen(onLoginSuccess = {
-                    navController.navigate(NavDestination.Sleep.route) {
-                        popUpTo(NavDestination.Login.route) { inclusive = true }
-                    }
-                })
+                if (authViewModel != null) {
+                    LoginScreen(
+                        viewModel            = authViewModel,
+                        onLoginSuccess       = {
+                            navController.navigate(NavDestination.Sleep.route) {
+                                popUpTo(NavDestination.Login.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateRegister   = { navController.navigate(NavDestination.Register.route) },
+                        onNavigateForgotPassword = { navController.navigate(NavDestination.ForgotPassword.route) },
+                    )
+                }
+            }
+            composable(NavDestination.Register.route) {
+                if (authViewModel != null) {
+                    RegisterScreen(
+                        viewModel        = authViewModel,
+                        onRegisterSuccess = {
+                            navController.navigate(NavDestination.Login.route) {
+                                popUpTo(NavDestination.Register.route) { inclusive = true }
+                            }
+                        },
+                    )
+                }
+            }
+            composable(NavDestination.ForgotPassword.route) {
+                if (authViewModel != null) {
+                    ForgotPasswordScreen(
+                        viewModel = authViewModel,
+                        onBack    = { navController.popBackStack() },
+                    )
+                }
             }
             composable(NavDestination.Sleep.route)    { SleepScreen() }
             composable(NavDestination.Trends.route)   { TrendsScreen() }
@@ -85,6 +120,7 @@ fun NavGraph(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
                     onLogout   = {
+                        authViewModel?.logout()
                         navController.navigate(NavDestination.Login.route) {
                             popUpTo(NavDestination.Sleep.route) { inclusive = true }
                         }

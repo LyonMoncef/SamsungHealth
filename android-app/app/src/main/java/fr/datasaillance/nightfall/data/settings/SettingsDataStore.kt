@@ -4,13 +4,14 @@ import android.content.Context
 import android.os.Build
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import fr.datasaillance.nightfall.BuildConfig
 
 class SettingsDataStore(context: Context) {
 
     companion object {
         private const val KEY_BACKEND_URL = "backend_url"
         private const val KEY_THEME_PREF  = "theme_preference"
-        private const val DEFAULT_BACKEND = "http://10.0.2.2:8001"
+        private val DEFAULT_BACKEND = BuildConfig.DEFAULT_BACKEND_URL
     }
 
     private val prefs = if (Build.FINGERPRINT == "robolectric") {

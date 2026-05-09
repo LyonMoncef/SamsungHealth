@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt
-git_blob: 34cced71e1d6351ff848ba7082b6abdce8dbf41b
-last_synced: '2026-05-07T03:51:34Z'
-loc: 54
+git_blob: 5f0ce14acb0b18e15555329af9ce872a258c1acf
+last_synced: '2026-05-09T02:10:36Z'
+loc: 55
 annotations: []
 imports: []
 exports: []
@@ -27,13 +27,14 @@ import android.content.Context
 import android.os.Build
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import fr.datasaillance.nightfall.BuildConfig
 
 class SettingsDataStore(context: Context) {
 
     companion object {
         private const val KEY_BACKEND_URL = "backend_url"
         private const val KEY_THEME_PREF  = "theme_preference"
-        private const val DEFAULT_BACKEND = "http://10.0.2.2:8001"
+        private val DEFAULT_BACKEND = BuildConfig.DEFAULT_BACKEND_URL
     }
 
     private val prefs = if (Build.FINGERPRINT == "robolectric") {
@@ -82,8 +83,8 @@ class SettingsDataStore(context: Context) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SettingsDataStore` (class) — lines 8-54
-- `getBackendUrl` (function) — lines 35-36
-- `setBackendUrl` (function) — lines 38-43
-- `getThemePreference` (function) — lines 45-46
-- `setThemePreference` (function) — lines 48-53
+- `SettingsDataStore` (class) — lines 9-55
+- `getBackendUrl` (function) — lines 36-37
+- `setBackendUrl` (function) — lines 39-44
+- `getThemePreference` (function) — lines 46-47
+- `setThemePreference` (function) — lines 49-54
