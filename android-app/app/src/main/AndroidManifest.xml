@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Phase A_us — collecte UsageStats local-first.
+         Permission appop : doit être activée manuellement par l'utilisateur via
+         Settings → Apps → Usage Access. La déclaration ici est nécessaire pour
+         que l'app apparaisse dans la liste Settings. tools:ignore évite le warning
+         "ProtectedPermissions" du linter (cette perm est techniquement system-level
+         mais usable via le toggle Settings, pattern documenté Android). -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- API 30+: declare intent resolution for Chrome Custom Tabs (shouldOverrideUrlLoading) -->
     <queries>
