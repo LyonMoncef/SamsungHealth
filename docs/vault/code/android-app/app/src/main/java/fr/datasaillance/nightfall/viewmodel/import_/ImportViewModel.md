@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt
-git_blob: 5f8eafd1f0cfcd20021916333447f4af33e92bd2
-last_synced: '2026-05-09T03:55:38Z'
+git_blob: 85fcb95df8c1dee7501bee28dcb5fce4643c0d3b
+last_synced: '2026-05-07T03:10:49Z'
 loc: 99
 annotations: []
 imports: []
@@ -112,7 +112,7 @@ class ImportViewModel(
                     )
                 }
             }
-            _uiState.value = ImportUiState.Success(results, missingTypes = skipped.toList())
+            _uiState.value = ImportUiState.Success(results)
         }
     }
 

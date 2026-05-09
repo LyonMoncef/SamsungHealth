@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt
-git_blob: df60a9f0c0c5f27525716cbf093b425e6af03507
-last_synced: '2026-05-09T03:55:38Z'
-loc: 67
+git_blob: 34cced71e1d6351ff848ba7082b6abdce8dbf41b
+last_synced: '2026-05-07T03:51:34Z'
+loc: 54
 annotations: []
 imports: []
 exports: []
@@ -27,14 +27,13 @@ import android.content.Context
 import android.os.Build
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import fr.datasaillance.nightfall.BuildConfig
 
 class SettingsDataStore(context: Context) {
 
     companion object {
         private const val KEY_BACKEND_URL = "backend_url"
         private const val KEY_THEME_PREF  = "theme_preference"
-        private val DEFAULT_BACKEND = BuildConfig.DEFAULT_BACKEND_URL
+        private const val DEFAULT_BACKEND = "http://10.0.2.2:8001"
     }
 
     private val prefs = if (Build.FINGERPRINT == "robolectric") {
@@ -47,25 +46,13 @@ class SettingsDataStore(context: Context) {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        try {
-            EncryptedSharedPreferences.create(
-                context,
-                "nightfall_settings_prefs",
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: Exception) {
-            context.deleteSharedPreferences("nightfall_settings_prefs")
-            val freshKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
-            EncryptedSharedPreferences.create(
-                context,
-                "nightfall_settings_prefs",
-                freshKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        }
+        EncryptedSharedPreferences.create(
+            context,
+            "nightfall_settings_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
     }
 
     fun getBackendUrl(): String =
@@ -95,8 +82,8 @@ class SettingsDataStore(context: Context) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SettingsDataStore` (class) — lines 9-67
-- `getBackendUrl` (function) — lines 48-49
-- `setBackendUrl` (function) — lines 51-56
-- `getThemePreference` (function) — lines 58-59
-- `setThemePreference` (function) — lines 61-66
+- `SettingsDataStore` (class) — lines 8-54
+- `getBackendUrl` (function) — lines 35-36
+- `setBackendUrl` (function) — lines 38-43
+- `getThemePreference` (function) — lines 45-46
+- `setThemePreference` (function) — lines 48-53

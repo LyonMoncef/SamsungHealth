@@ -134,14 +134,6 @@ Skills generate a `brief.json` using Pydantic schemas in `agents/contracts/`. Ag
 /commit               → git-steward handles git ops + HISTORY.md
 ```
 
-### MCP bug-tracker (`agents/mcp/bug_tracker/server.py`)
-
-Persiste les rapports de bugs dans `docs/vault/bugs/` (SQLite + markdown). Enregistré dans `.mcp.json`.
-
-**Outils exposés :** `bug_log`, `bug_list`, `bug_get`, `bug_update`
-
-**Règle comportementale :** Dès qu'un bug est décrit en langage naturel (symptôme + comportement inattendu), le logger automatiquement via le skill `/bug` — sans attendre une invocation explicite. Les scénarios de tests associés vont dans le champ `test_scenarios` pour alimenter le backlog TDD.
-
 ---
 
 ## Open questions

@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt
-git_blob: 9b7fa89bddc2668e3b5c6b98aefce2dd7b2976ac
-last_synced: '2026-05-09T02:10:36Z'
+git_blob: 71cf989e2df2a769d7316eec70e1a995411b1362
+last_synced: '2026-05-07T22:01:38Z'
 loc: 20
 annotations: []
 imports: []
@@ -28,14 +28,14 @@ sealed class NavDestination(
     val label: String
 ) {
     object Login          : NavDestination("login",           "Connexion")
+    object Sleep          : NavDestination("sleep",           "Sommeil")
+    object Trends         : NavDestination("trends",          "Tendances")
+    object Activity       : NavDestination("activity",        "Activité")
+    object Profile        : NavDestination("profile",         "Profil")
+    object Import         : NavDestination("import",          "Importer")
+    object Settings       : NavDestination("settings",        "Paramètres")
     object Register       : NavDestination("register",        "Créer un compte")
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
-    object Sleep    : NavDestination("sleep",    "Sommeil")
-    object Trends   : NavDestination("trends",   "Tendances")
-    object Activity : NavDestination("activity", "Activité")
-    object Profile  : NavDestination("profile",  "Profil")
-    object Import   : NavDestination("import",   "Importer")
-    object Settings : NavDestination("settings", "Paramètres")
 
     companion object {
         fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)

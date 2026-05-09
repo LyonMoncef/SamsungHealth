@@ -3,10 +3,6 @@
     "android-test-runner": {
       "command": "/home/tats/MyPersonalProjects/SamsungHealth/.venv/bin/python",
       "args": ["agents/mcp/android_test_runner/server.py"]
-    },
-    "bug-tracker": {
-      "command": "/home/tats/MyPersonalProjects/SamsungHealth/.venv/bin/python",
-      "args": ["agents/mcp/bug_tracker/server.py"]
     }
   }
 }

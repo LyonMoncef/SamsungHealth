@@ -29,10 +29,36 @@
 | Phase 4 Backend Import CSV multipart | `server/services/csv_import.py`, `server/routers/sleep.py`, `server/routers/heartrate.py`, `server/routers/steps.py`, `server/routers/exercise.py`, `tests/server/test_import_csv_multipart.py` | [`b11e00f`](#2026-05-07-b11e00f) |
 | Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`4dcf071`](#2026-05-07-4dcf071) |
 | Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
+| P5.0 LoginScreen natif | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt` | [`2ccecfe`](#2026-05-08-2ccecfe) |
+| P5.1 SleepScreen Night Cards | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepNightCard.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/SleepViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt` | [`54e9e54`](#2026-05-08-54e9e54) |
 
 ---
 
 ## Changelog
+
+### 2026-05-08 `54e9e54`
+feat: (android): P5.1 SleepScreen Night Cards — SleepViewModel, barre colorée, OffsetDateTime
+- SleepSessionResponse + SleepStageResponse — data classes @Serializable, @SerialName("stage_type") pour mapping JSON correct
+- SleepRepository (interface getSessions()) + SleepRepositoryImpl (Retrofit + TokenDataStore, Bearer token)
+- SleepUiState sealed class — Idle/Loading/Success/Error/Empty
+- SleepViewModel — loadSessions() + retry(), StateFlow<SleepUiState>, tri OffsetDateTime.toInstant() desc, yield() pour observabilité Loading en Robolectric
+- SleepNightCard — barre indicatrice 6dp (teal #0E9EB0 ≥7h / amber #D37C04 ≥5h / rouge #B00020 <5h), date OffsetDateTime + Locale.FRENCH ("Mer 7 mai"), durée "7h 23", score Profond X% conditionnel
+- SleepScreen (native) — remplace stub P4, états Loading/Success/Error/Empty avec testTags sleep_loading/sleep_list/sleep_card_{id}/sleep_error/sleep_retry/sleep_empty
+- SleepScreen (webview) — signature alignée (viewModel?, onSessionClick?) pour compatibilité NavGraph partagé
+- NightfallApi — getSleepSessions(@Header token, @Query from/to, include_stages=true)
+- NavGraph — route Sleep câblée avec SleepViewModel + NoOpSleepRepository
+- SleepScreenTest — 14 tests (4 Paparazzi goldens, 5 Robolectric interaction, 5 ViewModel JVM)
+- 119/119 tests GREEN — build native + webview SUCCESSFUL
+
+### 2026-05-08 `2ccecfe`
+feat: (android): P5.0 LoginScreen natif — isFormValid, NavGraph wiring, AppModule.provideAuthViewModel
+- LoginScreen.kt — isFormValid = email.isNotBlank() && password.isNotBlank(), bouton Se connecter disabled si champs vides (TA-L-04)
+- NavGraph.kt — import stub ui.screens.login remplacé par ui.screens.auth.LoginScreen, AuthViewModel câblé via AppModule.provideAuthViewModel
+- NavDestination.kt — Register et ForgotPassword ajoutés
+- AppModule.kt — provideAuthViewModel(api, tokenDataStore) ajouté
+- Stub ui/screens/login/LoginScreen.kt supprimé (dead code)
+- Tests — NavGraphTest: TA-L-02 (login success → Sleep), LoginScreenTest: TA-L-06 (loading state disable behavioral), NavDestinationP5Test: Register/ForgotPassword routes
+- 110/110 tests GREEN
 
 ### 2026-05-07 `b11e00f`
 feat(backend): Phase 4 import CSV multipart — POST /api/sleep/import, /api/heartrate/import, /api/steps/import, /api/exercise/import

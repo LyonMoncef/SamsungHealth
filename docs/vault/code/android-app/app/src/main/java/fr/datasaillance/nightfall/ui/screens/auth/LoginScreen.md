@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt
-git_blob: b6fcda171011ef3aac4b27a64f6b4525beaf5b40
-last_synced: '2026-05-07T02:02:39Z'
-loc: 170
+git_blob: 256a00d8552d823e5cb989aa2fa4f6411185318c
+last_synced: '2026-05-09T04:03:35Z'
+loc: 172
 annotations: []
 imports: []
 exports: []
@@ -84,6 +84,7 @@ fun LoginScreen(
     }
 
     val isLoading = loginState is LoginUiState.Loading
+    val isFormValid = email.isNotBlank() && password.isNotBlank()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -146,6 +147,7 @@ fun LoginScreen(
                 text = "Se connecter",
                 onClick = { viewModel.login(email, password) },
                 isLoading = isLoading,
+                enabled = isFormValid && !isLoading,
                 modifier = Modifier.fillMaxWidth().semantics { testTag = "btn_login" }
             )
 
@@ -198,4 +200,4 @@ fun LoginScreen(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `LoginScreen` (function) — lines 43-170
+- `LoginScreen` (function) — lines 43-172

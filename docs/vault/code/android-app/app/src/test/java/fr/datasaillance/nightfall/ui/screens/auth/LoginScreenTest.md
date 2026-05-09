@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreenTest.kt
-git_blob: e74f61d57f8c4c0eaa5efaa3b0f43b0b9b14ae48
-last_synced: '2026-05-07T02:02:39Z'
-loc: 131
+git_blob: 8697a298f3462bd92eb1f78ff1e895e7f7d514d4
+last_synced: '2026-05-09T04:03:35Z'
+loc: 282
 annotations: []
 imports: []
 exports: []
@@ -23,16 +23,23 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.ui.screens.auth
 
-// spec: Tests d'acceptation TA-AUTH-04, TA-AUTH-12
+// spec: Tests d'acceptation TA-AUTH-04, TA-AUTH-12, TA-L-01, TA-L-04, TA-L-06
 // spec: section "LoginScreen" layout + "Parité light / dark mode"
 // RED by construction: fr.datasaillance.nightfall.ui.screens.auth.LoginScreen does not exist yet
 
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performTextInput
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.robolectric.RobolectricTestRunner
 import kotlinx.coroutines.flow.MutableStateFlow
 
 // These imports will fail to resolve until production code is written:
@@ -152,6 +159,150 @@ class LoginScreenTest {
         // spec: TA-AUTH-04 — loading state: button disabled, fields disabled, progress indicator visible
     }
 }
+
+// ---------------------------------------------------------------------------
+// Robolectric / ComposeTestRule — behavioral tests (TA-L-01, TA-L-04)
+// These tests use a separate class to avoid mixing Paparazzi @Rule with
+// createComposeRule() in the same class instance (incompatible Rule lifecycles).
+// ---------------------------------------------------------------------------
+
+// spec: TA-L-01, TA-L-04 — behavioral interaction tests
+// RED trigger: LoginScreen.kt uses `enabled = !isLoading` without `isFormValid` guard (TA-L-04)
+// The production code in LoginScreen.kt calls:
+//   AuthPrimaryButton(..., isLoading = isLoading, ...)
+// without passing `enabled = isFormValid`. AuthPrimaryButton defaults `enabled = true`.
+// After impl adds `val isFormValid = email.isNotBlank() && password.isNotBlank()` and passes
+// `enabled = isFormValid` to AuthPrimaryButton, these tests will turn GREEN.
+@RunWith(RobolectricTestRunner::class)
+class LoginScreenInteractionTest {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    private fun buildViewModel(): fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel {
+        val api = mock<fr.datasaillance.nightfall.data.http.NightfallApi>()
+        val tokenDataStore = mock<fr.datasaillance.nightfall.data.auth.TokenDataStore>()
+        // spec: D1 / §10 — DI manuelle, pas de Hilt (issue #52)
+        return fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel(api, tokenDataStore)
+    }
+
+    // spec: TA-L-01 / TA-L-04 — bouton "Se connecter" disabled si email ET password sont vides
+    // RED: LoginScreen.kt passe uniquement `isLoading = isLoading` à AuthPrimaryButton — pas de
+    // `enabled = isFormValid`. Le bouton est enabled dès le départ (default enabled=true).
+    // Ce test échoue TANT QUE `isFormValid` n'est pas câblé dans LoginScreen.kt.
+    @Test
+    fun loginScreen_button_disabled_when_fields_empty() {
+        val viewModel = buildViewModel()
+
+        composeTestRule.setContent {
+            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
+                // spec: TA-L-04 — champs vides au démarrage → bouton disabled
+                fr.datasaillance.nightfall.ui.screens.auth.LoginScreen(
+                    viewModel = viewModel,
+                    onLoginSuccess = {},
+                    onNavigateRegister = {},
+                    onNavigateForgotPassword = {}
+                )
+            }
+        }
+
+        // spec: TA-L-04 — avec email="" et password="" (état initial), btn_login doit être disabled
+        // spec: §4.4 — `val isFormValid = email.isNotBlank() && password.isNotBlank()`
+        composeTestRule
+            .onNode(hasTestTag("btn_login"))
+            .assertIsNotEnabled()
+    }
+
+    // spec: TA-L-04 (complément) — bouton disabled si seulement email rempli, password vide
+    // RED: même raison — `isFormValid` absent dans LoginScreen.kt
+    @Test
+    fun loginScreen_button_disabled_when_only_email_filled() {
+        val viewModel = buildViewModel()
+
+        composeTestRule.setContent {
+            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
+                fr.datasaillance.nightfall.ui.screens.auth.LoginScreen(
+                    viewModel = viewModel,
+                    onLoginSuccess = {},
+                    onNavigateRegister = {},
+                    onNavigateForgotPassword = {}
+                )
+            }
+        }
+
+        // Remplir uniquement le champ email
+        composeTestRule
+            .onNode(hasTestTag("field_email"))
+            .performTextInput("user@example.com")
+
+        // spec: TA-L-04 — un seul champ rempli → bouton toujours disabled
+        composeTestRule
+            .onNode(hasTestTag("btn_login"))
+            .assertIsNotEnabled()
+    }
+
+    // spec: TA-L-04 — bouton enabled quand email ET password sont remplis
+    // Ce test documente le contrat complet de TA-L-04 (transition disabled → enabled).
+    // Après impl de `isFormValid`, ce test doit passer GREEN (bouton enabled après saisie des deux champs).
+    @Test
+    fun loginScreen_button_enabled_when_both_fields_filled() {
+        val viewModel = buildViewModel()
+
+        composeTestRule.setContent {
+            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
+                fr.datasaillance.nightfall.ui.screens.auth.LoginScreen(
+                    viewModel = viewModel,
+                    onLoginSuccess = {},
+                    onNavigateRegister = {},
+                    onNavigateForgotPassword = {}
+                )
+            }
+        }
+
+        // Remplir les deux champs
+        composeTestRule
+            .onNode(hasTestTag("field_email"))
+            .performTextInput("user@example.com")
+        composeTestRule
+            .onNode(hasTestTag("field_password"))
+            .performTextInput("Password123!")
+
+        // spec: TA-L-04 — email + password remplis + état Idle → bouton enabled
+        composeTestRule
+            .onNode(hasTestTag("btn_login"))
+            .assertIsEnabled()
+    }
+
+    // spec: TA-L-06 — état Loading : champs email/password et bouton disabled
+    @Test
+    fun loginScreen_loading_state_disables_all_interactive_elements() {
+        val viewModel = buildViewModel()
+
+        // Force Loading state via reflection — LoginUiState.Loading is the private _loginState value
+        val field = fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel::class.java
+            .getDeclaredField("_loginState")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        (field.get(viewModel) as MutableStateFlow<fr.datasaillance.nightfall.viewmodel.auth.LoginUiState>)
+            .value = fr.datasaillance.nightfall.viewmodel.auth.LoginUiState.Loading
+
+        composeTestRule.setContent {
+            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
+                fr.datasaillance.nightfall.ui.screens.auth.LoginScreen(
+                    viewModel = viewModel,
+                    onLoginSuccess = {},
+                    onNavigateRegister = {},
+                    onNavigateForgotPassword = {}
+                )
+            }
+        }
+
+        // spec: TA-L-06 — Loading state must disable all interactive elements
+        composeTestRule.onNode(hasTestTag("field_email")).assertIsNotEnabled()
+        composeTestRule.onNode(hasTestTag("field_password")).assertIsNotEnabled()
+        composeTestRule.onNode(hasTestTag("btn_login")).assertIsNotEnabled()
+    }
+}
 ```
 
 ---
@@ -159,9 +310,15 @@ class LoginScreenTest {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `LoginScreenTest` (class) — lines 21-131
-- `buildViewModel` (function) — lines 30-42
-- `loginScreen_idle_dark` (function) — lines 46-61
-- `loginScreen_idle_light` (function) — lines 65-80
-- `loginScreen_error_dark` (function) — lines 84-107
-- `loginScreen_loading_dark` (function) — lines 111-130
+- `LoginScreenTest` (class) — lines 28-138
+- `buildViewModel` (function) — lines 37-49
+- `loginScreen_idle_dark` (function) — lines 53-68
+- `loginScreen_idle_light` (function) — lines 72-87
+- `loginScreen_error_dark` (function) — lines 91-114
+- `loginScreen_loading_dark` (function) — lines 118-137
+- `LoginScreenInteractionTest` (class) — lines 154-282
+- `buildViewModel` (function) — lines 159-164
+- `loginScreen_button_disabled_when_fields_empty` (function) — lines 170-191
+- `loginScreen_button_disabled_when_only_email_filled` (function) — lines 195-219
+- `loginScreen_button_enabled_when_both_fields_filled` (function) — lines 224-251
+- `loginScreen_loading_state_disables_all_interactive_elements` (function) — lines 254-281

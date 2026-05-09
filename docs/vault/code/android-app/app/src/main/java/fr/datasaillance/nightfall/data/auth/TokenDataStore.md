@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt
-git_blob: e0a2b76583c5f432a76592154d3fc826f401d7e6
-last_synced: '2026-05-09T03:55:38Z'
-loc: 49
+git_blob: 261b5a7f8bc86ae3bfe7fd944df17f47a3c452b8
+last_synced: '2026-05-07T00:48:24Z'
+loc: 37
 annotations: []
 imports: []
 exports: []
@@ -37,7 +37,16 @@ class TokenDataStore(context: Context) {
         // must propagate (no silent fallback — spec C2).
         context.getSharedPreferences("nightfall_test_prefs", Context.MODE_PRIVATE)
     } else {
-        openEncryptedPrefs(context, "nightfall_secure_prefs")
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        EncryptedSharedPreferences.create(
+            context,
+            "nightfall_secure_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
     }
 
     fun saveToken(token: String) = prefs.edit().putString(KEY_JWT, token).apply()
@@ -49,27 +58,6 @@ class TokenDataStore(context: Context) {
         private const val KEY_JWT = "jwt_access_token"
     }
 }
-
-private fun openEncryptedPrefs(
-    context: Context,
-    name: String,
-): android.content.SharedPreferences {
-    fun buildMasterKey() = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-    fun create(key: MasterKey) = EncryptedSharedPreferences.create(
-        context, name, key,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-    )
-    return try {
-        create(buildMasterKey())
-    } catch (e: Exception) {
-        // AEADBadTagException on reinstall: AndroidKeyStore key invalidated → wipe stale prefs and start fresh
-        context.deleteSharedPreferences(name)
-        create(buildMasterKey())
-    }
-}
 ```
 
 ---
@@ -77,11 +65,8 @@ private fun openEncryptedPrefs(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `TokenDataStore` (class) — lines 8-28
-- `saveToken` (function) — lines 20-20
-- `getToken` (function) — lines 21-21
-- `clearToken` (function) — lines 22-22
-- `hasToken` (function) — lines 23-23
-- `openEncryptedPrefs` (function) — lines 30-49
-- `buildMasterKey` (function) — lines 34-36
-- `create` (function) — lines 37-41
+- `TokenDataStore` (class) — lines 8-37
+- `saveToken` (function) — lines 29-29
+- `getToken` (function) — lines 30-30
+- `clearToken` (function) — lines 31-31
+- `hasToken` (function) — lines 32-32

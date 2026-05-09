@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/webview/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt
-git_blob: 55d2b9efd1dc6330328a2d1d770947c1b26b4483
-last_synced: '2026-05-07T03:51:34Z'
-loc: 30
+git_blob: aeac17cd1b6c51b56a5e4519bd27b1bdf81d3adf
+last_synced: '2026-05-09T04:03:35Z'
+loc: 33
 annotations: []
 imports: []
 exports: []
@@ -29,10 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.settings.SettingsDataStore
+import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.webview.WebViewScreen
 
 @Composable
 fun SleepScreen(
+    viewModel: SleepViewModel? = null,
+    onSessionClick: (String) -> Unit = {},
     tokenDataStore: TokenDataStore? = null,
     settingsDataStore: SettingsDataStore? = null,
     onOpenImport: () -> Unit = {},
@@ -58,4 +61,4 @@ fun SleepScreen(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SleepScreen` (function) — lines 11-30
+- `SleepScreen` (function) — lines 12-33

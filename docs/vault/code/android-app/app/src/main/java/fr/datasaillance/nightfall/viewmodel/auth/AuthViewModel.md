@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt
-git_blob: 60a331d60b30b340c780436affa2005c2d7b189d
-last_synced: '2026-05-09T02:10:36Z'
-loc: 100
+git_blob: 95aeee7ef4a9a4dbe702cf9a6ca50fd24895cd4e
+last_synced: '2026-05-09T04:03:35Z'
+loc: 94
 annotations: []
 imports: []
 exports: []
@@ -98,12 +98,6 @@ class AuthViewModel(
         null
     }
 
-    fun logout() {
-        tokenDataStore.clearToken()
-        _loginState.value = LoginUiState.Idle
-        _registerState.value = RegisterUiState.Idle
-    }
-
     fun storeTokenFromCallback(token: String) {
         tokenDataStore.saveToken(token)
         _loginState.value = LoginUiState.Success
@@ -128,12 +122,11 @@ class AuthViewModel(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `AuthViewModel` (class) — lines 17-100
+- `AuthViewModel` (class) — lines 17-94
 - `login` (function) — lines 31-44
 - `register` (function) — lines 46-58
 - `requestPasswordReset` (function) — lines 60-70
 - `getGoogleStartUrl` (function) — lines 72-76
-- `logout` (function) — lines 78-82
-- `storeTokenFromCallback` (function) — lines 84-87
-- `setLoginError` (function) — lines 89-91
-- `mapHttpError` (function) — lines 93-99
+- `storeTokenFromCallback` (function) — lines 78-81
+- `setLoginError` (function) — lines 83-85
+- `mapHttpError` (function) — lines 87-93

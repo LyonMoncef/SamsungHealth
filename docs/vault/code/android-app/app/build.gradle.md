@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: 71379b9a591cbcc3dee680157f90681b926c65a9
-last_synced: '2026-05-09T02:10:36Z'
+git_blob: 523fc31d70b5f0c1d8ad2550f524d8f7b628fbb5
+last_synced: '2026-05-07T03:10:49Z'
 loc: 123
 annotations: []
 imports: []
@@ -47,7 +47,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "4.0.0"
-        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"https://sh-dev.datasaillance.fr\"")
+        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"http://10.0.2.2:8001\"")
     }
 
     buildTypes {
