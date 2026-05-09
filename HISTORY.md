@@ -31,10 +31,33 @@
 | Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
 | P5.0 LoginScreen natif | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt` | [`2ccecfe`](#2026-05-08-2ccecfe) |
 | P5.1 SleepScreen Night Cards | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepNightCard.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/SleepViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt` | [`54e9e54`](#2026-05-08-54e9e54) |
+| Android auth flow + bug-tracker MCP | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt`, `agents/mcp/bug_tracker/server.py` | [`301fe9a`](#2026-05-09-301fe9a) |
+| Import ZIP Samsung Health end-to-end | `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportDataType.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt` | [`c1424f9`](#2026-05-09-c1424f9) |
 
 ---
 
 ## Changelog
+
+### 2026-05-09 
+fix: fix import end-to-end — shealth prefixes, healthz, AEADBadTag, OpenDocument, Settings URL live update
+- ImportDataType: corriger les préfixes com.samsung.health.* → com.samsung.shealth.* (sleep, tracker.heart_rate, step_daily_trend, exercise) — les vrais noms de fichiers dans le ZIP Samsung Health
+- NightfallApi: GET health → healthz (la route backend réelle)
+- ImportRepositoryImpl: supprimer la limite MAX_ZIP_ENTRIES=100 qui tronquait l'extraction des gros exports (500MB)
+- ImportScreen: OpenDocumentTree → OpenDocument pour sélectionner le .zip directement
+- ImportUiState.Success: ajouter missingTypes pour afficher les types absents du ZIP
+- MainActivity: api by lazy → mutableStateOf(buildApi()) — Retrofit se recrée quand l'URL change dans Settings
+- NavGraph: remember(api) sur ImportRepository pour propager le changement d'URL
+- TokenDataStore / BackendUrlStore / SettingsDataStore: catch AEADBadTagException — deleteSharedPreferences + recreate au lieu de crash sur reinstall APK
+
+### 2026-05-09 
+fix: wire real auth flow, fix logout token clear, add bug-tracker MCP
+- Replace placeholder LoginScreen with real auth.LoginScreen wired to AuthViewModel
+- NavGraph: add Register + ForgotPassword routes; shared authViewModel via remember(api, tokenDataStore)
+- MainActivity: create NightfallApi via NetworkModule and pass it to NavGraph
+- Fix logout: AuthViewModel.logout() clears token before navigating to Login
+- SettingsDataStore: use BuildConfig.DEFAULT_BACKEND_URL instead of hardcoded emulator URL (10.0.2.2 → sh-dev.datasaillance.fr)
+- Add bug-tracker MCP server (FastMCP + SQLite + markdown vault notes in docs/vault/bugs/)
+- Register bug-tracker in .mcp.json; document auto-log behavior in CLAUDE.md
 
 ### 2026-05-08 `54e9e54`
 feat: (android): P5.1 SleepScreen Night Cards — SleepViewModel, barre colorée, OffsetDateTime
