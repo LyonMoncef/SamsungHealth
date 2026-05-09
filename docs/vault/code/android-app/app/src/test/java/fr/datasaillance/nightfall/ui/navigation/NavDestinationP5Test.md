@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/ui/navigation/NavDestinationP5Test.kt
 git_blob: 37b8c7a5d1554771c9c8315557a0d7fda6473299
-last_synced: '2026-05-07T22:01:38Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 60
 annotations: []
 imports: []

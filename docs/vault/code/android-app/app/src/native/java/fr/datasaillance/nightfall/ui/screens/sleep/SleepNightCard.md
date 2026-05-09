@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepNightCard.kt
 git_blob: 6cf69f76130deaedb0d53d1a64630cec1496faf6
-last_synced: '2026-05-08T01:27:05Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 132
 annotations: []
 imports: []

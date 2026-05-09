@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt
 git_blob: 256a00d8552d823e5cb989aa2fa4f6411185318c
-last_synced: '2026-05-07T22:01:38Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 172
 annotations: []
 imports: []

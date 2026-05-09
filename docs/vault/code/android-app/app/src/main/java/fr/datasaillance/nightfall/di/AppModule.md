@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt
 git_blob: ae126d603890e049b3a64e3625459b444eebf224
-last_synced: '2026-05-07T22:01:38Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 18
 annotations: []
 imports: []

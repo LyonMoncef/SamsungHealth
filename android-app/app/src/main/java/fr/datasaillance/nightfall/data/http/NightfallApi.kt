@@ -15,7 +15,7 @@ import retrofit2.http.Query
 data class ImportApiResponse(val inserted: Int, val skipped: Int)
 
 interface NightfallApi {
-    @GET("health")
+    @GET("healthz")
     suspend fun health(): Response<Unit>
 
     @POST("auth/login")

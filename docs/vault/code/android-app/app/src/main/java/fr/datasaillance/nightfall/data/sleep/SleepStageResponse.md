@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepStageResponse.kt
 git_blob: 5606b9f467a7cc9214655fe191da408a366fecae
-last_synced: '2026-05-08T01:27:05Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 13
 annotations: []
 imports: []

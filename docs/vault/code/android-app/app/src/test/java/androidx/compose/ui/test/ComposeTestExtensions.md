@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/androidx/compose/ui/test/ComposeTestExtensions.kt
 git_blob: 70c16d2017f4af8b6263bab9284936206807cd89
-last_synced: '2026-05-08T01:27:05Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 15
 annotations: []
 imports: []

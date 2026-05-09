@@ -3,7 +3,7 @@ type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt
 git_blob: 95aeee7ef4a9a4dbe702cf9a6ca50fd24895cd4e
-last_synced: '2026-05-07T02:02:39Z'
+last_synced: '2026-05-09T04:03:35Z'
 loc: 94
 annotations: []
 imports: []

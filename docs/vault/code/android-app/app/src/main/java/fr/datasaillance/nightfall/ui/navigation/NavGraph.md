@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: bcf8c6c98788112da0d8cf2037ef1e49b66256dc
-last_synced: '2026-05-08T01:27:05Z'
-loc: 222
+git_blob: 8ba8f8c2c1b5895ee2850134e8bc7074da03e3d7
+last_synced: '2026-05-09T04:03:35Z'
+loc: 220
 annotations: []
 imports: []
 exports: []
@@ -38,7 +38,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
-import fr.datasaillance.nightfall.di.AppModule
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
 import fr.datasaillance.nightfall.data.http.GoogleStartResponse
 import fr.datasaillance.nightfall.data.http.ImportApiResponse
@@ -78,15 +77,11 @@ fun NavGraph(
     backendUrl: String = "",
     onSaveUrl: (String) -> Unit = {},
     api: NightfallApi? = null,
-    authViewModel: AuthViewModel? = null,
+    tokenDataStore: TokenDataStore? = null,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val startDestination = if (hasToken) NavDestination.Sleep.route else NavDestination.Login.route
-    val resolvedAuthViewModel = authViewModel ?: remember(api, context) {
-        AppModule.provideAuthViewModel(
-            api = api ?: NoOpNightfallApi(),
-            tokenDataStore = AppModule.provideTokenDataStore(context)
-        )
+    val authViewModel = remember(api, tokenDataStore) {
+        if (api != null && tokenDataStore != null) AuthViewModel(api, tokenDataStore) else null
     }
 
     // Adds ComposeNavigator/DialogNavigator to the navigator provider when absent.
@@ -121,36 +116,38 @@ fun NavGraph(
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(NavDestination.Login.route) {
-                LoginScreen(
-                    viewModel = resolvedAuthViewModel,
-                    onLoginSuccess = {
-                        navController.navigate(NavDestination.Sleep.route) {
-                            popUpTo(NavDestination.Login.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateRegister = {
-                        navController.navigate(NavDestination.Register.route)
-                    },
-                    onNavigateForgotPassword = {
-                        navController.navigate(NavDestination.ForgotPassword.route)
-                    }
-                )
+                if (authViewModel != null) {
+                    LoginScreen(
+                        viewModel            = authViewModel,
+                        onLoginSuccess       = {
+                            navController.navigate(NavDestination.Sleep.route) {
+                                popUpTo(NavDestination.Login.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateRegister   = { navController.navigate(NavDestination.Register.route) },
+                        onNavigateForgotPassword = { navController.navigate(NavDestination.ForgotPassword.route) },
+                    )
+                }
             }
             composable(NavDestination.Register.route) {
-                RegisterScreen(
-                    viewModel = resolvedAuthViewModel,
-                    onRegisterSuccess = {
-                        navController.navigate(NavDestination.Sleep.route) {
-                            popUpTo(NavDestination.Login.route) { inclusive = true }
-                        }
-                    }
-                )
+                if (authViewModel != null) {
+                    RegisterScreen(
+                        viewModel        = authViewModel,
+                        onRegisterSuccess = {
+                            navController.navigate(NavDestination.Login.route) {
+                                popUpTo(NavDestination.Register.route) { inclusive = true }
+                            }
+                        },
+                    )
+                }
             }
             composable(NavDestination.ForgotPassword.route) {
-                ForgotPasswordScreen(
-                    viewModel = resolvedAuthViewModel,
-                    onBack = { navController.popBackStack() }
-                )
+                if (authViewModel != null) {
+                    ForgotPasswordScreen(
+                        viewModel = authViewModel,
+                        onBack    = { navController.popBackStack() },
+                    )
+                }
             }
             composable(NavDestination.Sleep.route) {
                 val sleepViewModel = remember { SleepViewModel(NoOpSleepRepository()) }
@@ -163,6 +160,7 @@ fun NavGraph(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
                     onLogout   = {
+                        authViewModel?.logout()
                         navController.navigate(NavDestination.Login.route) {
                             popUpTo(NavDestination.Sleep.route) { inclusive = true }
                         }
@@ -170,14 +168,14 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Import.route) {
-                val repository: ImportRepository = remember {
+                val repository: ImportRepository = remember(api) {
                     if (api != null) {
                         ImportRepositoryImpl(api)
                     } else {
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember { ImportViewModel(repository) }
+                val viewModel = remember(repository) { ImportViewModel(repository) }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
@@ -221,11 +219,11 @@ private class NoOpNightfallApi : NightfallApi {
     override suspend fun register(body: RegisterRequest, registrationToken: String?): RegisterResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun requestPasswordReset(body: PasswordResetRequest): StatusResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun googleStart(body: GoogleStartRequest): GoogleStartResponse = throw UnsupportedOperationException("No-op api")
+    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
     override suspend fun importSleep(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importHeartRate(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importSteps(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importExercise(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
 }
 
 /**
@@ -250,22 +248,22 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 51-171
-- `NoOpSleepRepository` (class) — lines 173-176
-- `getSessions` (function) — lines 174-175
-- `NoOpImportRepository` (class) — lines 178-193
-- `pingBackend` (function) — lines 179-179
-- `extractCsvEntries` (function) — lines 181-184
-- `uploadCsv` (function) — lines 186-192
-- `NoOpNightfallApi` (class) — lines 195-206
-- `health` (function) — lines 196-196
-- `login` (function) — lines 197-197
-- `register` (function) — lines 198-198
-- `requestPasswordReset` (function) — lines 199-199
-- `googleStart` (function) — lines 200-200
-- `importSleep` (function) — lines 201-201
-- `importHeartRate` (function) — lines 202-202
-- `importSteps` (function) — lines 203-203
-- `importExercise` (function) — lines 204-204
-- `getSleepSessions` (function) — lines 205-205
-- `ensureComposeNavigators` (function) — lines 214-222
+- `NavGraph` (function) — lines 50-169
+- `NoOpSleepRepository` (class) — lines 171-174
+- `getSessions` (function) — lines 172-173
+- `NoOpImportRepository` (class) — lines 176-191
+- `pingBackend` (function) — lines 177-177
+- `extractCsvEntries` (function) — lines 179-182
+- `uploadCsv` (function) — lines 184-190
+- `NoOpNightfallApi` (class) — lines 193-204
+- `health` (function) — lines 194-194
+- `login` (function) — lines 195-195
+- `register` (function) — lines 196-196
+- `requestPasswordReset` (function) — lines 197-197
+- `googleStart` (function) — lines 198-198
+- `getSleepSessions` (function) — lines 199-199
+- `importSleep` (function) — lines 200-200
+- `importHeartRate` (function) — lines 201-201
+- `importSteps` (function) — lines 202-202
+- `importExercise` (function) — lines 203-203
+- `ensureComposeNavigators` (function) — lines 212-220

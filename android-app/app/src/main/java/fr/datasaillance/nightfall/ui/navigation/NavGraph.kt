@@ -15,7 +15,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
-import fr.datasaillance.nightfall.di.AppModule
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
 import fr.datasaillance.nightfall.data.http.GoogleStartResponse
 import fr.datasaillance.nightfall.data.http.ImportApiResponse
@@ -55,15 +54,11 @@ fun NavGraph(
     backendUrl: String = "",
     onSaveUrl: (String) -> Unit = {},
     api: NightfallApi? = null,
-    authViewModel: AuthViewModel? = null,
+    tokenDataStore: TokenDataStore? = null,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val startDestination = if (hasToken) NavDestination.Sleep.route else NavDestination.Login.route
-    val resolvedAuthViewModel = authViewModel ?: remember(api, context) {
-        AppModule.provideAuthViewModel(
-            api = api ?: NoOpNightfallApi(),
-            tokenDataStore = AppModule.provideTokenDataStore(context)
-        )
+    val authViewModel = remember(api, tokenDataStore) {
+        if (api != null && tokenDataStore != null) AuthViewModel(api, tokenDataStore) else null
     }
 
     // Adds ComposeNavigator/DialogNavigator to the navigator provider when absent.
@@ -98,36 +93,38 @@ fun NavGraph(
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(NavDestination.Login.route) {
-                LoginScreen(
-                    viewModel = resolvedAuthViewModel,
-                    onLoginSuccess = {
-                        navController.navigate(NavDestination.Sleep.route) {
-                            popUpTo(NavDestination.Login.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateRegister = {
-                        navController.navigate(NavDestination.Register.route)
-                    },
-                    onNavigateForgotPassword = {
-                        navController.navigate(NavDestination.ForgotPassword.route)
-                    }
-                )
+                if (authViewModel != null) {
+                    LoginScreen(
+                        viewModel            = authViewModel,
+                        onLoginSuccess       = {
+                            navController.navigate(NavDestination.Sleep.route) {
+                                popUpTo(NavDestination.Login.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateRegister   = { navController.navigate(NavDestination.Register.route) },
+                        onNavigateForgotPassword = { navController.navigate(NavDestination.ForgotPassword.route) },
+                    )
+                }
             }
             composable(NavDestination.Register.route) {
-                RegisterScreen(
-                    viewModel = resolvedAuthViewModel,
-                    onRegisterSuccess = {
-                        navController.navigate(NavDestination.Sleep.route) {
-                            popUpTo(NavDestination.Login.route) { inclusive = true }
-                        }
-                    }
-                )
+                if (authViewModel != null) {
+                    RegisterScreen(
+                        viewModel        = authViewModel,
+                        onRegisterSuccess = {
+                            navController.navigate(NavDestination.Login.route) {
+                                popUpTo(NavDestination.Register.route) { inclusive = true }
+                            }
+                        },
+                    )
+                }
             }
             composable(NavDestination.ForgotPassword.route) {
-                ForgotPasswordScreen(
-                    viewModel = resolvedAuthViewModel,
-                    onBack = { navController.popBackStack() }
-                )
+                if (authViewModel != null) {
+                    ForgotPasswordScreen(
+                        viewModel = authViewModel,
+                        onBack    = { navController.popBackStack() },
+                    )
+                }
             }
             composable(NavDestination.Sleep.route) {
                 val sleepViewModel = remember { SleepViewModel(NoOpSleepRepository()) }
@@ -140,6 +137,7 @@ fun NavGraph(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
                     onLogout   = {
+                        authViewModel?.logout()
                         navController.navigate(NavDestination.Login.route) {
                             popUpTo(NavDestination.Sleep.route) { inclusive = true }
                         }
@@ -147,14 +145,14 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Import.route) {
-                val repository: ImportRepository = remember {
+                val repository: ImportRepository = remember(api) {
                     if (api != null) {
                         ImportRepositoryImpl(api)
                     } else {
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember { ImportViewModel(repository) }
+                val viewModel = remember(repository) { ImportViewModel(repository) }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
@@ -198,11 +196,11 @@ private class NoOpNightfallApi : NightfallApi {
     override suspend fun register(body: RegisterRequest, registrationToken: String?): RegisterResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun requestPasswordReset(body: PasswordResetRequest): StatusResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun googleStart(body: GoogleStartRequest): GoogleStartResponse = throw UnsupportedOperationException("No-op api")
+    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
     override suspend fun importSleep(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importHeartRate(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importSteps(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importExercise(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
 }
 
 /**
