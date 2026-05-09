@@ -32,4 +32,10 @@ enum class ImportDataType(
         labelRes = R.string.import_type_exercise,
         iconRes = R.drawable.ic_import_exercise,
     ),
+    SLEEP_STAGE(
+        samsungFilenamePrefix = "com.samsung.health.sleep_stage.",
+        apiPath = "api/sleep/import-stages",
+        labelRes = R.string.import_type_sleep_stage,
+        iconRes = R.drawable.ic_import_sleep,
+    ),
 }

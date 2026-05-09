@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt
-git_blob: 15be5d2254cfd3874a877df8f8d79f1928b8101d
-last_synced: '2026-05-09T04:03:34Z'
-loc: 56
+git_blob: 8c032be84c7326e2c320a7c2fc48795349691ae2
+last_synced: '2026-05-09T08:38:11Z'
+loc: 60
 annotations: []
 imports: []
 exports: []
@@ -76,6 +76,10 @@ interface NightfallApi {
     @Multipart
     @POST("api/exercise/import")
     suspend fun importExercise(@Part file: MultipartBody.Part): ImportApiResponse
+
+    @Multipart
+    @POST("api/sleep/import-stages")
+    suspend fun importSleepStages(@Part file: MultipartBody.Part): ImportApiResponse
 }
 ```
 
@@ -85,7 +89,7 @@ interface NightfallApi {
 
 ### Symbols
 - `ImportApiResponse` (class) — lines 14-15
-- `NightfallApi` (class) — lines 17-56
+- `NightfallApi` (class) — lines 17-60
 - `health` (function) — lines 18-19
 - `login` (function) — lines 21-22
 - `register` (function) — lines 24-25
@@ -96,3 +100,4 @@ interface NightfallApi {
 - `importHeartRate` (function) — lines 45-47
 - `importSteps` (function) — lines 49-51
 - `importExercise` (function) — lines 53-55
+- `importSleepStages` (function) — lines 57-59

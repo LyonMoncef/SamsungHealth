@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/sleep/HypnogramScreenTest.kt
-git_blob: 7ab09fb66e23faeb6f137635233fac1a89a6a908
-last_synced: '2026-05-09T06:05:32Z'
+git_blob: 6bef60c6e5168bf270be17f7f227ae6dcd358dbe
+last_synced: '2026-05-09T08:38:11Z'
 loc: 612
 annotations: []
 imports: []
@@ -161,7 +161,7 @@ class HypnogramScreenSnapshotTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(fullSession)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
         )
 
         paparazzi.snapshot {
@@ -184,7 +184,7 @@ class HypnogramScreenSnapshotTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(fullSession)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
         )
 
         paparazzi.snapshot {
@@ -277,7 +277,7 @@ class HypnogramScreenInteractionTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(fullSession)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
         )
 
         composeTestRule.setContent {
@@ -304,7 +304,7 @@ class HypnogramScreenInteractionTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(fullSession)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
         )
 
         composeTestRule.setContent {
@@ -331,7 +331,7 @@ class HypnogramScreenInteractionTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(fullSession)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
         )
 
         composeTestRule.setContent {
@@ -425,7 +425,7 @@ class HypnogramScreenInteractionTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(sessionNoStages)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(sessionNoStages))
         )
 
         composeTestRule.setContent {
@@ -464,7 +464,7 @@ class HypnogramScreenInteractionTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(sessionZeroDuration)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(sessionZeroDuration))
         )
 
         composeTestRule.setContent {
@@ -486,7 +486,7 @@ class HypnogramScreenInteractionTest {
         val viewModel = buildViewModel()
         injectHypnogramState(
             viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(fullSession)
+            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
         )
 
         var backCalled = false
@@ -543,7 +543,7 @@ class HypnogramViewModelTest {
     }
 
     // spec: TA-H-VM-01 — repository retourne [fullSession], loadSession() filtre par "hyp-001"
-    //   → uiState = HypnogramUiState.Success(fullSession)
+    //   → uiState = HypnogramUiState.Success(listOf(fullSession))
     // RED: HypnogramViewModel.loadSession() n'existe pas encore
     @Test
     fun hypnogramViewModel_emits_success_when_session_found() = runTest {
@@ -559,10 +559,10 @@ class HypnogramViewModelTest {
             "uiState must be HypnogramUiState.Success when session hyp-001 is found — spec: TA-H-VM-01, got: $state"
         }
 
-        // spec: TA-H-VM-01 — Success.session doit être la session correspondant au sessionId
-        val session = (state as fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success).session
-        assert(session.id == "hyp-001") {
-            "Success.session.id must be 'hyp-001' — spec: TA-H-VM-01, got: ${session.id}"
+        // spec: TA-H-VM-01 — Success.sessions doit contenir la session correspondant au sessionId
+        val sessions = (state as fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success).sessions
+        assert(sessions.any { it.id == "hyp-001" }) {
+            "Success.sessions must contain session 'hyp-001' — spec: TA-H-VM-01, got: ${sessions.map { it.id }}"
         }
     }
 

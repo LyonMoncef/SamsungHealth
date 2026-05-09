@@ -34,10 +34,34 @@
 | P5.2 Hypnogramme | `HypnogramViewModel.kt`, `HypnogramScreen.kt`, `HypnogramStatsSection.kt`, `NavDestination.kt`, `NavGraph.kt`, `AuthViewModel.kt`, `HypnogramScreenTest.kt` | [`77b7ca6`](#2026-05-09-p52-hypnogramme) |
 | Android auth flow + bug-tracker MCP | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt`, `agents/mcp/bug_tracker/server.py` | [`301fe9a`](#2026-05-09-301fe9a) |
 | Import ZIP Samsung Health end-to-end | `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportDataType.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt` | [`c1424f9`](#2026-05-09-c1424f9) |
+| P5.3 Timeline Circadienne | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/TimelineViewModel.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreenTest.kt` | [`352e619`](#2026-05-09-352e619) |
+| P5.3 Timeline V2 | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt` | [`0e79abe`](#2026-05-09-0e79abe) |
 
 ---
 
 ## Changelog
+
+### 2026-05-09 `0e79abe`
+feat: Timeline V2 — 1 ligne/nuit, phases colorées, bottom sheet
+- groupByNight() : agrégation 1 ligne = 1 date calendaire (clé sleep_start.toLocalDate())
+- drawStageSegment() : couleur par type DEEP/LIGHT/REM/AWAKE, segments AWAKE à hauteur 50%
+- drawFallbackBar() : barre teal fallback si stages == null
+- StageHitBox : struct pixel bounds + stageType/stageStart/stageEnd/nightLabel pour tap detection
+- pointerInput + detectTapGestures sur Canvas — hitBoxes accumulées pendant le draw, vidées à chaque recomposition
+- ModalBottomSheet StageDetailSheet : dot coloré (CircleShape), nom de phase, durée, plage horaire
+- Fix StageDetailSheet : remplacement Box cassé (.run/.let imbriqués) par Box { Modifier.clip(CircleShape).background(stageColor) }
+
+### 2026-05-09 `352e619`
+feat: P5.3 Timeline Circadienne — canvas multi-nuits, onglet Timeline, fenêtre Y dynamique
+- Ajout de TimelineViewModel : sealed TimelineUiState (Idle/Loading/Success/Empty/Error), tri croissant par sleep_start, Loading émis synchroniquement avant viewModelScope.launch
+- Ajout de TimelineScreen : Scaffold + TopAppBar 'Drift circadien', Canvas multi-nuits avec fenêtre Y dynamique (médiane sleep_start ±2h, 16h, clamp [0, 1440])
+- Canvas : barres teal tronquées par LABEL_WIDTH_DP=48dp, date labels axe Y gauche, graduations horaires axe X bas (step 1h ou 2h si fenêtre ≥12h)
+- TimelineAxisHeader composable privé : en-tête graduations d'heures fixe (24dp) au-dessus du scroll canvas
+- Remplacement NavDestination.Trends → NavDestination.Timeline, BottomNavBar et bottomNavItems() mis à jour
+- NavGraph : route 'timeline' câblée, authViewModel fallback non-null via LocalContext (NoOpNightfallApi + TokenDataStore), suppression des guards if(authViewModel != null) sur les écrans auth
+- NavGraph : paramètre authViewModel: AuthViewModel? = null ré-ajouté pour injection test, authViewModel.logout() sans safe-call
+- 15 tests RED → GREEN : TimelineViewModelTest ×5, TimelineScreenInteractionTest ×6, TimelineScreenSnapshotTest ×4 ; 150 tests / 0 failures
+- BottomNavBarTest + NavGraphTest mis à jour : références Trends → Timeline, navGraph_login_screen_shows_real_loginscreen désormais GREEN
 
 ### 2026-05-09 `77b7ca6` {#2026-05-09-p52-hypnogramme}
 feat(android): P5.2 hypnogramme — HypnogramScreen, canvas timeline, nav route, 16 tests GREEN

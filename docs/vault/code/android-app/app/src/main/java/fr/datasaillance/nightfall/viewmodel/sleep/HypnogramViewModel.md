@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/HypnogramViewModel.kt
-git_blob: 8bd6b7c7e92f2a326abab094ad48001ac2ada78d
-last_synced: '2026-05-09T06:05:32Z'
-loc: 81
+git_blob: ea4e5479bc273af0f644f239ba66a90ce852a087
+last_synced: '2026-05-09T08:38:11Z'
+loc: 92
 annotations: []
 imports: []
 exports: []
@@ -34,11 +34,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.IOException
+import java.time.OffsetDateTime
 
 sealed class HypnogramUiState {
     object Idle    : HypnogramUiState()
     object Loading : HypnogramUiState()
-    data class Success(val session: SleepSessionResponse) : HypnogramUiState()
+    data class Success(val sessions: List<SleepSessionResponse>) : HypnogramUiState()
     data class Error(val message: String) : HypnogramUiState()
 }
 
@@ -77,14 +78,24 @@ class HypnogramViewModel(
                     Timber.w("scope=hypno_vm session_id=$sessionId sessions_null")
                     return@launch
                 }
-                val session = sessions.firstOrNull { it.id == sessionId }
-                if (session == null) {
+                val target = sessions.firstOrNull { it.id == sessionId }
+                if (target == null) {
                     Timber.w("scope=hypno_vm session_id=$sessionId not found")
                     _uiState.value = HypnogramUiState.Error("Session introuvable")
-                } else {
-                    Timber.d("scope=hypno_vm stage_count=${session.stages?.size ?: 0}")
-                    _uiState.value = HypnogramUiState.Success(session)
+                    return@launch
                 }
+                val targetDate = runCatching {
+                    OffsetDateTime.parse(target.sleep_start).toLocalDate()
+                }.getOrNull()
+                val nightSessions = if (targetDate != null) {
+                    sessions.filter { s ->
+                        runCatching { OffsetDateTime.parse(s.sleep_start).toLocalDate() }.getOrNull() == targetDate
+                    }.sortedBy { it.sleep_start }
+                } else {
+                    listOf(target)
+                }
+                Timber.d("scope=hypno_vm night_sessions=${nightSessions.size} total_stages=${nightSessions.sumOf { it.stages?.size ?: 0 }}")
+                _uiState.value = HypnogramUiState.Success(nightSessions)
             } catch (e: Exception) {
                 Timber.w("scope=hypno_vm error=${e::class.simpleName}")
                 _uiState.value = HypnogramUiState.Error(mapError(e))
@@ -109,10 +120,10 @@ class HypnogramViewModel(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `HypnogramUiState` (class) — lines 15-20
-- `Success` (class) — lines 18-18
-- `Error` (class) — lines 19-19
-- `HypnogramViewModel` (class) — lines 22-81
-- `retry` (function) — lines 34-34
-- `loadSession` (function) — lines 36-70
-- `mapError` (function) — lines 72-80
+- `HypnogramUiState` (class) — lines 16-21
+- `Success` (class) — lines 19-19
+- `Error` (class) — lines 20-20
+- `HypnogramViewModel` (class) — lines 23-92
+- `retry` (function) — lines 35-35
+- `loadSession` (function) — lines 37-81
+- `mapError` (function) — lines 83-91
