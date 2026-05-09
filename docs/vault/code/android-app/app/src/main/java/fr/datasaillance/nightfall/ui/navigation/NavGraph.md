@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: ff170b96fa6cb0bdb055869f24961d25422661ff
-last_synced: '2026-05-09T15:40:18Z'
-loc: 283
+git_blob: ed527f3ec32f1df389191ece895c9812ff2c5293
+last_synced: '2026-05-09T16:40:48Z'
+loc: 274
 annotations: []
 imports: []
 exports: []
@@ -43,7 +43,6 @@ import androidx.navigation.navArgument
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
 import fr.datasaillance.nightfall.data.http.GoogleStartResponse
-import fr.datasaillance.nightfall.data.http.ImportApiResponse
 import fr.datasaillance.nightfall.data.http.LoginRequest
 import fr.datasaillance.nightfall.data.http.LoginResponse
 import fr.datasaillance.nightfall.data.http.NightfallApi
@@ -56,7 +55,6 @@ import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.LocalSleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
-import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
@@ -75,7 +73,6 @@ import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel
-import okhttp3.MultipartBody
 import retrofit2.Response
 
 @Composable
@@ -281,12 +278,6 @@ private class NoOpNightfallApi : NightfallApi {
     override suspend fun register(body: RegisterRequest, registrationToken: String?): RegisterResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun requestPasswordReset(body: PasswordResetRequest): StatusResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun googleStart(body: GoogleStartRequest): GoogleStartResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
-    override suspend fun importSleep(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importHeartRate(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importSteps(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importExercise(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importSleepStages(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
 }
 
 /**
@@ -311,23 +302,17 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 58-229
-- `NoOpSleepRepository` (class) — lines 231-236
-- `getSessions` (function) — lines 232-235
-- `NoOpImportRepository` (class) — lines 238-253
-- `pingBackend` (function) — lines 239-239
-- `extractCsvEntries` (function) — lines 241-244
-- `uploadCsv` (function) — lines 246-252
-- `NoOpNightfallApi` (class) — lines 255-267
-- `health` (function) — lines 256-256
-- `login` (function) — lines 257-257
-- `register` (function) — lines 258-258
-- `requestPasswordReset` (function) — lines 259-259
-- `googleStart` (function) — lines 260-260
-- `getSleepSessions` (function) — lines 261-261
-- `importSleep` (function) — lines 262-262
-- `importHeartRate` (function) — lines 263-263
-- `importSteps` (function) — lines 264-264
-- `importExercise` (function) — lines 265-265
-- `importSleepStages` (function) — lines 266-266
-- `ensureComposeNavigators` (function) — lines 275-283
+- `NavGraph` (function) — lines 55-226
+- `NoOpSleepRepository` (class) — lines 228-233
+- `getSessions` (function) — lines 229-232
+- `NoOpImportRepository` (class) — lines 235-250
+- `pingBackend` (function) — lines 236-236
+- `extractCsvEntries` (function) — lines 238-241
+- `uploadCsv` (function) — lines 243-249
+- `NoOpNightfallApi` (class) — lines 252-258
+- `health` (function) — lines 253-253
+- `login` (function) — lines 254-254
+- `register` (function) — lines 255-255
+- `requestPasswordReset` (function) — lines 256-256
+- `googleStart` (function) — lines 257-257
+- `ensureComposeNavigators` (function) — lines 266-274

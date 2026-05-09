@@ -20,7 +20,6 @@ import androidx.navigation.navArgument
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
 import fr.datasaillance.nightfall.data.http.GoogleStartResponse
-import fr.datasaillance.nightfall.data.http.ImportApiResponse
 import fr.datasaillance.nightfall.data.http.LoginRequest
 import fr.datasaillance.nightfall.data.http.LoginResponse
 import fr.datasaillance.nightfall.data.http.NightfallApi
@@ -33,7 +32,6 @@ import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.LocalSleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
-import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
@@ -52,7 +50,6 @@ import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel
-import okhttp3.MultipartBody
 import retrofit2.Response
 
 @Composable
@@ -258,12 +255,6 @@ private class NoOpNightfallApi : NightfallApi {
     override suspend fun register(body: RegisterRequest, registrationToken: String?): RegisterResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun requestPasswordReset(body: PasswordResetRequest): StatusResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun googleStart(body: GoogleStartRequest): GoogleStartResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun getSleepSessions(token: String, from: String?, to: String?, includeStages: Boolean): List<SleepSessionResponse> = emptyList()
-    override suspend fun importSleep(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importHeartRate(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importSteps(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importExercise(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun importSleepStages(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
 }
 
 /**
