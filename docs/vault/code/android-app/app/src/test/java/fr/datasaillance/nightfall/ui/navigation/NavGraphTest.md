@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/ui/navigation/NavGraphTest.kt
-git_blob: e95f969b6b8b20939ef4c8f6d19002d83fc032dd
-last_synced: '2026-05-09T04:03:35Z'
+git_blob: b9038b488b5c441a602a3bc442051f46a5a05193
+last_synced: '2026-05-09T07:04:02Z'
 loc: 246
 annotations: []
 imports: []
@@ -95,9 +95,9 @@ class NavGraphTest {
         }
     }
 
-    // spec: TA-03 — l'utilisateur tape sur l'onglet "Tendances" → TrendsScreen affiché
+    // spec: TA-03 — l'utilisateur tape sur l'onglet "Timeline" → TimelineScreen affiché
     @Test
-    fun navGraph_bottomNav_switchesToTrends() {
+    fun navGraph_bottomNav_switchesToTimeline() {
         val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
 
         composeTestRule.setContent {
@@ -109,11 +109,11 @@ class NavGraphTest {
             }
         }
 
-        // spec: TA-03 — bottom nav label "Tendances" must navigate to TrendsScreen
-        composeTestRule.onNodeWithText("Tendances").performClick()
+        // spec: TA-03 — bottom nav label "Timeline" must navigate to TimelineScreen
+        composeTestRule.onNodeWithText("Timeline").performClick()
 
-        assert(navController.currentDestination?.route == NavDestination.Trends.route) {
-            "Expected navigation to trends after clicking Tendances tab — spec: TA-03"
+        assert(navController.currentDestination?.route == NavDestination.Timeline.route) {
+            "Expected navigation to timeline after clicking Timeline tab — spec: TA-03"
         }
     }
 
@@ -277,7 +277,7 @@ class NavGraphTest {
 - `NavGraphTest` (class) — lines 28-246
 - `navGraph_noToken_navigatesToLogin` (function) — lines 35-53
 - `navGraph_withToken_navigatesToSleep` (function) — lines 56-73
-- `navGraph_bottomNav_switchesToTrends` (function) — lines 76-95
+- `navGraph_bottomNav_switchesToTimeline` (function) — lines 76-95
 - `navGraph_bottomNav_switchesToActivity` (function) — lines 98-117
 - `navGraph_bottomNav_switchesToProfile` (function) — lines 120-138
 - `navGraph_profileScreen_importButtonNavigatesToImport` (function) — lines 141-163

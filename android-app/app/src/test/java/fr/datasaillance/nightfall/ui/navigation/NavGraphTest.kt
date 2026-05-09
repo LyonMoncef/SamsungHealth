@@ -72,9 +72,9 @@ class NavGraphTest {
         }
     }
 
-    // spec: TA-03 — l'utilisateur tape sur l'onglet "Tendances" → TrendsScreen affiché
+    // spec: TA-03 — l'utilisateur tape sur l'onglet "Timeline" → TimelineScreen affiché
     @Test
-    fun navGraph_bottomNav_switchesToTrends() {
+    fun navGraph_bottomNav_switchesToTimeline() {
         val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
 
         composeTestRule.setContent {
@@ -86,11 +86,11 @@ class NavGraphTest {
             }
         }
 
-        // spec: TA-03 — bottom nav label "Tendances" must navigate to TrendsScreen
-        composeTestRule.onNodeWithText("Tendances").performClick()
+        // spec: TA-03 — bottom nav label "Timeline" must navigate to TimelineScreen
+        composeTestRule.onNodeWithText("Timeline").performClick()
 
-        assert(navController.currentDestination?.route == NavDestination.Trends.route) {
-            "Expected navigation to trends after clicking Tendances tab — spec: TA-03"
+        assert(navController.currentDestination?.route == NavDestination.Timeline.route) {
+            "Expected navigation to timeline after clicking Timeline tab — spec: TA-03"
         }
     }
 
