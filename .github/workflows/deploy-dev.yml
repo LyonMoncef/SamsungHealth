@@ -36,8 +36,8 @@ jobs:
       - name: Build & push GHCR (no :latest mutable tag — HIGH 2)
         uses: docker/build-push-action@v5
         with:
+          context: .
           push: true
-          no-cache: true
           tags: ghcr.io/lyonmoncef/samsunghealth:${{ steps.meta.outputs.tag }}
 
   deploy:
