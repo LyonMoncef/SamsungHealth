@@ -96,8 +96,13 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
           set -euo pipefail
           cd /srv/samsunghealth-dev
+          # Verify IMAGE_TAG line exists before sed (silent mismatch = old image deployed)
+          if ! grep -qE "^IMAGE_TAG=" .env.prod; then
+            echo "::error::IMAGE_TAG not found in .env.prod — check file format"
+            exit 1
+          fi
           sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
-          echo "IMAGE_TAG: \$(grep '^IMAGE_TAG=' .env.prod)"
+          echo "IMAGE_TAG updated: \$(grep '^IMAGE_TAG=' .env.prod)"
           # < /dev/null — docker compose pull consomme le stdin SSH sans ça,
           # bash voit EOF et stoppe l'exécution du heredoc après le pull
           docker compose -f docker-compose.prod.yml --env-file .env.prod pull web < /dev/null
@@ -115,9 +120,11 @@ jobs:
             exit 1
           fi
           docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
+          # Stop and remove web explicitly — handles any v1/v2 naming drift
           docker compose -f docker-compose.prod.yml --env-file .env.prod rm --stop --force web 2>/dev/null || true
           docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
-          echo "container: \$(docker ps --filter 'publish=8001' --format '{{.Names}} {{.Image}}')"
+          echo "=== Running container ==="
+          docker ps --filter "publish=8001" --format "{{.Names}} {{.Image}}"
           EOF
 
       - name: Smoke test (loop, 60s max)
