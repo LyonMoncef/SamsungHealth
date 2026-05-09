@@ -31,7 +31,7 @@
 | Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
 | P5.0 LoginScreen natif | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt` | [`2ccecfe`](#2026-05-08-2ccecfe) |
 | P5.1 SleepScreen Night Cards | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepNightCard.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/SleepViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt` | [`54e9e54`](#2026-05-08-54e9e54) |
-| P5.2 Hypnogramme | `HypnogramViewModel.kt`, `HypnogramScreen.kt`, `HypnogramStatsSection.kt`, `NavDestination.kt`, `NavGraph.kt`, `AuthViewModel.kt`, `HypnogramScreenTest.kt` | [`pending`](#2026-05-09-p52-hypnogramme) |
+| P5.2 Hypnogramme | `HypnogramViewModel.kt`, `HypnogramScreen.kt`, `HypnogramStatsSection.kt`, `NavDestination.kt`, `NavGraph.kt`, `AuthViewModel.kt`, `HypnogramScreenTest.kt` | [`77b7ca6`](#2026-05-09-p52-hypnogramme) |
 | Android auth flow + bug-tracker MCP | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt`, `agents/mcp/bug_tracker/server.py` | [`301fe9a`](#2026-05-09-301fe9a) |
 | Import ZIP Samsung Health end-to-end | `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportDataType.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt` | [`c1424f9`](#2026-05-09-c1424f9) |
 
@@ -39,7 +39,7 @@
 
 ## Changelog
 
-### 2026-05-09 `pending` {#2026-05-09-p52-hypnogramme}
+### 2026-05-09 `77b7ca6` {#2026-05-09-p52-hypnogramme}
 feat(android): P5.2 hypnogramme — HypnogramScreen, canvas timeline, nav route, 16 tests GREEN
 - HypnogramViewModel.kt : sealed HypnogramUiState (Idle/Loading/Success/Error), loadSession() re-fetch par sessionId depuis SleepRepository, retry(), mapError() — init{} déclenche le chargement
 - HypnogramScreen.kt : Scaffold + TopAppBar (titre "Nuit du Mer 7 mai" via prevDay convention), Canvas timeline 120dp (rectangles proportionnels aux timestamps, AWAKE 60dp centré), légende 4 couleurs, HypnogramSummarySection (durée/horaires/deepPct), HypnogramLegend — couleurs hardcodées (données physiologiques stables dark+light)
