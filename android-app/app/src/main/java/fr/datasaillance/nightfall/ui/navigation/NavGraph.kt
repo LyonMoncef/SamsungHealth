@@ -31,6 +31,7 @@ import fr.datasaillance.nightfall.data.http.StatusResponse
 import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
+import fr.datasaillance.nightfall.data.sleep.LocalSleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
@@ -132,12 +133,9 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Sleep.route) {
-                val sleepRepository: SleepRepository = remember(api, tokenDataStore) {
-                    if (api != null && tokenDataStore != null) {
-                        SleepRepositoryImpl(api, tokenDataStore)
-                    } else {
-                        NoOpSleepRepository()
-                    }
+                val sleepRepository: SleepRepository = remember(context) {
+                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                    LocalSleepRepository(db.sleepDao())
                 }
                 val sleepViewModel = remember(sleepRepository) { SleepViewModel(sleepRepository) }
                 SleepScreen(
@@ -160,12 +158,9 @@ fun NavGraph(
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 val dateArg = backStackEntry.arguments?.getString("date")
-                val hypnogramRepository: SleepRepository = remember(api, tokenDataStore) {
-                    if (api != null && tokenDataStore != null) {
-                        SleepRepositoryImpl(api, tokenDataStore)
-                    } else {
-                        NoOpSleepRepository()
-                    }
+                val hypnogramRepository: SleepRepository = remember(context) {
+                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                    LocalSleepRepository(db.sleepDao())
                 }
                 val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
                     HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
@@ -176,12 +171,9 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Timeline.route) {
-                val timelineRepository: SleepRepository = remember(api, tokenDataStore) {
-                    if (api != null && tokenDataStore != null) {
-                        SleepRepositoryImpl(api, tokenDataStore)
-                    } else {
-                        NoOpSleepRepository()
-                    }
+                val timelineRepository: SleepRepository = remember(context) {
+                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                    LocalSleepRepository(db.sleepDao())
                 }
                 val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
                 TimelineScreen(
@@ -205,9 +197,17 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Import.route) {
-                val repository: ImportRepository = remember(api) {
+                val context = LocalContext.current
+                val repository: ImportRepository = remember(api, context) {
                     if (api != null) {
-                        ImportRepositoryImpl(api)
+                        val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                        val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
+                            sleepDao = db.sleepDao(),
+                            heartRateDao = db.heartRateDao(),
+                            stepsDao = db.stepsDao(),
+                            exerciseDao = db.exerciseDao(),
+                        )
+                        ImportRepositoryImpl(api, localService)
                     } else {
                         NoOpImportRepository()
                     }
