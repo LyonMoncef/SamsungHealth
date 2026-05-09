@@ -116,7 +116,7 @@ fun clearToken()               // utilisé par logout (ProfileScreen)
 ```
 Surface (fillMaxSize, couleur = colorScheme.background)
   Column (padding horizontal 24dp, centré verticalement)
-    ├── Text "Connexion" (headlineLarge — Playfair Display Bold 32sp)
+    ├── Text "Connexion" (headlineLarge — 32sp Bold)
     ├── Spacer 32dp
     ├── AuthTextField — Email (keyboardType = Email, testTag = "field_email")
     ├── Spacer 16dp
@@ -210,10 +210,10 @@ Tokens interdits : `#6366f1` (indigo Tailwind), dégradés décoratifs, box-shad
 
 | Style Material3 | Famille | Poids | Taille | Usage |
 |---|---|---|---|---|
-| `headlineLarge` | Playfair Display | Bold | 32sp / 40sp | Titre "Connexion" |
-| `bodyLarge` | Inter | Regular | 16sp / 24sp | Labels champs |
-| `labelLarge` | Inter | Medium | 14sp / 20sp | Texte boutons |
-| `bodySmall` | Inter | Regular | 12sp / 16sp | Erreurs inline |
+| `headlineLarge` | Système (Roboto) | Bold | 32sp / 40sp | Titre "Connexion" |
+| `bodyLarge` | Système (Roboto) | Regular | 16sp / 24sp | Labels champs |
+| `labelLarge` | Système (Roboto) | Medium | 14sp / 20sp | Texte boutons |
+| `bodySmall` | Système (Roboto) | Regular | 12sp / 16sp | Erreurs inline |
 
 > Divergence avec le brief : le brief mentionne la police Cairo. Le code existant dans `Type.kt` utilise Playfair Display (headings) + Inter (UI). Cette spec se conforme au code réel — Cairo est la police web (`static/`), non la police Android native. Si une migration vers Cairo est souhaitée pour Android, ouvrir une issue dédiée.
 
@@ -300,7 +300,7 @@ Tokens interdits : `#6366f1` (indigo Tailwind), dégradés décoratifs, box-shad
 **Then** (dark) : fond `#191E22`, CTA amber `#D37C04`, liens cyan `#07BCD3` — snapshot valide vs golden  
 **Then** (light) : fond `#FAFAFA`, même CTA amber — snapshot valide vs golden  
 **Implémentation** : `LoginScreenTest.loginScreen_idle_dark()` et `loginScreen_idle_light()` dans le test existant  
-**Note** : la police Playfair Display / Inter ne se résoud pas en JVM Paparazzi — `FontLoadingStrategy.OptionalLocal` déjà en place dans `Type.kt`, le fallback système est attendu dans les goldens.
+**Note** : la police système (Roboto) est la police cible pour les goldens Paparazzi — aucun `FontLoadingStrategy` custom nécessaire.
 
 ### TA-L-06 — État Loading : champs et bouton désactivés
 

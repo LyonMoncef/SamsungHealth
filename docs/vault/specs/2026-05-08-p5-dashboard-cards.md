@@ -249,7 +249,7 @@ Structure générale :
 ```
 Surface(color = MaterialTheme.colorScheme.background)
 └── Scaffold
-    ├── TopAppBar — titre "Mes nuits" (Playfair Display / headlineLarge)
+    ├── TopAppBar — titre "Mes nuits" (headlineLarge)
     └── content
         ├── [Loading]  → CircularProgressIndicator centré
         │               testTag = "sleep_loading"
@@ -289,13 +289,13 @@ Card(
     ├── Box(width=6.dp, fillMaxHeight) — barre de couleur indicateur durée (voir §Indicateur)
     ├── Spacer(8.dp)
     └── Column(modifier = Modifier.weight(1f))
-        ├── Text — label nuit ex: "Lun 5 mai"     style=labelLarge (Inter 13sp 500, uppercase)
-        ├── Text — durée ex: "7h 23"               style=headlineMedium (Inter 22sp 600)
+        ├── Text — label nuit ex: "Lun 5 mai"     style=labelLarge (13sp 500, uppercase)
+        ├── Text — durée ex: "7h 23"               style=headlineMedium (22sp 600)
         ├── Spacer(4.dp)
         └── Row
-            ├── Text — "Coucher 23:15"             style=bodySmall (Inter 14sp 400)
+            ├── Text — "Coucher 23:15"             style=bodySmall (14sp 400)
             ├── Spacer(8.dp)
-            ├── Text — "Réveil 06:38"              style=bodySmall (Inter 14sp 400)
+            ├── Text — "Réveil 06:38"              style=bodySmall (14sp 400)
             └── [si score disponible] Text — "% Profond 28%"  style=bodySmall, color=teal
 ```
 
@@ -345,10 +345,10 @@ Les tokens suivants doivent être mappés dans les thèmes `LightColorScheme` / 
 
 | Style Material 3 | Famille | Taille | Poids |
 |------------------|---------|--------|-------|
-| `headlineLarge` | Playfair Display | 32sp | 700 |
-| `headlineMedium` | Inter | 22sp | 600 |
-| `labelLarge` | Inter | 13sp | 500 |
-| `bodySmall` | Inter | 14sp | 400 |
+| `headlineLarge` | Système (Roboto) | 32sp | 700 |
+| `headlineMedium` | Système (Roboto) | 22sp | 600 |
+| `labelLarge` | Système (Roboto) | 13sp | 500 |
+| `bodySmall` | Système (Roboto) | 14sp | 400 |
 
 Les fichiers de polices doivent être copiés dans `android-app/app/src/main/assets/fonts/` (depuis `~/MyPersonalProjects/Vectorizer/IdentiteVisuelle/Polices/`) si ce n'est pas déjà fait par P5.0.
 

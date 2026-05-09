@@ -12,8 +12,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
 import fr.datasaillance.nightfall.data.http.GoogleStartResponse
@@ -29,6 +31,7 @@ import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
+import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
@@ -39,10 +42,12 @@ import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
 import fr.datasaillance.nightfall.ui.screens.import_.ImportScreen
 import fr.datasaillance.nightfall.ui.screens.profile.ProfileScreen
 import fr.datasaillance.nightfall.ui.screens.settings.SettingsScreen
+import fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.trends.TrendsScreen
 import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
+import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -127,8 +132,40 @@ fun NavGraph(
                 }
             }
             composable(NavDestination.Sleep.route) {
-                val sleepViewModel = remember { SleepViewModel(NoOpSleepRepository()) }
-                SleepScreen(viewModel = sleepViewModel, onSessionClick = {})
+                val sleepRepository: SleepRepository = remember(api, tokenDataStore) {
+                    if (api != null && tokenDataStore != null) {
+                        SleepRepositoryImpl(api, tokenDataStore)
+                    } else {
+                        NoOpSleepRepository()
+                    }
+                }
+                val sleepViewModel = remember(sleepRepository) { SleepViewModel(sleepRepository) }
+                SleepScreen(
+                    viewModel = sleepViewModel,
+                    onSessionClick = { sessionId ->
+                        navController.navigate(NavDestination.Hypnogram.route(sessionId))
+                    }
+                )
+            }
+            composable(
+                route = NavDestination.Hypnogram.route,
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val hypnogramRepository: SleepRepository = remember(api, tokenDataStore) {
+                    if (api != null && tokenDataStore != null) {
+                        SleepRepositoryImpl(api, tokenDataStore)
+                    } else {
+                        NoOpSleepRepository()
+                    }
+                }
+                val hypnogramViewModel = remember(sessionId, hypnogramRepository) {
+                    HypnogramViewModel(sessionId, hypnogramRepository)
+                }
+                HypnogramScreen(
+                    viewModel = hypnogramViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(NavDestination.Trends.route)   { TrendsScreen() }
             composable(NavDestination.Activity.route) { ActivityScreen() }

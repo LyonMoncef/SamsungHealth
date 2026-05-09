@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: 8ba8f8c2c1b5895ee2850134e8bc7074da03e3d7
-last_synced: '2026-05-09T04:03:35Z'
-loc: 220
+git_blob: 78fa52b8e2383ef529db45eb2666d61a591c735d
+last_synced: '2026-05-09T06:18:31Z'
+loc: 257
 annotations: []
 imports: []
 exports: []
@@ -35,8 +35,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import fr.datasaillance.nightfall.data.auth.TokenDataStore
 import fr.datasaillance.nightfall.data.http.GoogleStartRequest
 import fr.datasaillance.nightfall.data.http.GoogleStartResponse
@@ -52,6 +54,7 @@ import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
+import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
@@ -62,10 +65,12 @@ import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
 import fr.datasaillance.nightfall.ui.screens.import_.ImportScreen
 import fr.datasaillance.nightfall.ui.screens.profile.ProfileScreen
 import fr.datasaillance.nightfall.ui.screens.settings.SettingsScreen
+import fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.trends.TrendsScreen
 import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
+import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -150,8 +155,40 @@ fun NavGraph(
                 }
             }
             composable(NavDestination.Sleep.route) {
-                val sleepViewModel = remember { SleepViewModel(NoOpSleepRepository()) }
-                SleepScreen(viewModel = sleepViewModel, onSessionClick = {})
+                val sleepRepository: SleepRepository = remember(api, tokenDataStore) {
+                    if (api != null && tokenDataStore != null) {
+                        SleepRepositoryImpl(api, tokenDataStore)
+                    } else {
+                        NoOpSleepRepository()
+                    }
+                }
+                val sleepViewModel = remember(sleepRepository) { SleepViewModel(sleepRepository) }
+                SleepScreen(
+                    viewModel = sleepViewModel,
+                    onSessionClick = { sessionId ->
+                        navController.navigate(NavDestination.Hypnogram.route(sessionId))
+                    }
+                )
+            }
+            composable(
+                route = NavDestination.Hypnogram.route,
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val hypnogramRepository: SleepRepository = remember(api, tokenDataStore) {
+                    if (api != null && tokenDataStore != null) {
+                        SleepRepositoryImpl(api, tokenDataStore)
+                    } else {
+                        NoOpSleepRepository()
+                    }
+                }
+                val hypnogramViewModel = remember(sessionId, hypnogramRepository) {
+                    HypnogramViewModel(sessionId, hypnogramRepository)
+                }
+                HypnogramScreen(
+                    viewModel = hypnogramViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(NavDestination.Trends.route)   { TrendsScreen() }
             composable(NavDestination.Activity.route) { ActivityScreen() }
@@ -248,22 +285,22 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 50-169
-- `NoOpSleepRepository` (class) — lines 171-174
-- `getSessions` (function) — lines 172-173
-- `NoOpImportRepository` (class) — lines 176-191
-- `pingBackend` (function) — lines 177-177
-- `extractCsvEntries` (function) — lines 179-182
-- `uploadCsv` (function) — lines 184-190
-- `NoOpNightfallApi` (class) — lines 193-204
-- `health` (function) — lines 194-194
-- `login` (function) — lines 195-195
-- `register` (function) — lines 196-196
-- `requestPasswordReset` (function) — lines 197-197
-- `googleStart` (function) — lines 198-198
-- `getSleepSessions` (function) — lines 199-199
-- `importSleep` (function) — lines 200-200
-- `importHeartRate` (function) — lines 201-201
-- `importSteps` (function) — lines 202-202
-- `importExercise` (function) — lines 203-203
-- `ensureComposeNavigators` (function) — lines 212-220
+- `NavGraph` (function) — lines 55-206
+- `NoOpSleepRepository` (class) — lines 208-211
+- `getSessions` (function) — lines 209-210
+- `NoOpImportRepository` (class) — lines 213-228
+- `pingBackend` (function) — lines 214-214
+- `extractCsvEntries` (function) — lines 216-219
+- `uploadCsv` (function) — lines 221-227
+- `NoOpNightfallApi` (class) — lines 230-241
+- `health` (function) — lines 231-231
+- `login` (function) — lines 232-232
+- `register` (function) — lines 233-233
+- `requestPasswordReset` (function) — lines 234-234
+- `googleStart` (function) — lines 235-235
+- `getSleepSessions` (function) — lines 236-236
+- `importSleep` (function) — lines 237-237
+- `importHeartRate` (function) — lines 238-238
+- `importSteps` (function) — lines 239-239
+- `importExercise` (function) — lines 240-240
+- `ensureComposeNavigators` (function) — lines 249-257
