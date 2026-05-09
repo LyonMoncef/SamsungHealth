@@ -31,7 +31,9 @@ object NetworkModule {
                     cookieStore[url.host] ?: emptyList()
             })
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            // 5 min pour absorber les imports lourds (sleep_stage = ~60k rows possible).
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(5, TimeUnit.MINUTES)
             .build()
 
     fun provideRetrofit(okHttpClient: OkHttpClient, backendUrlStore: BackendUrlStore): Retrofit =
