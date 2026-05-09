@@ -53,4 +53,8 @@ interface NightfallApi {
     @Multipart
     @POST("api/exercise/import")
     suspend fun importExercise(@Part file: MultipartBody.Part): ImportApiResponse
+
+    @Multipart
+    @POST("api/sleep/import-stages")
+    suspend fun importSleepStages(@Part file: MultipartBody.Part): ImportApiResponse
 }

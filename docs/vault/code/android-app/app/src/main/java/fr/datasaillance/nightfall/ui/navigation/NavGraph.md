@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: bc187019adb6fafa680fb1f88517ed67905975cf
-last_synced: '2026-05-09T07:04:02Z'
-loc: 267
+git_blob: f30caf03537af9ccc83d3653d7458a9e1397c042
+last_synced: '2026-05-09T08:38:11Z'
+loc: 268
 annotations: []
 imports: []
 exports: []
@@ -271,6 +271,7 @@ private class NoOpNightfallApi : NightfallApi {
     override suspend fun importHeartRate(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importSteps(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
     override suspend fun importExercise(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
+    override suspend fun importSleepStages(file: MultipartBody.Part): ImportApiResponse = throw UnsupportedOperationException("No-op api")
 }
 
 /**
@@ -302,7 +303,7 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 - `pingBackend` (function) — lines 224-224
 - `extractCsvEntries` (function) — lines 226-229
 - `uploadCsv` (function) — lines 231-237
-- `NoOpNightfallApi` (class) — lines 240-251
+- `NoOpNightfallApi` (class) — lines 240-252
 - `health` (function) — lines 241-241
 - `login` (function) — lines 242-242
 - `register` (function) — lines 243-243
@@ -313,4 +314,5 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 - `importHeartRate` (function) — lines 248-248
 - `importSteps` (function) — lines 249-249
 - `importExercise` (function) — lines 250-250
-- `ensureComposeNavigators` (function) — lines 259-267
+- `importSleepStages` (function) — lines 251-251
+- `ensureComposeNavigators` (function) — lines 260-268

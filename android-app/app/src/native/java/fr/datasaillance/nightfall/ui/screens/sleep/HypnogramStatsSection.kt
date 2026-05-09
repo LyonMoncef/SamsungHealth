@@ -16,12 +16,12 @@ import java.time.OffsetDateTime
 
 @Composable
 fun HypnogramStatsSection(
-    session: SleepSessionResponse,
+    sessions: List<SleepSessionResponse>,
     modifier: Modifier = Modifier
 ) {
-    val stages = session.stages ?: emptyList()
-    val start = runCatching { OffsetDateTime.parse(session.sleep_start) }.getOrNull()
-    val end   = runCatching { OffsetDateTime.parse(session.sleep_end) }.getOrNull()
+    val stages = sessions.flatMap { it.stages ?: emptyList() }
+    val start = sessions.mapNotNull { runCatching { OffsetDateTime.parse(it.sleep_start) }.getOrNull() }.minOrNull()
+    val end   = sessions.mapNotNull { runCatching { OffsetDateTime.parse(it.sleep_end) }.getOrNull() }.maxOrNull()
     val totalMin = if (start != null && end != null) Duration.between(start, end).toMinutes() else 0L
 
     data class StageInfo(val color: Color, val label: String, val type: String)

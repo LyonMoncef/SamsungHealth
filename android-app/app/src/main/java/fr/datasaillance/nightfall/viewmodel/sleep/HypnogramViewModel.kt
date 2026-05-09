@@ -11,11 +11,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.IOException
+import java.time.OffsetDateTime
 
 sealed class HypnogramUiState {
     object Idle    : HypnogramUiState()
     object Loading : HypnogramUiState()
-    data class Success(val session: SleepSessionResponse) : HypnogramUiState()
+    data class Success(val sessions: List<SleepSessionResponse>) : HypnogramUiState()
     data class Error(val message: String) : HypnogramUiState()
 }
 
@@ -54,14 +55,24 @@ class HypnogramViewModel(
                     Timber.w("scope=hypno_vm session_id=$sessionId sessions_null")
                     return@launch
                 }
-                val session = sessions.firstOrNull { it.id == sessionId }
-                if (session == null) {
+                val target = sessions.firstOrNull { it.id == sessionId }
+                if (target == null) {
                     Timber.w("scope=hypno_vm session_id=$sessionId not found")
                     _uiState.value = HypnogramUiState.Error("Session introuvable")
-                } else {
-                    Timber.d("scope=hypno_vm stage_count=${session.stages?.size ?: 0}")
-                    _uiState.value = HypnogramUiState.Success(session)
+                    return@launch
                 }
+                val targetDate = runCatching {
+                    OffsetDateTime.parse(target.sleep_start).toLocalDate()
+                }.getOrNull()
+                val nightSessions = if (targetDate != null) {
+                    sessions.filter { s ->
+                        runCatching { OffsetDateTime.parse(s.sleep_start).toLocalDate() }.getOrNull() == targetDate
+                    }.sortedBy { it.sleep_start }
+                } else {
+                    listOf(target)
+                }
+                Timber.d("scope=hypno_vm night_sessions=${nightSessions.size} total_stages=${nightSessions.sumOf { it.stages?.size ?: 0 }}")
+                _uiState.value = HypnogramUiState.Success(nightSessions)
             } catch (e: Exception) {
                 Timber.w("scope=hypno_vm error=${e::class.simpleName}")
                 _uiState.value = HypnogramUiState.Error(mapError(e))

@@ -111,6 +111,7 @@ class ImportRepositoryImpl(
             ImportDataType.HEART_RATE -> api.importHeartRate(part)
             ImportDataType.STEPS -> api.importSteps(part)
             ImportDataType.EXERCISE -> api.importExercise(part)
+            ImportDataType.SLEEP_STAGE -> api.importSleepStages(part)
         }
         return ImportResult(type = type, inserted = response.inserted, skipped = response.skipped)
     }

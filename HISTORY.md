@@ -35,10 +35,21 @@
 | Android auth flow + bug-tracker MCP | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt`, `agents/mcp/bug_tracker/server.py` | [`301fe9a`](#2026-05-09-301fe9a) |
 | Import ZIP Samsung Health end-to-end | `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportDataType.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt` | [`c1424f9`](#2026-05-09-c1424f9) |
 | P5.3 Timeline Circadienne | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/TimelineViewModel.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreenTest.kt` | [`352e619`](#2026-05-09-352e619) |
+| P5.3 Timeline V2 | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt` | [`0e79abe`](#2026-05-09-0e79abe) |
 
 ---
 
 ## Changelog
+
+### 2026-05-09 `0e79abe`
+feat: Timeline V2 — 1 ligne/nuit, phases colorées, bottom sheet
+- groupByNight() : agrégation 1 ligne = 1 date calendaire (clé sleep_start.toLocalDate())
+- drawStageSegment() : couleur par type DEEP/LIGHT/REM/AWAKE, segments AWAKE à hauteur 50%
+- drawFallbackBar() : barre teal fallback si stages == null
+- StageHitBox : struct pixel bounds + stageType/stageStart/stageEnd/nightLabel pour tap detection
+- pointerInput + detectTapGestures sur Canvas — hitBoxes accumulées pendant le draw, vidées à chaque recomposition
+- ModalBottomSheet StageDetailSheet : dot coloré (CircleShape), nom de phase, durée, plage horaire
+- Fix StageDetailSheet : remplacement Box cassé (.run/.let imbriqués) par Box { Modifier.clip(CircleShape).background(stageColor) }
 
 ### 2026-05-09 `352e619`
 feat: P5.3 Timeline Circadienne — canvas multi-nuits, onglet Timeline, fenêtre Y dynamique

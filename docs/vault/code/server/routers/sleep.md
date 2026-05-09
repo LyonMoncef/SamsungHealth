@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/sleep.py
-git_blob: 9000f5af1fa903c59cfdc25d0b10269412451430
-last_synced: '2026-05-07T16:11:01Z'
-loc: 149
+git_blob: 7765583e149d3519e98155decfc72fe427ccac61
+last_synced: '2026-05-09T08:38:11Z'
+loc: 177
 annotations: []
 imports:
 - datetime
@@ -48,11 +48,39 @@ from server.logging_config import get_logger
 from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
-from server.services.csv_import import MAX_CSV_BYTES, parse_samsung_csv, parse_sleep_rows
+from server.services.csv_import import MAX_CSV_BYTES, parse_samsung_csv, parse_sleep_rows, parse_sleep_stage_rows
 
 _log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/sleep", tags=["sleep"])
+
+
+@router.post("/import-stages", status_code=200)
+@limiter.limit(_api_post_cap, key_func=_user_id_key)
+def import_sleep_stages(
+    request: Request,
+    response: Response,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    raw = file.file.read(MAX_CSV_BYTES + 1)
+    if len(raw) > MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="file_too_large")
+    try:
+        rows = parse_samsung_csv(raw)
+    except (UnicodeDecodeError, ValueError):
+        raise HTTPException(status_code=422, detail="invalid_csv_encoding")
+    inserted, skipped = parse_sleep_stage_rows(rows, current_user.id, db)
+    _log.info(
+        "csv_import.done",
+        endpoint="sleep_stage",
+        inserted=inserted,
+        skipped=skipped,
+        user_id=str(current_user.id),
+        filename=file.filename[:255] if file.filename else None,
+    )
+    return {"inserted": inserted, "skipped": skipped}
 
 
 @router.post("/import", status_code=200)
@@ -197,9 +225,9 @@ def get_sleep_sessions(
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_parse_day` (function) — lines 48-49
-- `_to_iso` (function) — lines 97-102
-- `_serialize` (function) — lines 105-123
+- `_parse_day` (function) — lines 76-77
+- `_to_iso` (function) — lines 125-130
+- `_serialize` (function) — lines 133-151
 
 ### Imports
 - `datetime`

@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/HypnogramScreen.kt
-git_blob: 01d0df6892316d2c9b37f02f5f406dd166ff1ffd
-last_synced: '2026-05-09T06:05:32Z'
+git_blob: af95f089ced1500882b826646a1d087a99b2a252
+last_synced: '2026-05-09T08:38:11Z'
 loc: 320
 annotations: []
 imports: []
@@ -93,7 +93,7 @@ fun HypnogramScreen(
                 TopAppBar(
                     title = {
                         val title = when (val s = uiState) {
-                            is HypnogramUiState.Success -> nightTitle(s.session.sleep_start)
+                            is HypnogramUiState.Success -> nightTitle(s.sessions.first().sleep_start)
                             else -> ""
                         }
                         Text(title, style = MaterialTheme.typography.headlineMedium)
@@ -157,10 +157,10 @@ fun HypnogramScreen(
                                 .verticalScroll(rememberScrollState())
                                 .testTag("hyp_screen")
                         ) {
-                            HypnogramSummarySection(state.session)
+                            HypnogramSummarySection(state.sessions)
                             Spacer(modifier = Modifier.height(16.dp))
                             HypnogramCanvas(
-                                session = state.session,
+                                sessions = state.sessions,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(120.dp)
@@ -169,7 +169,7 @@ fun HypnogramScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             HypnogramLegend()
                             Spacer(modifier = Modifier.height(16.dp))
-                            HypnogramStatsSection(session = state.session)
+                            HypnogramStatsSection(sessions = state.sessions)
                         }
                     }
                 }
@@ -180,11 +180,11 @@ fun HypnogramScreen(
 
 @Composable
 private fun HypnogramSummarySection(
-    session: SleepSessionResponse,
+    sessions: List<SleepSessionResponse>,
     modifier: Modifier = Modifier
 ) {
-    val start = runCatching { OffsetDateTime.parse(session.sleep_start) }.getOrNull()
-    val end   = runCatching { OffsetDateTime.parse(session.sleep_end) }.getOrNull()
+    val start = sessions.mapNotNull { runCatching { OffsetDateTime.parse(it.sleep_start) }.getOrNull() }.minOrNull()
+    val end   = sessions.mapNotNull { runCatching { OffsetDateTime.parse(it.sleep_end) }.getOrNull() }.maxOrNull()
     val duration = if (start != null && end != null) Duration.between(start, end) else null
 
     val durationText = duration?.let {
@@ -198,13 +198,13 @@ private fun HypnogramSummarySection(
     val wakeTime = end?.format(timeFmt) ?: ""
 
     val totalMin = duration?.toMinutes() ?: 0L
-    val deepMin  = session.stages
-        ?.filter { it.stage == "DEEP" }
-        ?.sumOf { s ->
+    val deepMin  = sessions.flatMap { it.stages ?: emptyList() }
+        .filter { it.stage == "DEEP" }
+        .sumOf { s ->
             val ss = runCatching { OffsetDateTime.parse(s.stage_start) }.getOrNull()
             val se = runCatching { OffsetDateTime.parse(s.stage_end) }.getOrNull()
             if (ss != null && se != null) Duration.between(ss, se).toMinutes() else 0L
-        } ?: 0L
+        }
     val deepPct = if (totalMin > 0 && deepMin > 0) (deepMin * 100 / totalMin).toInt() else null
 
     Column(
@@ -228,7 +228,7 @@ private fun HypnogramSummarySection(
 
 @Composable
 private fun HypnogramCanvas(
-    session: SleepSessionResponse,
+    sessions: List<SleepSessionResponse>,
     modifier: Modifier = Modifier
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -238,11 +238,12 @@ private fun HypnogramCanvas(
         val canvasWidth = size.width
         val stageZoneH  = 100.dp.toPx()
 
-        val start = runCatching { OffsetDateTime.parse(session.sleep_start) }.getOrNull()
-        val end   = runCatching { OffsetDateTime.parse(session.sleep_end) }.getOrNull()
-        val sessionDuration = if (start != null && end != null) Duration.between(start, end).toMillis() else 0L
+        val start = sessions.mapNotNull { runCatching { OffsetDateTime.parse(it.sleep_start) }.getOrNull() }.minOrNull()
+        val end   = sessions.mapNotNull { runCatching { OffsetDateTime.parse(it.sleep_end) }.getOrNull() }.maxOrNull()
+        val totalDuration = if (start != null && end != null) Duration.between(start, end).toMillis() else 0L
 
-        if (sessionDuration <= 0 || session.stages.isNullOrEmpty()) {
+        val allStages = sessions.flatMap { it.stages ?: emptyList() }
+        if (totalDuration <= 0 || allStages.isEmpty()) {
             drawRect(
                 color   = surface.copy(alpha = 0.3f),
                 topLeft = Offset(0f, 0f),
@@ -251,15 +252,14 @@ private fun HypnogramCanvas(
             return@Canvas
         }
 
-        val sorted = session.stages.sortedBy { it.stage_start }
-        for (stage in sorted) {
+        for (stage in allStages.sortedBy { it.stage_start }) {
             val ss = runCatching { OffsetDateTime.parse(stage.stage_start) }.getOrNull() ?: continue
             val se = runCatching { OffsetDateTime.parse(stage.stage_end) }.getOrNull() ?: continue
             val stageDurMs = Duration.between(ss, se).toMillis()
             val offsetMs   = Duration.between(start, ss).toMillis()
 
-            val x     = (offsetMs.toFloat() / sessionDuration) * canvasWidth
-            val width = (stageDurMs.toFloat() / sessionDuration) * canvasWidth
+            val x     = (offsetMs.toFloat() / totalDuration) * canvasWidth
+            val width = (stageDurMs.toFloat() / totalDuration) * canvasWidth
 
             val rectH: Float
             val rectTop: Float
@@ -294,7 +294,7 @@ private fun HypnogramCanvas(
         var tick = tickStart
         while (!tick.isAfter(end!!)) {
             val tickOffsetMs = Duration.between(start, tick).toMillis()
-            val xTick = (tickOffsetMs.toFloat() / sessionDuration) * canvasWidth
+            val xTick = (tickOffsetMs.toFloat() / totalDuration) * canvasWidth
             drawLine(
                 color       = onSurface.copy(alpha = 0.3f),
                 start       = Offset(xTick, 95.dp.toPx()),

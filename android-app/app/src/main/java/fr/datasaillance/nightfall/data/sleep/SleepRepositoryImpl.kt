@@ -14,7 +14,7 @@ class SleepRepositoryImpl(
         val token = tokenDataStore.getToken()
             ?: return Result.failure(IOException("No auth token"))
         return try {
-            val sessions = api.getSleepSessions("Bearer $token")
+            val sessions = api.getSleepSessions("Bearer $token", includeStages = true)
             Timber.i("sleep_sessions_fetched count=${sessions.size}")
             Result.success(sessions)
         } catch (e: retrofit2.HttpException) {
