@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/RetrofitClient.kt
-git_blob: e66d3ecee00a0fc4d7fcba15c7280b5f08c169d2
-last_synced: '2026-05-07T00:48:24Z'
-loc: 24
+git_blob: 1f7ae7ed02b0c87760cfdad3f037368db2ff6163
+last_synced: '2026-05-09T13:23:16Z'
+loc: 25
 annotations: []
 imports: []
 exports: []
@@ -35,7 +35,8 @@ object RetrofitClient {
         val okHttp = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(5, TimeUnit.MINUTES)
             .build()
         return Retrofit.Builder()
             .baseUrl(baseUrl.trimEnd('/') + "/")
@@ -52,4 +53,4 @@ object RetrofitClient {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `create` (function) — lines 11-23
+- `create` (function) — lines 11-24
