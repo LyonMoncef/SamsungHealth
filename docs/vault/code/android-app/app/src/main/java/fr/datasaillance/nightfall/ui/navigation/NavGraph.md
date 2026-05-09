@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: b5c61b0e553fa384e12580a1ca86cb747d81511c
-last_synced: '2026-05-09T15:32:55Z'
-loc: 291
+git_blob: ff170b96fa6cb0bdb055869f24961d25422661ff
+last_synced: '2026-05-09T15:40:18Z'
+loc: 283
 annotations: []
 imports: []
 exports: []
@@ -54,6 +54,7 @@ import fr.datasaillance.nightfall.data.http.StatusResponse
 import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
+import fr.datasaillance.nightfall.data.sleep.LocalSleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
@@ -155,12 +156,9 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Sleep.route) {
-                val sleepRepository: SleepRepository = remember(api, tokenDataStore) {
-                    if (api != null && tokenDataStore != null) {
-                        SleepRepositoryImpl(api, tokenDataStore)
-                    } else {
-                        NoOpSleepRepository()
-                    }
+                val sleepRepository: SleepRepository = remember(context) {
+                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                    LocalSleepRepository(db.sleepDao())
                 }
                 val sleepViewModel = remember(sleepRepository) { SleepViewModel(sleepRepository) }
                 SleepScreen(
@@ -183,12 +181,9 @@ fun NavGraph(
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 val dateArg = backStackEntry.arguments?.getString("date")
-                val hypnogramRepository: SleepRepository = remember(api, tokenDataStore) {
-                    if (api != null && tokenDataStore != null) {
-                        SleepRepositoryImpl(api, tokenDataStore)
-                    } else {
-                        NoOpSleepRepository()
-                    }
+                val hypnogramRepository: SleepRepository = remember(context) {
+                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                    LocalSleepRepository(db.sleepDao())
                 }
                 val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
                     HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
@@ -199,12 +194,9 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Timeline.route) {
-                val timelineRepository: SleepRepository = remember(api, tokenDataStore) {
-                    if (api != null && tokenDataStore != null) {
-                        SleepRepositoryImpl(api, tokenDataStore)
-                    } else {
-                        NoOpSleepRepository()
-                    }
+                val timelineRepository: SleepRepository = remember(context) {
+                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                    LocalSleepRepository(db.sleepDao())
                 }
                 val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
                 TimelineScreen(
@@ -319,23 +311,23 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 57-237
-- `NoOpSleepRepository` (class) — lines 239-244
-- `getSessions` (function) — lines 240-243
-- `NoOpImportRepository` (class) — lines 246-261
-- `pingBackend` (function) — lines 247-247
-- `extractCsvEntries` (function) — lines 249-252
-- `uploadCsv` (function) — lines 254-260
-- `NoOpNightfallApi` (class) — lines 263-275
-- `health` (function) — lines 264-264
-- `login` (function) — lines 265-265
-- `register` (function) — lines 266-266
-- `requestPasswordReset` (function) — lines 267-267
-- `googleStart` (function) — lines 268-268
-- `getSleepSessions` (function) — lines 269-269
-- `importSleep` (function) — lines 270-270
-- `importHeartRate` (function) — lines 271-271
-- `importSteps` (function) — lines 272-272
-- `importExercise` (function) — lines 273-273
-- `importSleepStages` (function) — lines 274-274
-- `ensureComposeNavigators` (function) — lines 283-291
+- `NavGraph` (function) — lines 58-229
+- `NoOpSleepRepository` (class) — lines 231-236
+- `getSessions` (function) — lines 232-235
+- `NoOpImportRepository` (class) — lines 238-253
+- `pingBackend` (function) — lines 239-239
+- `extractCsvEntries` (function) — lines 241-244
+- `uploadCsv` (function) — lines 246-252
+- `NoOpNightfallApi` (class) — lines 255-267
+- `health` (function) — lines 256-256
+- `login` (function) — lines 257-257
+- `register` (function) — lines 258-258
+- `requestPasswordReset` (function) — lines 259-259
+- `googleStart` (function) — lines 260-260
+- `getSleepSessions` (function) — lines 261-261
+- `importSleep` (function) — lines 262-262
+- `importHeartRate` (function) — lines 263-263
+- `importSteps` (function) — lines 264-264
+- `importExercise` (function) — lines 265-265
+- `importSleepStages` (function) — lines 266-266
+- `ensureComposeNavigators` (function) — lines 275-283
