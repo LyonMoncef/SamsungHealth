@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 private fun iconForDestination(destination: NavDestination): ImageVector = when (destination) {
     is NavDestination.Sleep    -> Icons.Default.Home
-    is NavDestination.Trends   -> Icons.Default.ShowChart
+    is NavDestination.Timeline -> Icons.Default.ShowChart
     is NavDestination.Activity -> Icons.Default.FitnessCenter
     is NavDestination.Profile  -> Icons.Default.AccountCircle
     else                       -> Icons.Default.Home

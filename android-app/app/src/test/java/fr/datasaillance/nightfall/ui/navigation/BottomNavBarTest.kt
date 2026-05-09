@@ -67,13 +67,13 @@ class BottomNavBarTest {
         // RED until BottomNavBar exposes selectedRoute parameter + NightfallTheme exists
     }
 
-    // spec: TA-03 — tab "Tendances" en état selected quand selectedRoute == trends
+    // spec: TA-03 — tab "Timeline" en état selected quand selectedRoute == timeline
     @Test
-    fun bottomNavBar_trendsTabSelected_snapshot() {
+    fun bottomNavBar_timelineTabSelected_snapshot() {
         paparazzi.snapshot {
             NightfallTheme(darkTheme = false) {
                 BottomNavBar(
-                    selectedRoute = NavDestination.Trends.route,
+                    selectedRoute = NavDestination.Timeline.route,
                     onNavigate = {}
                 )
             }
@@ -92,7 +92,7 @@ class BottomNavBarTest {
                 )
             }
         }
-        // Contract: 4 tabs — Sommeil, Tendances, Activité, Profil
+        // Contract: 4 tabs — Sommeil, Timeline, Activité, Profil
         // spec: navigation graph section + BottomNavBar.kt livrable
     }
 }

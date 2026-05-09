@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt
-git_blob: d413b4dbf77afee2e48e34efe7c3252b585d1137
-last_synced: '2026-05-07T00:48:24Z'
+git_blob: c485a8e26ad52f80d343a81050b0170745fef0f8
+last_synced: '2026-05-09T07:04:02Z'
 loc: 38
 annotations: []
 imports: []
@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 private fun iconForDestination(destination: NavDestination): ImageVector = when (destination) {
     is NavDestination.Sleep    -> Icons.Default.Home
-    is NavDestination.Trends   -> Icons.Default.ShowChart
+    is NavDestination.Timeline -> Icons.Default.ShowChart
     is NavDestination.Activity -> Icons.Default.FitnessCenter
     is NavDestination.Profile  -> Icons.Default.AccountCircle
     else                       -> Icons.Default.Home

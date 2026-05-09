@@ -8,7 +8,7 @@ sealed class NavDestination(
     object Register       : NavDestination("register",        "Créer un compte")
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
     object Sleep    : NavDestination("sleep",    "Sommeil")
-    object Trends   : NavDestination("trends",   "Tendances")
+    object Timeline : NavDestination("timeline", "Timeline")
     object Activity : NavDestination("activity", "Activité")
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")
@@ -18,6 +18,6 @@ sealed class NavDestination(
     }
 
     companion object {
-        fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)
+        fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Timeline, Activity, Profile)
     }
 }
