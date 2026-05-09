@@ -29,10 +29,102 @@
 | Phase 4 Backend Import CSV multipart | `server/services/csv_import.py`, `server/routers/sleep.py`, `server/routers/heartrate.py`, `server/routers/steps.py`, `server/routers/exercise.py`, `tests/server/test_import_csv_multipart.py` | [`b11e00f`](#2026-05-07-b11e00f) |
 | Phase 4 Android Import SAF | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/import_/ImportViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/CountingRequestBody.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportUiState.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt` | [`4dcf071`](#2026-05-07-4dcf071) |
 | Phase 4 Android WebView Bridge | `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallWebViewClient.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/NightfallJsInterface.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/webview/WebViewScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/settings/SettingsDataStore.kt` | [`b7105b4`](#2026-05-07-b7105b4) |
+| P5.0 LoginScreen natif | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/auth/LoginScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/di/AppModule.kt` | [`2ccecfe`](#2026-05-08-2ccecfe) |
+| P5.1 SleepScreen Night Cards | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepNightCard.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/SleepViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/sleep/SleepRepository.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt` | [`54e9e54`](#2026-05-08-54e9e54) |
+| P5.2 Hypnogramme | `HypnogramViewModel.kt`, `HypnogramScreen.kt`, `HypnogramStatsSection.kt`, `NavDestination.kt`, `NavGraph.kt`, `AuthViewModel.kt`, `HypnogramScreenTest.kt` | [`77b7ca6`](#2026-05-09-p52-hypnogramme) |
+| Android auth flow + bug-tracker MCP | `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/auth/AuthViewModel.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/MainActivity.kt`, `agents/mcp/bug_tracker/server.py` | [`301fe9a`](#2026-05-09-301fe9a) |
+| Import ZIP Samsung Health end-to-end | `android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportDataType.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/data/auth/TokenDataStore.kt` | [`c1424f9`](#2026-05-09-c1424f9) |
+| P5.3 Timeline Circadienne | `android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/TimelineViewModel.kt`, `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt`, `android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt`, `android-app/app/src/test/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreenTest.kt` | [`352e619`](#2026-05-09-352e619) |
+| P5.3 Timeline V2 | `android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt` | [`0e79abe`](#2026-05-09-0e79abe) |
 
 ---
 
 ## Changelog
+
+### 2026-05-09 `0e79abe`
+feat: Timeline V2 — 1 ligne/nuit, phases colorées, bottom sheet
+- groupByNight() : agrégation 1 ligne = 1 date calendaire (clé sleep_start.toLocalDate())
+- drawStageSegment() : couleur par type DEEP/LIGHT/REM/AWAKE, segments AWAKE à hauteur 50%
+- drawFallbackBar() : barre teal fallback si stages == null
+- StageHitBox : struct pixel bounds + stageType/stageStart/stageEnd/nightLabel pour tap detection
+- pointerInput + detectTapGestures sur Canvas — hitBoxes accumulées pendant le draw, vidées à chaque recomposition
+- ModalBottomSheet StageDetailSheet : dot coloré (CircleShape), nom de phase, durée, plage horaire
+- Fix StageDetailSheet : remplacement Box cassé (.run/.let imbriqués) par Box { Modifier.clip(CircleShape).background(stageColor) }
+
+### 2026-05-09 `352e619`
+feat: P5.3 Timeline Circadienne — canvas multi-nuits, onglet Timeline, fenêtre Y dynamique
+- Ajout de TimelineViewModel : sealed TimelineUiState (Idle/Loading/Success/Empty/Error), tri croissant par sleep_start, Loading émis synchroniquement avant viewModelScope.launch
+- Ajout de TimelineScreen : Scaffold + TopAppBar 'Drift circadien', Canvas multi-nuits avec fenêtre Y dynamique (médiane sleep_start ±2h, 16h, clamp [0, 1440])
+- Canvas : barres teal tronquées par LABEL_WIDTH_DP=48dp, date labels axe Y gauche, graduations horaires axe X bas (step 1h ou 2h si fenêtre ≥12h)
+- TimelineAxisHeader composable privé : en-tête graduations d'heures fixe (24dp) au-dessus du scroll canvas
+- Remplacement NavDestination.Trends → NavDestination.Timeline, BottomNavBar et bottomNavItems() mis à jour
+- NavGraph : route 'timeline' câblée, authViewModel fallback non-null via LocalContext (NoOpNightfallApi + TokenDataStore), suppression des guards if(authViewModel != null) sur les écrans auth
+- NavGraph : paramètre authViewModel: AuthViewModel? = null ré-ajouté pour injection test, authViewModel.logout() sans safe-call
+- 15 tests RED → GREEN : TimelineViewModelTest ×5, TimelineScreenInteractionTest ×6, TimelineScreenSnapshotTest ×4 ; 150 tests / 0 failures
+- BottomNavBarTest + NavGraphTest mis à jour : références Trends → Timeline, navGraph_login_screen_shows_real_loginscreen désormais GREEN
+
+### 2026-05-09 `77b7ca6` {#2026-05-09-p52-hypnogramme}
+feat(android): P5.2 hypnogramme — HypnogramScreen, canvas timeline, nav route, 16 tests GREEN
+- HypnogramViewModel.kt : sealed HypnogramUiState (Idle/Loading/Success/Error), loadSession() re-fetch par sessionId depuis SleepRepository, retry(), mapError() — init{} déclenche le chargement
+- HypnogramScreen.kt : Scaffold + TopAppBar (titre "Nuit du Mer 7 mai" via prevDay convention), Canvas timeline 120dp (rectangles proportionnels aux timestamps, AWAKE 60dp centré), légende 4 couleurs, HypnogramSummarySection (durée/horaires/deepPct), HypnogramLegend — couleurs hardcodées (données physiologiques stables dark+light)
+- HypnogramStatsSection.kt : section "Détail des phases" avec durées et % par type de stage, testTag hyp_stats
+- NavDestination.kt : ajout object Hypnogram avec fun route(id: String) — non ajouté à bottomNavItems (écran de détail)
+- NavGraph.kt : remplacement NoOpSleepRepository par SleepRepositoryImpl réel sur la route Sleep, câblage onSessionClick → navigate(Hypnogram.route(sessionId)), ajout route hypnogram/{sessionId} avec HypnogramViewModel, correction route literal → NavDestination.Hypnogram.route
+- AuthViewModel.kt : ajout fun logout() { tokenDataStore.clearToken() } — régression corrigée (NavGraph l'appelait mais la méthode n'existait pas)
+- HypnogramScreenTest.kt : 16 tests GREEN — 4 Paparazzi snapshots (dark+light+loading+error), 8 Robolectric (canvas/titre/stats/loading/error+retry/stages_null/zero_duration/back_button), 4 ViewModel purs (success/not_found/failure/loading_in_flight)
+
+### 2026-05-09 `9b806ec`
+chore: drop Playfair+Inter, use system font (Roboto) — remove bundled fonts from APK
+- Type.kt — supprimé PlayfairDisplayFamily + InterFontFamily, plus d'imports Font/FontFamily/R.font ; NightfallTypography conserve la même échelle de tailles/graisses mais utilise FontFamily.Default (Roboto système)
+- res/font/inter_variable.ttf + playfair_display_variable.ttf supprimés — APK allégé d'environ 600 Ko
+- VISION.md — distinction explicite web (Playfair+Inter) vs Android native (système)
+- CLAUDE.md — règle mise à jour : custom font bundlée interdite dans l'APK, Playfair+Inter réservé au web (static/)
+- Specs Android P4+P5 mises à jour : p4-android-shell, p4-android-auth, p4-android-import, p5-login-native, p5-dashboard-cards, p5-hypnogram — toutes les mentions Playfair/Inter remplacées par Système (Roboto)
+
+### 2026-05-09 
+fix: fix import end-to-end — shealth prefixes, healthz, AEADBadTag, OpenDocument, Settings URL live update
+- ImportDataType: corriger les préfixes com.samsung.health.* → com.samsung.shealth.* (sleep, tracker.heart_rate, step_daily_trend, exercise) — les vrais noms de fichiers dans le ZIP Samsung Health
+- NightfallApi: GET health → healthz (la route backend réelle)
+- ImportRepositoryImpl: supprimer la limite MAX_ZIP_ENTRIES=100 qui tronquait l'extraction des gros exports (500MB)
+- ImportScreen: OpenDocumentTree → OpenDocument pour sélectionner le .zip directement
+- ImportUiState.Success: ajouter missingTypes pour afficher les types absents du ZIP
+- MainActivity: api by lazy → mutableStateOf(buildApi()) — Retrofit se recrée quand l'URL change dans Settings
+- NavGraph: remember(api) sur ImportRepository pour propager le changement d'URL
+- TokenDataStore / BackendUrlStore / SettingsDataStore: catch AEADBadTagException — deleteSharedPreferences + recreate au lieu de crash sur reinstall APK
+
+### 2026-05-09 
+fix: wire real auth flow, fix logout token clear, add bug-tracker MCP
+- Replace placeholder LoginScreen with real auth.LoginScreen wired to AuthViewModel
+- NavGraph: add Register + ForgotPassword routes; shared authViewModel via remember(api, tokenDataStore)
+- MainActivity: create NightfallApi via NetworkModule and pass it to NavGraph
+- Fix logout: AuthViewModel.logout() clears token before navigating to Login
+- SettingsDataStore: use BuildConfig.DEFAULT_BACKEND_URL instead of hardcoded emulator URL (10.0.2.2 → sh-dev.datasaillance.fr)
+- Add bug-tracker MCP server (FastMCP + SQLite + markdown vault notes in docs/vault/bugs/)
+- Register bug-tracker in .mcp.json; document auto-log behavior in CLAUDE.md
+
+### 2026-05-08 `54e9e54`
+feat: (android): P5.1 SleepScreen Night Cards — SleepViewModel, barre colorée, OffsetDateTime
+- SleepSessionResponse + SleepStageResponse — data classes @Serializable, @SerialName("stage_type") pour mapping JSON correct
+- SleepRepository (interface getSessions()) + SleepRepositoryImpl (Retrofit + TokenDataStore, Bearer token)
+- SleepUiState sealed class — Idle/Loading/Success/Error/Empty
+- SleepViewModel — loadSessions() + retry(), StateFlow<SleepUiState>, tri OffsetDateTime.toInstant() desc, yield() pour observabilité Loading en Robolectric
+- SleepNightCard — barre indicatrice 6dp (teal #0E9EB0 ≥7h / amber #D37C04 ≥5h / rouge #B00020 <5h), date OffsetDateTime + Locale.FRENCH ("Mer 7 mai"), durée "7h 23", score Profond X% conditionnel
+- SleepScreen (native) — remplace stub P4, états Loading/Success/Error/Empty avec testTags sleep_loading/sleep_list/sleep_card_{id}/sleep_error/sleep_retry/sleep_empty
+- SleepScreen (webview) — signature alignée (viewModel?, onSessionClick?) pour compatibilité NavGraph partagé
+- NightfallApi — getSleepSessions(@Header token, @Query from/to, include_stages=true)
+- NavGraph — route Sleep câblée avec SleepViewModel + NoOpSleepRepository
+- SleepScreenTest — 14 tests (4 Paparazzi goldens, 5 Robolectric interaction, 5 ViewModel JVM)
+- 119/119 tests GREEN — build native + webview SUCCESSFUL
+
+### 2026-05-08 `2ccecfe`
+feat: (android): P5.0 LoginScreen natif — isFormValid, NavGraph wiring, AppModule.provideAuthViewModel
+- LoginScreen.kt — isFormValid = email.isNotBlank() && password.isNotBlank(), bouton Se connecter disabled si champs vides (TA-L-04)
+- NavGraph.kt — import stub ui.screens.login remplacé par ui.screens.auth.LoginScreen, AuthViewModel câblé via AppModule.provideAuthViewModel
+- NavDestination.kt — Register et ForgotPassword ajoutés
+- AppModule.kt — provideAuthViewModel(api, tokenDataStore) ajouté
+- Stub ui/screens/login/LoginScreen.kt supprimé (dead code)
+- Tests — NavGraphTest: TA-L-02 (login success → Sleep), LoginScreenTest: TA-L-06 (loading state disable behavioral), NavDestinationP5Test: Register/ForgotPassword routes
+- 110/110 tests GREEN
 
 ### 2026-05-07 `b11e00f`
 feat(backend): Phase 4 import CSV multipart — POST /api/sleep/import, /api/heartrate/import, /api/steps/import, /api/exercise/import

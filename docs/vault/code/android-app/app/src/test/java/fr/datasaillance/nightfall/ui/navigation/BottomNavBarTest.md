@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBarTest.kt
-git_blob: 9bc8fc91b8cad478ce6406ada9e6de0c1fdc6a02
-last_synced: '2026-05-07T00:48:24Z'
+git_blob: b2f2696c99b5bd352ab7ed5bc5796104eb3aabf8
+last_synced: '2026-05-09T07:04:02Z'
 loc: 98
 annotations: []
 imports: []
@@ -90,13 +90,13 @@ class BottomNavBarTest {
         // RED until BottomNavBar exposes selectedRoute parameter + NightfallTheme exists
     }
 
-    // spec: TA-03 — tab "Tendances" en état selected quand selectedRoute == trends
+    // spec: TA-03 — tab "Timeline" en état selected quand selectedRoute == timeline
     @Test
-    fun bottomNavBar_trendsTabSelected_snapshot() {
+    fun bottomNavBar_timelineTabSelected_snapshot() {
         paparazzi.snapshot {
             NightfallTheme(darkTheme = false) {
                 BottomNavBar(
-                    selectedRoute = NavDestination.Trends.route,
+                    selectedRoute = NavDestination.Timeline.route,
                     onNavigate = {}
                 )
             }
@@ -115,7 +115,7 @@ class BottomNavBarTest {
                 )
             }
         }
-        // Contract: 4 tabs — Sommeil, Tendances, Activité, Profil
+        // Contract: 4 tabs — Sommeil, Timeline, Activité, Profil
         // spec: navigation graph section + BottomNavBar.kt livrable
     }
 }
@@ -130,5 +130,5 @@ class BottomNavBarTest {
 - `bottomNavBar_snapshot_dark` (function) — lines 28-40
 - `bottomNavBar_snapshot_light` (function) — lines 43-53
 - `bottomNavBar_sleepTabSelected` (function) — lines 56-68
-- `bottomNavBar_trendsTabSelected_snapshot` (function) — lines 71-81
+- `bottomNavBar_timelineTabSelected_snapshot` (function) — lines 71-81
 - `bottomNavBar_fourTabsPresent_dark` (function) — lines 85-97

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/domain/import_/ImportDataType.kt
-git_blob: 54597c9c952e5cb764bf75abafee457c0d844873
-last_synced: '2026-05-07T03:10:49Z'
-loc: 35
+git_blob: e53b1d50951aec6a31bc07b40f081e9cf9c9000b
+last_synced: '2026-05-09T08:38:11Z'
+loc: 41
 annotations: []
 imports: []
 exports: []
@@ -32,28 +32,34 @@ enum class ImportDataType(
     val iconRes: Int,
 ) {
     SLEEP(
-        samsungFilenamePrefix = "com.samsung.health.sleep",
+        samsungFilenamePrefix = "com.samsung.shealth.sleep.",
         apiPath = "api/sleep/import",
         labelRes = R.string.import_type_sleep,
         iconRes = R.drawable.ic_import_sleep,
     ),
     HEART_RATE(
-        samsungFilenamePrefix = "com.samsung.health.heart_rate",
+        samsungFilenamePrefix = "com.samsung.shealth.tracker.heart_rate.",
         apiPath = "api/heartrate/import",
         labelRes = R.string.import_type_heartrate,
         iconRes = R.drawable.ic_import_heartrate,
     ),
     STEPS(
-        samsungFilenamePrefix = "com.samsung.health.step_daily_trend",
+        samsungFilenamePrefix = "com.samsung.shealth.step_daily_trend.",
         apiPath = "api/steps/import",
         labelRes = R.string.import_type_steps,
         iconRes = R.drawable.ic_import_steps,
     ),
     EXERCISE(
-        samsungFilenamePrefix = "com.samsung.health.exercise",
+        samsungFilenamePrefix = "com.samsung.shealth.exercise.",
         apiPath = "api/exercise/import",
         labelRes = R.string.import_type_exercise,
         iconRes = R.drawable.ic_import_exercise,
+    ),
+    SLEEP_STAGE(
+        samsungFilenamePrefix = "com.samsung.health.sleep_stage.",
+        apiPath = "api/sleep/import-stages",
+        labelRes = R.string.import_type_sleep_stage,
+        iconRes = R.drawable.ic_import_sleep,
     ),
 }
 ```
@@ -63,4 +69,4 @@ enum class ImportDataType(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportDataType` (class) — lines 5-35
+- `ImportDataType` (class) — lines 5-41

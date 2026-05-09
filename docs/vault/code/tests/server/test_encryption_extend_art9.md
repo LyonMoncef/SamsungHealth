@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: tests/server/test_encryption_extend_art9.py
-git_blob: 7c56adcef3aa183040f74c3c4d8be7a84dc6ecea
-last_synced: '2026-05-08T05:35:48Z'
+git_blob: f74f5be3764728a31406dddfa1bac69aae3ca350
+last_synced: '2026-05-06T08:02:35Z'
 loc: 301
 annotations: []
 imports:
@@ -66,7 +66,7 @@ class TestSentinelleBytea:
             assert _is_bytes_storage(col), f"Attendu bytes, got {type(col)} : {col!r}"
         # Plaintext "85" / "0.92" / "480" ne doivent pas apparaître
         all_bytes = b"".join(_bytes_value(c) for c in row)
-        for needle in (b"0.92", b"480"):
+        for needle in (b"85", b"0.92", b"480"):
             assert needle not in all_bytes, f"Plaintext {needle!r} leak in {all_bytes!r}"
 
     def test_weight_art9_columns_are_bytea(self, schema_ready, db_session):
@@ -102,7 +102,7 @@ class TestSentinelleBytea:
         for col in row:
             assert _is_bytes_storage(col)
         all_bytes = b"".join(_bytes_value(c) for c in row)
-        for needle in (b"120.5", b"80.0"):
+        for needle in (b"120.5", b"80.0", b"68"):
             assert needle not in all_bytes
 
     def test_stress_score_is_bytea(self, schema_ready, db_session):
@@ -133,7 +133,7 @@ class TestSentinelleBytea:
         for col in row:
             assert _is_bytes_storage(col)
         all_bytes = b"".join(_bytes_value(c) for c in row)
-        for needle in (b"97.5", b"95.0"):
+        for needle in (b"97.5", b"95.0", b"10"):
             assert needle not in all_bytes
 
     def test_heart_rate_hourly_art9_columns_are_bytea(self, schema_ready, db_session):
@@ -153,7 +153,7 @@ class TestSentinelleBytea:
         for col in row:
             assert _is_bytes_storage(col)
         all_bytes = b"".join(_bytes_value(c) for c in row)
-        for needle in (b"110",):
+        for needle in (b"58", b"110", b"72"):
             assert needle not in all_bytes
 
     def test_respiratory_rate_art9_columns_are_bytea(self, schema_ready, db_session):

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/ui/navigation/NavGraphTest.kt
-git_blob: 464108babcb702c0afc81470b00b31b176b21e99
-last_synced: '2026-05-07T00:48:24Z'
-loc: 185
+git_blob: b9038b488b5c441a602a3bc442051f46a5a05193
+last_synced: '2026-05-09T07:04:02Z'
+loc: 246
 annotations: []
 imports: []
 exports: []
@@ -32,9 +32,13 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
+import fr.datasaillance.nightfall.data.auth.TokenDataStore
+import fr.datasaillance.nightfall.data.http.NightfallApi
+import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.kotlin.mock
 import org.robolectric.RobolectricTestRunner
 
 // These imports will fail to resolve until production code is written:
@@ -91,9 +95,9 @@ class NavGraphTest {
         }
     }
 
-    // spec: TA-03 — l'utilisateur tape sur l'onglet "Tendances" → TrendsScreen affiché
+    // spec: TA-03 — l'utilisateur tape sur l'onglet "Timeline" → TimelineScreen affiché
     @Test
-    fun navGraph_bottomNav_switchesToTrends() {
+    fun navGraph_bottomNav_switchesToTimeline() {
         val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
 
         composeTestRule.setContent {
@@ -105,11 +109,11 @@ class NavGraphTest {
             }
         }
 
-        // spec: TA-03 — bottom nav label "Tendances" must navigate to TrendsScreen
-        composeTestRule.onNodeWithText("Tendances").performClick()
+        // spec: TA-03 — bottom nav label "Timeline" must navigate to TimelineScreen
+        composeTestRule.onNodeWithText("Timeline").performClick()
 
-        assert(navController.currentDestination?.route == NavDestination.Trends.route) {
-            "Expected navigation to trends after clicking Tendances tab — spec: TA-03"
+        assert(navController.currentDestination?.route == NavDestination.Timeline.route) {
+            "Expected navigation to timeline after clicking Timeline tab — spec: TA-03"
         }
     }
 
@@ -205,6 +209,63 @@ class NavGraphTest {
             "Expected navigation to login after logout — spec: TA-11"
         }
     }
+
+    // spec: TA-L-02 — login success → navController navigue vers Sleep, Login popped de la back-stack
+    @Test
+    fun navGraph_login_success_navigates_to_sleep() {
+        val api = mock<NightfallApi>()
+        val tokenStore = mock<TokenDataStore>()
+        val viewModel = AuthViewModel(api, tokenStore)
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+
+        composeTestRule.setContent {
+            NightfallTheme {
+                NavGraph(
+                    navController = navController,
+                    hasToken = false,
+                    authViewModel = viewModel
+                )
+            }
+        }
+
+        // storeTokenFromCallback sets loginState = Success synchronously
+        composeTestRule.runOnUiThread { viewModel.storeTokenFromCallback("fake-token") }
+        composeTestRule.waitForIdle()
+
+        assert(navController.currentDestination?.route == NavDestination.Sleep.route) {
+            "Expected navigation to sleep after login success — spec: TA-L-02"
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // spec: P5 §6.1 — NavGraph doit importer ui.screens.auth.LoginScreen (et non le stub
+    // ui.screens.login.LoginScreen) — vérification via le titre "Connexion" visible.
+    // ---------------------------------------------------------------------------
+    @Test
+    fun navGraph_login_screen_shows_real_loginscreen() {
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+
+        composeTestRule.setContent {
+            NightfallTheme {
+                // spec: §6.1 — NavGraph câble ui.screens.auth.LoginScreen (vrai LoginScreen)
+                NavGraph(
+                    navController = navController,
+                    hasToken = false
+                )
+            }
+        }
+
+        // spec: §4.1 — le vrai LoginScreen affiche un Text "Connexion" (headlineLarge)
+        // Le stub legacy affiche "Login — p4-android-auth" — ce noeud ne doit plus exister
+        composeTestRule
+            .onNodeWithText("Connexion")
+            .assertExists("NavGraph must render the real LoginScreen with title 'Connexion' — spec: §6.1 / §4.1")
+
+        // spec: §8 — field_email doit être visible (testTag présent dans le vrai LoginScreen uniquement)
+        composeTestRule
+            .onNode(androidx.compose.ui.test.hasTestTag("field_email"))
+            .assertExists("field_email testTag must be present — only exists in ui.screens.auth.LoginScreen — spec: §8")
+    }
 }
 ```
 
@@ -213,11 +274,13 @@ class NavGraphTest {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraphTest` (class) — lines 24-185
-- `navGraph_noToken_navigatesToLogin` (function) — lines 31-49
-- `navGraph_withToken_navigatesToSleep` (function) — lines 52-69
-- `navGraph_bottomNav_switchesToTrends` (function) — lines 72-91
-- `navGraph_bottomNav_switchesToActivity` (function) — lines 94-113
-- `navGraph_bottomNav_switchesToProfile` (function) — lines 116-134
-- `navGraph_profileScreen_importButtonNavigatesToImport` (function) — lines 137-159
-- `navGraph_profileScreen_logoutClearsTokenAndNavigatesToLogin` (function) — lines 162-184
+- `NavGraphTest` (class) — lines 28-246
+- `navGraph_noToken_navigatesToLogin` (function) — lines 35-53
+- `navGraph_withToken_navigatesToSleep` (function) — lines 56-73
+- `navGraph_bottomNav_switchesToTimeline` (function) — lines 76-95
+- `navGraph_bottomNav_switchesToActivity` (function) — lines 98-117
+- `navGraph_bottomNav_switchesToProfile` (function) — lines 120-138
+- `navGraph_profileScreen_importButtonNavigatesToImport` (function) — lines 141-163
+- `navGraph_profileScreen_logoutClearsTokenAndNavigatesToLogin` (function) — lines 166-188
+- `navGraph_login_success_navigates_to_sleep` (function) — lines 191-215
+- `navGraph_login_screen_shows_real_loginscreen` (function) — lines 221-245

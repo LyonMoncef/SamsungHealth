@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt
-git_blob: 58de67aea204eea8b2f605bb8e206e90048a0718
-last_synced: '2026-05-07T03:10:49Z'
-loc: 124
+git_blob: f78e97d430f86e164fcb8f4462e58c178d5b1eaf
+last_synced: '2026-05-09T08:45:05Z'
+loc: 125
 annotations: []
 imports: []
 exports: []
@@ -141,6 +141,7 @@ class ImportRepositoryImpl(
             ImportDataType.HEART_RATE -> api.importHeartRate(part)
             ImportDataType.STEPS -> api.importSteps(part)
             ImportDataType.EXERCISE -> api.importExercise(part)
+            ImportDataType.SLEEP_STAGE -> api.importSleepStages(part)
         }
         return ImportResult(type = type, inserted = response.inserted, skipped = response.skipped)
     }
@@ -152,8 +153,8 @@ class ImportRepositoryImpl(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportRepositoryImpl` (class) — lines 20-124
+- `ImportRepositoryImpl` (class) — lines 20-125
 - `pingBackend` (function) — lines 24-31
 - `extractCsvEntries` (function) — lines 35-45
 - `extractFromZip` (function) — lines 47-92
-- `uploadCsv` (function) — lines 94-123
+- `uploadCsv` (function) — lines 94-124

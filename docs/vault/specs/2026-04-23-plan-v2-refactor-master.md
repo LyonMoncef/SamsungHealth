@@ -5,7 +5,7 @@ project: SamsungHealth
 phase: master
 status: approved
 created: 2026-04-23
-updated: 2026-04-23
+updated: 2026-05-07
 branch: refactor/v2
 milestones: [V2-P0, V2-P1, V2-P2, V2-P3, V2-P4, V2-P5, V2-P6]
 tags: [samsunghealth, plan, v2, refactor, master, rgpd, hds]
@@ -53,7 +53,7 @@ Projet en refonte complète. État actuel : FastAPI + SQLite single-user local, 
 | **Chiffrement transit** | TLS 1.3 via Caddy en reverse proxy (Let's Encrypt prod, mkcert dev) | Caddy fait HTTPS + HTTP/3 out-of-box |
 | **UI Android prod** | Compose shell (auth/settings/import) + Compose Canvas (dashboard) | Natif complet, rendu système cohérent |
 | **UI Android dev** | Compose shell + WebView chargé sur `static/` bundled | Itération rapide navigateur, même shell Compose |
-| **Parité UI** | Spec Obsidian = source of truth, tests de parité visuelle (Playwright vs Compose screenshot) | Éviter dérive entre dev et prod |
+| **Parité UI** | OpenDesign = source of truth visuelle. Paparazzi golden tests (régression Compose). Playwright tests (web `static/` indépendant). Pas de comparaison cross-renderer automatique. | Renderers différents (Chromium vs Compose Canvas) → parité pixel < 2% impossible sur dataviz ; la parité s'évalue à l'œil en review design via OpenDesign ref |
 | **Logging** | `structlog` JSON en prod, console humaine en dev, rotation par jour, sharding par keyword | Queryable par datetime + keyword, pas de 50k-lignes-dump |
 | **Audit** | Dual sink : table `audit_log` Postgres + fichier JSON-L journalier | Queryable API + export légal |
 | **Docker** | docker-compose pour backend (Postgres + FastAPI + Caddy + Mailpit + Adminer) | Android build natif via Gradle |
@@ -143,11 +143,17 @@ Build flavors : `webview` (dev) + `native` (prod).
 
 ### Phase 5 — Compose Canvas natif dashboard (10-15j)
 
-5 specs UI par viz : `spec-p5-dashboard-{hypnogram,radial,timeline,cards,metrics}.md`
+**Prérequis P5.0 — LoginScreen natif** : avant toute viz, le flow email/password → `POST /auth/login` → `TokenDataStore` → navigate Sleep doit être fonctionnel. Non planifié dans le shell P4 (stub livré). Spec : `spec-p5-login-native.md`.
 
-Chaque viz : spec → test parité (Playwright vs Paparazzi) → impl Compose Canvas → tolerance < 2% diff.
+6 specs UI : `spec-p5-login-native.md` + `spec-p5-dashboard-{cards,hypnogram,timeline,radial,metrics}.md`
 
-Ordre : night cards → hypnogram → timeline → radial clock → metrics cards.
+Ordre : **login natif → night cards → hypnogram → timeline → radial clock → metrics cards**.
+
+**Stratégie de test visuel (révisée 2026-05-07)** :
+- **Paparazzi golden tests** — régression Compose uniquement : screenshot de référence par écran, CI échoue si l'écran change sans validation intentionnelle.
+- **Playwright tests** — valident le dashboard web `static/` indépendamment des écrans Compose.
+- **OpenDesign** est la source de vérité visuelle — les deux implémentations (web + Compose) dérivent de la même spec design, pas l'une de l'autre.
+- La comparaison cross-renderer (pixel WebView vs pixel Compose) est **abandonnée** : anti-aliasing différent, layout text différent, arc Canvas différent — la parité pixel < 2% est structurellement impossible sur les dataviz. La parité est évaluée à l'œil en review design via les exports OpenDesign.
 
 **Design system** : voir `2026-04-26-nightfall-rebrand-data-saillance`. Tokens couleur Compose mappent les CSS vars `--ds-*` ; viz dataviz utilisent les flat tokens (pas le halo plat dark — réservé aux logos SVG).
 
@@ -261,7 +267,7 @@ Total méta-projet : ~17-23 jours étalés sur les 6-8 semaines du master plan.
 8. Isolation multi-user user A ≠ user B
 9. `GET /api/rgpd/export` → ZIP JSON-LD
 10. `DELETE /api/rgpd/erase` → reçu + tables vidées + audit conservé
-11. Dashboard browser dev + WebView emulator + Compose natif prod : parité visuelle < 2% diff
+11. Dashboard web : Playwright green. Compose natif : Paparazzi golden tests green. Parité visuelle évaluée en review design via exports OpenDesign (pas de gate automatique cross-renderer).
 12. CI 7 jobs green
 13. `logq --trace <id>` → 12 lignes qui expliquent un bug, pas 50k
 

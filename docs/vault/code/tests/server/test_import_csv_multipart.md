@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: tests/server/test_import_csv_multipart.py
-git_blob: 7b35aa5c97e17ec2898d9b2776d725be82d52f2e
-last_synced: '2026-05-08T06:49:56Z'
-loc: 912
+git_blob: d022225937e4128a2da30d891fe106e8791eca75
+last_synced: '2026-05-07T16:11:01Z'
+loc: 825
 annotations: []
 imports:
 - pytest
@@ -235,31 +235,28 @@ class TestMissingFilePart:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# TA-03 — Fichier > MAX_CSV_BYTES → 413
+# TA-03 — Fichier > 10 MB → 413
 # ══════════════════════════════════════════════════════════════════════════
 
 class TestFileTooLarge:
 
-    # spec: TA-03 — Fichier > MAX_CSV_BYTES → 413
-    def test_413_when_file_exceeds_limit(self, client_pg_ready):
-        """POST un fichier de MAX_CSV_BYTES + 1 octet → 413.
+    # spec: TA-03 — Fichier > 10 MB → 413
+    def test_413_when_file_exceeds_10mb(self, client_pg_ready):
+        """POST un fichier de 10 MB + 1 octet → 413.
 
-        spec: TA-03 §Codes HTTP "Fichier > MAX_CSV_BYTES → 413"
+        spec: TA-03 §Codes HTTP "Fichier > 10 MB → 413"
         spec: §Décisions techniques "Vérification de taille avant lecture"
-        si len(raw) > MAX_CSV_BYTES → HTTPException(413)
+        MAX_CSV_BYTES = 10 * 1024 * 1024 ; si > MAX → HTTPException(413)
         """
-        from server.services.csv_import import MAX_CSV_BYTES  # noqa: PLC0415
-
-        # Contenu CSV valide (lignes courtes) pour éviter _csv.Error sur les gros champs
-        row = b"a,b\n"
-        oversized = row * (MAX_CSV_BYTES // len(row) + 1)
+        # 10 MB + 1 octet — la vérification de taille se fait avant le parsing
+        oversized = b"x" * (10 * 1024 * 1024 + 1)
         r = client_pg_ready.post(
             "/api/sleep/import",
             files={"file": ("big.csv", oversized, "text/csv")},
         )
         # spec: TA-03 — 413 attendu
         assert r.status_code == 413, (
-            f"Fichier > MAX_CSV_BYTES devrait retourner 413, got {r.status_code}"
+            f"Fichier > 10 MB devrait retourner 413, got {r.status_code}"
         )
 
 
@@ -842,16 +839,16 @@ class TestCsvImportService:
         with pytest.raises((UnicodeDecodeError, ValueError)):
             parse_samsung_csv(non_utf8)
 
-    # spec: §MAX_CSV_BYTES = 100 * 1024 * 1024
-    def test_max_csv_bytes_constant_is_100_mb(self):
-        """La constante MAX_CSV_BYTES doit valoir exactement 100 * 1024 * 1024.
+    # spec: §MAX_CSV_BYTES = 10 * 1024 * 1024
+    def test_max_csv_bytes_constant_is_10_mb(self):
+        """La constante MAX_CSV_BYTES doit valoir exactement 10 * 1024 * 1024.
 
-        spec: §Contrats d'interface "MAX_CSV_BYTES = 100 * 1024 * 1024"
+        spec: §Contrats d'interface "MAX_CSV_BYTES = 10 * 1024 * 1024"
         """
         from server.services.csv_import import MAX_CSV_BYTES  # noqa: PLC0415
 
-        assert MAX_CSV_BYTES == 100 * 1024 * 1024, (
-            f"MAX_CSV_BYTES attendu={100 * 1024 * 1024}, got {MAX_CSV_BYTES}"
+        assert MAX_CSV_BYTES == 10 * 1024 * 1024, (
+            f"MAX_CSV_BYTES attendu={10 * 1024 * 1024}, got {MAX_CSV_BYTES}"
         )
 
     # spec: §parse_samsung_csv — header présent mais 0 lignes données
@@ -868,90 +865,6 @@ class TestCsvImportService:
         )
         rows = parse_samsung_csv(raw)
         assert rows == [], f"Header seul → list vide attendue, got {rows}"
-
-    # spec: §Format réel Samsung Health — BOM + ligne metadata
-    def test_parse_samsung_csv_handles_bom_and_metadata_line(self):
-        """parse_samsung_csv gère le BOM UTF-8 et la ligne metadata Samsung Health.
-
-        Les exports Samsung Health commencent par :
-        - BOM (\\xef\\xbb\\xbf)
-        - Ligne metadata : namespace,user_id,version (ex: com.samsung.shealth.sleep,12345,11)
-        - Ligne headers : noms de colonnes réels
-        - Lignes données
-        """
-        from server.services.csv_import import parse_samsung_csv  # noqa: PLC0415
-
-        # Simule le format exact d'un export Samsung Health
-        raw = (
-            b"\xef\xbb\xbf"  # BOM UTF-8
-            b"com.samsung.shealth.sleep,12345,11\n"  # metadata line
-            b"com.samsung.health.sleep.start_time,com.samsung.health.sleep.end_time\n"  # vrais headers
-            b"2026-04-20 23:15:00.000,2026-04-21 07:30:00.000\n"
-        )
-        rows = parse_samsung_csv(raw)
-        assert len(rows) == 1, f"1 ligne de données attendue, got {len(rows)}"
-        assert "com.samsung.health.sleep.start_time" in rows[0], (
-            f"Colonne start_time absente après skip metadata, keys={list(rows[0].keys())}"
-        )
-        assert rows[0]["com.samsung.health.sleep.start_time"] == "2026-04-20 23:15:00.000"
-
-    # spec: §Format réel Samsung Health — steps avec day_time ms epoch
-    def test_import_steps_real_format_with_day_time_ms(self, client_pg_ready, schema_ready, engine):
-        """CSV steps au format réel Samsung Health (day_time ms epoch, colonne count).
-
-        Le format réel utilise 'count' et 'day_time' (timestamp ms) au lieu de
-        com.samsung.health.step_daily_trend.start_time / count.
-        day_time=1703203200000 → 2023-12-22 00:00:00 UTC (hour=0)
-        """
-        from sqlalchemy import select
-        from sqlalchemy.orm import sessionmaker
-        from server.db.models import StepsHourly  # noqa: PLC0415
-
-        # Format réel : BOM + metadata + headers courts + day_time en ms
-        raw = (
-            b"\xef\xbb\xbf"
-            b"com.samsung.shealth.step_daily_trend,12345,6\n"
-            b"count,day_time\n"
-            b"3000,1703203200000\n"  # 2023-12-22 00:00:00 UTC, 3000 steps
-            b"2500,1703206800000\n"  # 2023-12-22 01:00:00 UTC, 2500 steps
-        )
-        r = client_pg_ready.post(
-            "/api/steps/import",
-            files={"file": ("steps.csv", raw, "text/csv")},
-        )
-        assert r.status_code == 200, f"Import steps real format devrait 200, got {r.status_code}: {r.text}"
-        body = r.json()
-        assert body.get("inserted") == 2, f"inserted attendu=2, got {body}"
-
-        Session = sessionmaker(bind=engine, expire_on_commit=False)
-        with Session() as sess:
-            rows = sess.execute(select(StepsHourly).order_by(StepsHourly.hour)).scalars().all()
-        assert len(rows) == 2
-        assert rows[0].step_count == 3000
-        assert rows[1].step_count == 2500
-
-    # spec: §Format réel Samsung Health — heart_rate avec BPM en float ("104.0")
-    def test_import_heartrate_real_format_handles_float_bpm(self, client_pg_ready):
-        """CSV heart_rate avec valeurs BPM en float ("104.0") → parsé correctement.
-
-        Samsung Health exporte les BPM comme floats ("104.0") alors que le parser
-        doit produire des entiers (round(float(...))).
-        """
-        raw = (
-            b"# Samsung Health\n"
-            b"com.samsung.health.heart_rate.start_time,"
-            b"com.samsung.health.heart_rate.heart_rate,"
-            b"com.samsung.health.heart_rate.min,"
-            b"com.samsung.health.heart_rate.max\n"
-            b"2026-04-20 22:00:00.000,104.0,58.0,120.0\n"
-        )
-        r = client_pg_ready.post(
-            "/api/heartrate/import",
-            files={"file": ("hr.csv", raw, "text/csv")},
-        )
-        assert r.status_code == 200, f"Float BPM devrait être accepté, got {r.status_code}: {r.text}"
-        body = r.json()
-        assert body.get("inserted") == 1, f"inserted attendu=1, got {body}"
 ```
 
 ---
@@ -966,17 +879,17 @@ class TestCsvImportService:
 - `_register_and_login` (function) — lines 104-117
 - `TestAuth401` (class) — lines 124-147
 - `TestMissingFilePart` (class) — lines 154-192
-- `TestFileTooLarge` (class) — lines 199-221
-- `TestImportSleepNominal` (class) — lines 228-290
-- `TestImportSleepMalformedRow` (class) — lines 297-319
-- `TestImportHeartrateNominal` (class) — lines 326-401
-- `TestImportStepsNominal` (class) — lines 408-471
-- `TestImportExerciseNominal` (class) — lines 478-575
-- `TestImportEmptyCsv` (class) — lines 582-619
-- `TestImportInvalidEncoding` (class) — lines 626-649
-- `TestSecurityPathTraversal` (class) — lines 656-678
-- `TestMultiUserIsolation` (class) — lines 685-742
-- `TestCsvImportService` (class) — lines 749-912
+- `TestFileTooLarge` (class) — lines 199-218
+- `TestImportSleepNominal` (class) — lines 225-287
+- `TestImportSleepMalformedRow` (class) — lines 294-316
+- `TestImportHeartrateNominal` (class) — lines 323-398
+- `TestImportStepsNominal` (class) — lines 405-468
+- `TestImportExerciseNominal` (class) — lines 475-572
+- `TestImportEmptyCsv` (class) — lines 579-616
+- `TestImportInvalidEncoding` (class) — lines 623-646
+- `TestSecurityPathTraversal` (class) — lines 653-675
+- `TestMultiUserIsolation` (class) — lines 682-739
+- `TestCsvImportService` (class) — lines 746-825
 
 ### Imports
 - `pytest`

@@ -9,9 +9,13 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
+import fr.datasaillance.nightfall.data.auth.TokenDataStore
+import fr.datasaillance.nightfall.data.http.NightfallApi
+import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.kotlin.mock
 import org.robolectric.RobolectricTestRunner
 
 // These imports will fail to resolve until production code is written:
@@ -68,9 +72,9 @@ class NavGraphTest {
         }
     }
 
-    // spec: TA-03 — l'utilisateur tape sur l'onglet "Tendances" → TrendsScreen affiché
+    // spec: TA-03 — l'utilisateur tape sur l'onglet "Timeline" → TimelineScreen affiché
     @Test
-    fun navGraph_bottomNav_switchesToTrends() {
+    fun navGraph_bottomNav_switchesToTimeline() {
         val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
 
         composeTestRule.setContent {
@@ -82,11 +86,11 @@ class NavGraphTest {
             }
         }
 
-        // spec: TA-03 — bottom nav label "Tendances" must navigate to TrendsScreen
-        composeTestRule.onNodeWithText("Tendances").performClick()
+        // spec: TA-03 — bottom nav label "Timeline" must navigate to TimelineScreen
+        composeTestRule.onNodeWithText("Timeline").performClick()
 
-        assert(navController.currentDestination?.route == NavDestination.Trends.route) {
-            "Expected navigation to trends after clicking Tendances tab — spec: TA-03"
+        assert(navController.currentDestination?.route == NavDestination.Timeline.route) {
+            "Expected navigation to timeline after clicking Timeline tab — spec: TA-03"
         }
     }
 
@@ -181,5 +185,62 @@ class NavGraphTest {
         assert(navController.currentDestination?.route == NavDestination.Login.route) {
             "Expected navigation to login after logout — spec: TA-11"
         }
+    }
+
+    // spec: TA-L-02 — login success → navController navigue vers Sleep, Login popped de la back-stack
+    @Test
+    fun navGraph_login_success_navigates_to_sleep() {
+        val api = mock<NightfallApi>()
+        val tokenStore = mock<TokenDataStore>()
+        val viewModel = AuthViewModel(api, tokenStore)
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+
+        composeTestRule.setContent {
+            NightfallTheme {
+                NavGraph(
+                    navController = navController,
+                    hasToken = false,
+                    authViewModel = viewModel
+                )
+            }
+        }
+
+        // storeTokenFromCallback sets loginState = Success synchronously
+        composeTestRule.runOnUiThread { viewModel.storeTokenFromCallback("fake-token") }
+        composeTestRule.waitForIdle()
+
+        assert(navController.currentDestination?.route == NavDestination.Sleep.route) {
+            "Expected navigation to sleep after login success — spec: TA-L-02"
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // spec: P5 §6.1 — NavGraph doit importer ui.screens.auth.LoginScreen (et non le stub
+    // ui.screens.login.LoginScreen) — vérification via le titre "Connexion" visible.
+    // ---------------------------------------------------------------------------
+    @Test
+    fun navGraph_login_screen_shows_real_loginscreen() {
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+
+        composeTestRule.setContent {
+            NightfallTheme {
+                // spec: §6.1 — NavGraph câble ui.screens.auth.LoginScreen (vrai LoginScreen)
+                NavGraph(
+                    navController = navController,
+                    hasToken = false
+                )
+            }
+        }
+
+        // spec: §4.1 — le vrai LoginScreen affiche un Text "Connexion" (headlineLarge)
+        // Le stub legacy affiche "Login — p4-android-auth" — ce noeud ne doit plus exister
+        composeTestRule
+            .onNodeWithText("Connexion")
+            .assertExists("NavGraph must render the real LoginScreen with title 'Connexion' — spec: §6.1 / §4.1")
+
+        // spec: §8 — field_email doit être visible (testTag présent dans le vrai LoginScreen uniquement)
+        composeTestRule
+            .onNode(androidx.compose.ui.test.hasTestTag("field_email"))
+            .assertExists("field_email testTag must be present — only exists in ui.screens.auth.LoginScreen — spec: §8")
     }
 }

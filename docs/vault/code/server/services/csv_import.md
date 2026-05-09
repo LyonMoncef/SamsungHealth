@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/services/csv_import.py
-git_blob: ee9a0d3624761f7bc856eb5c4f0f26370ea1d1b4
-last_synced: '2026-05-08T06:49:56Z'
-loc: 236
+git_blob: e989f8e2cccd3d12137ded5b22290bd3178cd068
+last_synced: '2026-05-09T08:38:11Z'
+loc: 304
 annotations: []
 imports:
 - csv
@@ -15,12 +15,14 @@ imports:
 - uuid
 - sqlalchemy.dialects.postgresql
 - sqlalchemy.orm
+- sqlalchemy
 - server.db.models
 - server.logging_config
 exports:
 - parse_samsung_csv
 - _parse_ts
 - parse_sleep_rows
+- parse_sleep_stage_rows
 - parse_heartrate_rows
 - parse_steps_rows
 - parse_exercise_rows
@@ -49,12 +51,21 @@ from uuid import UUID
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from server.db.models import ExerciseSession, HeartRateHourly, SleepSession, StepsHourly
+from sqlalchemy import select
+
+from server.db.models import ExerciseSession, HeartRateHourly, SleepSession, SleepStage, StepsHourly
 from server.logging_config import get_logger
 
 _log = get_logger(__name__)
 
 MAX_CSV_BYTES = 100 * 1024 * 1024
+
+_SLEEP_STAGE_MAP: dict[int, str] = {
+    40001: "AWAKE",
+    40002: "LIGHT",
+    40003: "DEEP",
+    40004: "REM",
+}
 
 _EXERCISE_TYPE_MAP: dict[int, str] = {
     1001: "running",
@@ -128,6 +139,65 @@ def parse_sleep_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[int,
     db.commit()
     if skip_reasons:
         _log.warning("csv_import.rows_skipped", endpoint="sleep", count=sum(skip_reasons.values()), reasons=dict(skip_reasons), user_id=str(user_id))
+    return inserted, skipped
+
+
+def parse_sleep_stage_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[int, int]:
+    inserted = 0
+    skipped = 0
+    skip_reasons: Counter = Counter()
+
+    for row in rows:
+        try:
+            start = _parse_ts(row["start_time"])
+            end   = _parse_ts(row["end_time"])
+            stage_code = int(row["stage"])
+        except (KeyError, ValueError, TypeError):
+            skip_reasons["missing_or_invalid_field"] += 1
+            skipped += 1
+            continue
+
+        stage_type = _SLEEP_STAGE_MAP.get(stage_code)
+        if stage_type is None:
+            skip_reasons["unknown_stage_code"] += 1
+            skipped += 1
+            continue
+
+        session = db.execute(
+            select(SleepSession)
+            .where(
+                SleepSession.user_id == user_id,
+                SleepSession.sleep_start <= start,
+                SleepSession.sleep_end >= end,
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+
+        if session is None:
+            skip_reasons["no_matching_session"] += 1
+            skipped += 1
+            continue
+
+        stmt = (
+            pg_insert(SleepStage)
+            .values(
+                user_id=user_id,
+                session_id=session.id,
+                stage_type=stage_type,
+                stage_start=start,
+                stage_end=end,
+            )
+            .on_conflict_do_nothing(index_elements=["user_id", "stage_start", "stage_end"])
+            .returning(SleepStage.id)
+        )
+        if db.execute(stmt).first() is not None:
+            inserted += 1
+        else:
+            skipped += 1
+
+    db.commit()
+    if skip_reasons:
+        _log.warning("csv_import.rows_skipped", endpoint="sleep_stage", count=sum(skip_reasons.values()), reasons=dict(skip_reasons), user_id=str(user_id))
     return inserted, skipped
 
 
@@ -280,12 +350,13 @@ def parse_exercise_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[i
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `parse_samsung_csv` (function) — lines 30-48
-- `_parse_ts` (function) — lines 51-57
-- `parse_sleep_rows` (function) — lines 60-92
-- `parse_heartrate_rows` (function) — lines 95-143
-- `parse_steps_rows` (function) — lines 146-190
-- `parse_exercise_rows` (function) — lines 193-236
+- `parse_samsung_csv` (function) — lines 39-57
+- `_parse_ts` (function) — lines 60-66
+- `parse_sleep_rows` (function) — lines 69-101
+- `parse_sleep_stage_rows` (function) — lines 104-160
+- `parse_heartrate_rows` (function) — lines 163-211
+- `parse_steps_rows` (function) — lines 214-258
+- `parse_exercise_rows` (function) — lines 261-304
 
 ### Imports
 - `csv`
@@ -296,6 +367,7 @@ def parse_exercise_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[i
 - `uuid`
 - `sqlalchemy.dialects.postgresql`
 - `sqlalchemy.orm`
+- `sqlalchemy`
 - `server.db.models`
 - `server.logging_config`
 
@@ -303,6 +375,7 @@ def parse_exercise_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[i
 - `parse_samsung_csv`
 - `_parse_ts`
 - `parse_sleep_rows`
+- `parse_sleep_stage_rows`
 - `parse_heartrate_rows`
 - `parse_steps_rows`
 - `parse_exercise_rows`
