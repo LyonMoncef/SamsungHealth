@@ -2,8 +2,8 @@
 type: code-source
 language: python
 file_path: server/routers/sleep.py
-git_blob: 7765583e149d3519e98155decfc72fe427ccac61
-last_synced: '2026-05-09T08:38:11Z'
+git_blob: 330cff01baf2372a9d7bc3d277b095fa5ee825cd
+last_synced: '2026-05-09T10:19:06Z'
 loc: 177
 annotations: []
 imports:
@@ -36,7 +36,7 @@ coverage_pct: 87.5
 > Régénéré par `code-cartographer` au commit. Ne pas éditer directement.
 
 ```python
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone  # noqa: F401
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from sqlalchemy import select
