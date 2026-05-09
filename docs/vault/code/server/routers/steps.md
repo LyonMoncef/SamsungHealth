@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/steps.py
-git_blob: 2e35238b4d5d206b217cca8a19f0b1d348f68cbf
-last_synced: '2026-05-07T16:11:01Z'
-loc: 92
+git_blob: 061bd7112b7829da9a63a7233b138ddf2c91ef72
+last_synced: '2026-05-09T16:40:48Z'
+loc: 94
 annotations: []
 imports:
 - fastapi
@@ -18,6 +18,7 @@ imports:
 - server.security.auth
 - server.security.rate_limit
 - server.services.csv_import
+- server.services.deprecation
 exports: []
 tags:
 - code
@@ -45,6 +46,7 @@ from server.models import StepsBulkIn, StepsHourlyOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 from server.services.csv_import import MAX_CSV_BYTES, parse_samsung_csv, parse_steps_rows
+from server.services.deprecation import mark_deprecated
 
 _log = get_logger(__name__)
 
@@ -82,7 +84,7 @@ def create_steps(
     return {"inserted": inserted, "skipped": skipped}
 
 
-@router.post("/import", status_code=200)
+@router.post("/import", status_code=200, deprecated=True)
 @limiter.limit(_api_post_cap, key_func=_user_id_key)
 def import_steps(
     request: Request,
@@ -91,6 +93,7 @@ def import_steps(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    mark_deprecated(response, endpoint="steps", user_id=str(current_user.id))
     raw = file.file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
@@ -148,3 +151,4 @@ def get_steps(
 - `server.security.auth`
 - `server.security.rate_limit`
 - `server.services.csv_import`
+- `server.services.deprecation`

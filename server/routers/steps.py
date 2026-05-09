@@ -10,6 +10,7 @@ from server.models import StepsBulkIn, StepsHourlyOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 from server.services.csv_import import MAX_CSV_BYTES, parse_samsung_csv, parse_steps_rows
+from server.services.deprecation import mark_deprecated
 
 _log = get_logger(__name__)
 
@@ -47,7 +48,7 @@ def create_steps(
     return {"inserted": inserted, "skipped": skipped}
 
 
-@router.post("/import", status_code=200)
+@router.post("/import", status_code=200, deprecated=True)
 @limiter.limit(_api_post_cap, key_func=_user_id_key)
 def import_steps(
     request: Request,
@@ -56,6 +57,7 @@ def import_steps(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    mark_deprecated(response, endpoint="steps", user_id=str(current_user.id))
     raw = file.file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")

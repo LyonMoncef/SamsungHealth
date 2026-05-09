@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/exercise.py
-git_blob: d29256706dbcd1788c6d731961a62ca98789c764
-last_synced: '2026-05-07T16:11:01Z'
-loc: 121
+git_blob: da054cf9e279d400c45e76c9b28175b6b2a512fc
+last_synced: '2026-05-09T16:40:48Z'
+loc: 123
 annotations: []
 imports:
 - datetime
@@ -19,6 +19,7 @@ imports:
 - server.security.auth
 - server.security.rate_limit
 - server.services.csv_import
+- server.services.deprecation
 exports:
 - _to_dt
 - _iso
@@ -50,6 +51,7 @@ from server.models import ExerciseBulkIn, ExerciseSessionOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 from server.services.csv_import import MAX_CSV_BYTES, parse_exercise_rows, parse_samsung_csv
+from server.services.deprecation import mark_deprecated
 
 _log = get_logger(__name__)
 
@@ -103,7 +105,7 @@ def create_exercise(
     return {"inserted": inserted, "skipped": skipped}
 
 
-@router.post("/import", status_code=200)
+@router.post("/import", status_code=200, deprecated=True)
 @limiter.limit(_api_post_cap, key_func=_user_id_key)
 def import_exercise(
     request: Request,
@@ -112,6 +114,7 @@ def import_exercise(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    mark_deprecated(response, endpoint="exercise", user_id=str(current_user.id))
     raw = file.file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
@@ -169,8 +172,8 @@ def get_exercise(
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_to_dt` (function) — lines 21-25
-- `_iso` (function) — lines 28-31
+- `_to_dt` (function) — lines 22-26
+- `_iso` (function) — lines 29-32
 
 ### Imports
 - `datetime`
@@ -185,6 +188,7 @@ def get_exercise(
 - `server.security.auth`
 - `server.security.rate_limit`
 - `server.services.csv_import`
+- `server.services.deprecation`
 
 ### Exports
 - `_to_dt`
