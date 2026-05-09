@@ -103,7 +103,9 @@ jobs:
           fi
           sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
           echo "IMAGE_TAG updated: \$(grep '^IMAGE_TAG=' .env.prod)"
-          docker compose -f docker-compose.prod.yml --env-file .env.prod pull web
+          # < /dev/null — docker compose pull consomme le stdin SSH sans ça,
+          # bash voit EOF et stoppe l'exécution du heredoc après le pull
+          docker compose -f docker-compose.prod.yml --env-file .env.prod pull web < /dev/null
           # Use run --rm (not exec) — works even if web container not yet started
           CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
           EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
@@ -111,7 +113,6 @@ jobs:
             echo "::error::Failed to read alembic heads"
             exit 1
           fi
-          # CURRENT empty = fresh DB, treat as (none)
           CURRENT=\${CURRENT:-(none)}
           echo "alembic current=\$CURRENT expected=\$EXPECTED"
           if [ "\$CURRENT" != "\$EXPECTED" ] && [ "\$CURRENT" != "(none)" ]; then
