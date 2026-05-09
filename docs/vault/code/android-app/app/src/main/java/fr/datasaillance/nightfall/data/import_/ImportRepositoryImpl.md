@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt
-git_blob: 383c43dc5d1f90785d939634206bd0dabb45287d
-last_synced: '2026-05-09T08:38:11Z'
-loc: 118
+git_blob: f78e97d430f86e164fcb8f4462e58c178d5b1eaf
+last_synced: '2026-05-09T08:45:05Z'
+loc: 125
 annotations: []
 imports: []
 exports: []
@@ -38,6 +38,7 @@ import java.io.IOException
 import java.util.zip.ZipInputStream
 
 private const val MAX_UNCOMPRESSED_BYTES = 200_000_000L
+private const val MAX_ZIP_ENTRIES = 100
 
 class ImportRepositoryImpl(
     private val api: NightfallApi,
@@ -75,10 +76,16 @@ class ImportRepositoryImpl(
             ?: throw IOException("Cannot open URI")
 
         var totalUncompressed = 0L
+        var entryCount = 0
 
         ZipInputStream(inputStream).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
+                if (entryCount >= MAX_ZIP_ENTRIES) {
+                    throw IOException("Archive trop grande: dépasse $MAX_ZIP_ENTRIES entrées")
+                }
+                entryCount++
+
                 val name = entry.name.substringAfterLast('/')
                 val matchingType = ImportDataType.entries.firstOrNull { type ->
                     name.startsWith(type.samsungFilenamePrefix) && name.endsWith(".csv")
@@ -146,8 +153,8 @@ class ImportRepositoryImpl(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportRepositoryImpl` (class) — lines 19-118
-- `pingBackend` (function) — lines 23-30
-- `extractCsvEntries` (function) — lines 34-44
-- `extractFromZip` (function) — lines 46-85
-- `uploadCsv` (function) — lines 87-117
+- `ImportRepositoryImpl` (class) — lines 20-125
+- `pingBackend` (function) — lines 24-31
+- `extractCsvEntries` (function) — lines 35-45
+- `extractFromZip` (function) — lines 47-92
+- `uploadCsv` (function) — lines 94-124

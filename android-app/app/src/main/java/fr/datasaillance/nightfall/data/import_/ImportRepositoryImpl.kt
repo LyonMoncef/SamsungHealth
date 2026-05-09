@@ -15,6 +15,7 @@ import java.io.IOException
 import java.util.zip.ZipInputStream
 
 private const val MAX_UNCOMPRESSED_BYTES = 200_000_000L
+private const val MAX_ZIP_ENTRIES = 100
 
 class ImportRepositoryImpl(
     private val api: NightfallApi,
@@ -52,10 +53,16 @@ class ImportRepositoryImpl(
             ?: throw IOException("Cannot open URI")
 
         var totalUncompressed = 0L
+        var entryCount = 0
 
         ZipInputStream(inputStream).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
+                if (entryCount >= MAX_ZIP_ENTRIES) {
+                    throw IOException("Archive trop grande: dépasse $MAX_ZIP_ENTRIES entrées")
+                }
+                entryCount++
+
                 val name = entry.name.substringAfterLast('/')
                 val matchingType = ImportDataType.entries.firstOrNull { type ->
                     name.startsWith(type.samsungFilenamePrefix) && name.endsWith(".csv")
