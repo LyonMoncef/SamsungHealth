@@ -93,39 +93,12 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
-          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" bash << EOF
-          set -euo pipefail
-          cd /srv/samsunghealth-dev
-          # Verify IMAGE_TAG line exists before sed (silent mismatch = old image deployed)
-          if ! grep -qE "^IMAGE_TAG=" .env.prod; then
-            echo "::error::IMAGE_TAG not found in .env.prod — check file format"
-            exit 1
-          fi
-          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env.prod
-          echo "IMAGE_TAG updated: \$(grep '^IMAGE_TAG=' .env.prod)"
-          # < /dev/null — docker compose pull consomme le stdin SSH sans ça,
-          # bash voit EOF et stoppe l'exécution du heredoc après le pull
-          docker compose -f docker-compose.prod.yml --env-file .env.prod pull web < /dev/null
-          # Use run --rm (not exec) — works even if web container not yet started
-          CURRENT=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic current 2>/dev/null | awk 'NR==1{print \$1}')
-          EXPECTED=\$(docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic heads 2>/dev/null | awk 'NR==1{print \$1}')
-          if [ -z "\$EXPECTED" ]; then
-            echo "::error::Failed to read alembic heads"
-            exit 1
-          fi
-          CURRENT=\${CURRENT:-(none)}
-          echo "alembic current=\$CURRENT expected=\$EXPECTED"
-          if [ "\$CURRENT" != "\$EXPECTED" ] && [ "\$CURRENT" != "(none)" ]; then
-            echo "::error::Alembic drift — current=\$CURRENT expected=\$EXPECTED"
-            exit 1
-          fi
-          docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web alembic upgrade head
-          # Stop and remove web explicitly — handles any v1/v2 naming drift
-          docker compose -f docker-compose.prod.yml --env-file .env.prod rm --stop --force web 2>/dev/null || true
-          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d web
-          echo "=== Running container ==="
-          docker ps --filter "publish=8001" --format "{{.Names}} {{.Image}}"
-          EOF
+          # Script-file approach (pas de heredoc-over-SSH) — voir commentaire dans
+          # .github/scripts/deploy-vps.sh pour le pourquoi.
+          scp -o StrictHostKeyChecking=yes .github/scripts/deploy-vps.sh \
+            "${{ secrets.VPS_DEV_HOST }}:/tmp/deploy-vps.sh"
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.VPS_DEV_HOST }}" \
+            "bash /tmp/deploy-vps.sh '$IMAGE_TAG' && rm /tmp/deploy-vps.sh"
 
       - name: Smoke test (loop, 60s max)
         id: smoke
