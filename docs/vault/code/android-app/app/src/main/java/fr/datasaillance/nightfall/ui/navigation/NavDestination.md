@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt
-git_blob: 71cf989e2df2a769d7316eec70e1a995411b1362
-last_synced: '2026-05-07T22:01:38Z'
-loc: 20
+git_blob: 4844074ad608bcae8e1ebe0eef13bc073575ff07
+last_synced: '2026-05-09T06:05:32Z'
+loc: 23
 annotations: []
 imports: []
 exports: []
@@ -28,14 +28,17 @@ sealed class NavDestination(
     val label: String
 ) {
     object Login          : NavDestination("login",           "Connexion")
-    object Sleep          : NavDestination("sleep",           "Sommeil")
-    object Trends         : NavDestination("trends",          "Tendances")
-    object Activity       : NavDestination("activity",        "Activité")
-    object Profile        : NavDestination("profile",         "Profil")
-    object Import         : NavDestination("import",          "Importer")
-    object Settings       : NavDestination("settings",        "Paramètres")
     object Register       : NavDestination("register",        "Créer un compte")
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
+    object Sleep    : NavDestination("sleep",    "Sommeil")
+    object Trends   : NavDestination("trends",   "Tendances")
+    object Activity : NavDestination("activity", "Activité")
+    object Profile  : NavDestination("profile",  "Profil")
+    object Import   : NavDestination("import",   "Importer")
+    object Settings : NavDestination("settings", "Paramètres")
+    object Hypnogram : NavDestination("hypnogram/{sessionId}", "Hypnogramme") {
+        fun route(id: String): String = "hypnogram/$id"
+    }
 
     companion object {
         fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)
@@ -48,5 +51,6 @@ sealed class NavDestination(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavDestination` (class) — lines 3-20
-- `bottomNavItems` (function) — lines 18-18
+- `NavDestination` (class) — lines 3-23
+- `route` (function) — lines 17-17
+- `bottomNavItems` (function) — lines 21-21

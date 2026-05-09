@@ -13,6 +13,9 @@ sealed class NavDestination(
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")
     object Settings : NavDestination("settings", "Paramètres")
+    object Hypnogram : NavDestination("hypnogram/{sessionId}", "Hypnogramme") {
+        fun route(id: String): String = "hypnogram/$id"
+    }
 
     companion object {
         fun bottomNavItems(): List<NavDestination> = listOf(Sleep, Trends, Activity, Profile)

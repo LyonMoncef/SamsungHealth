@@ -75,6 +75,10 @@ class AuthViewModel(
         null
     }
 
+    fun logout() {
+        tokenDataStore.clearToken()
+    }
+
     fun storeTokenFromCallback(token: String) {
         tokenDataStore.saveToken(token)
         _loginState.value = LoginUiState.Success

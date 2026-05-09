@@ -262,9 +262,16 @@ L'état `Idle` ne rend rien (même pattern que `SleepScreen`).
 ```kotlin
 private fun nightTitle(sleepStart: String): String {
     val dt = runCatching { OffsetDateTime.parse(sleepStart) }.getOrNull() ?: return ""
-    val formatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH)
-    val formatted = dt.format(formatter).replaceFirstChar { it.uppercase() }
-    return "Nuit du $formatted"  // ex: "Nuit du Mer 7 mai"
+    // Convention : le jour de la semaine est celui de la veille (le jour où on s'est couché),
+    // la date est celle de dt (le jour calendaire du début de la session).
+    // Ex: session débutant le jeudi 7 mai à 23h15 → "Nuit du Mer 7 mai"
+    // (on s'est couché le mercredi soir = nuit du mercredi).
+    val prevDay = dt.minusDays(1)
+    val dayFormatter  = DateTimeFormatter.ofPattern("EEE", Locale.FRENCH)
+    val dateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH)
+    val dayAbbr = prevDay.format(dayFormatter).replaceFirstChar { it.uppercase() }.trimEnd('.')
+    val dateStr = dt.format(dateFormatter)
+    return "Nuit du $dayAbbr $dateStr"  // ex: "Nuit du Mer 7 mai"
 }
 ```
 
