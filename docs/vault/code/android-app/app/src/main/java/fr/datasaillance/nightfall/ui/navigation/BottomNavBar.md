@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/BottomNavBar.kt
-git_blob: c485a8e26ad52f80d343a81050b0170745fef0f8
-last_synced: '2026-05-09T07:04:02Z'
-loc: 38
+git_blob: 409c087914b738cbc5db33291426851c0fdab1b2
+last_synced: '2026-05-20T18:28:21Z'
+loc: 40
 annotations: []
 imports: []
 exports: []
@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -36,11 +37,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 
 private fun iconForDestination(destination: NavDestination): ImageVector = when (destination) {
-    is NavDestination.Sleep    -> Icons.Default.Home
-    is NavDestination.Timeline -> Icons.Default.ShowChart
-    is NavDestination.Activity -> Icons.Default.FitnessCenter
-    is NavDestination.Profile  -> Icons.Default.AccountCircle
-    else                       -> Icons.Default.Home
+    is NavDestination.Sleep     -> Icons.Default.Home
+    is NavDestination.Timeline  -> Icons.Default.ShowChart
+    is NavDestination.Wellbeing -> Icons.Default.PhoneAndroid
+    is NavDestination.Activity  -> Icons.Default.FitnessCenter
+    is NavDestination.Profile   -> Icons.Default.AccountCircle
+    else                        -> Icons.Default.Home
 }
 
 @Composable
@@ -66,5 +68,5 @@ fun BottomNavBar(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `iconForDestination` (function) — lines 15-21
-- `BottomNavBar` (function) — lines 23-38
+- `iconForDestination` (function) — lines 16-23
+- `BottomNavBar` (function) — lines 25-40

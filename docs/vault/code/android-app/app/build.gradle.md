@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: 6bee501736f61c9e8d3fca9d12678e3c6ee16467
-last_synced: '2026-05-09T15:08:38Z'
-loc: 132
+git_blob: 161e53797fddda284439be8265a56c9cb30e9ec0
+last_synced: '2026-05-20T18:28:21Z'
+loc: 135
 annotations: []
 imports: []
 exports: []
@@ -132,6 +132,9 @@ dependencies {
     // Core
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+
+    // WorkManager — Phase B_us : collecte UsageStats quotidienne en background
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Test dependencies
     testImplementation("junit:junit:4.13.2")

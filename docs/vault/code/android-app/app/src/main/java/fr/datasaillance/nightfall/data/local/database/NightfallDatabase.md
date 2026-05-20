@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/database/NightfallDatabase.kt
-git_blob: d8cedd6c16b58107a3e3c29e7448e2729928e583
-last_synced: '2026-05-09T15:08:38Z'
-loc: 76
+git_blob: 68007ca5b2d00e3ec7b4a490349451b955415f37
+last_synced: '2026-05-09T18:49:36Z'
+loc: 109
 annotations: []
 imports: []
 exports: []
@@ -27,16 +27,20 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import fr.datasaillance.nightfall.data.local.dao.ExerciseDao
 import fr.datasaillance.nightfall.data.local.dao.HeartRateDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
 import fr.datasaillance.nightfall.data.local.dao.StepsDao
+import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.entity.ExerciseSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.HeartRateHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepStageEntity
 import fr.datasaillance.nightfall.data.local.entity.StepsHourlyEntity
+import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
 import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
 
 @Database(
@@ -46,9 +50,10 @@ import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
         HeartRateHourlyEntity::class,
         StepsHourlyEntity::class,
         ExerciseSessionEntity::class,
+        UsageDailyEntity::class, // v2 — Phase A_us usage stats
     ],
-    version = 1,
-    exportSchema = false, // Phase A v1 — pas de migration legacy à archiver. À activer + plugin Room quand on attaquera v2.
+    version = 2,
+    exportSchema = false,
 )
 abstract class NightfallDatabase : RoomDatabase() {
 
@@ -56,6 +61,31 @@ abstract class NightfallDatabase : RoomDatabase() {
     abstract fun heartRateDao(): HeartRateDao
     abstract fun stepsDao(): StepsDao
     abstract fun exerciseDao(): ExerciseDao
+    abstract fun usageStatsDao(): UsageStatsDao
+
+    /** Migration v1 → v2 : ajoute la table `usage_daily` (Phase A_us). */
+    object Migration1to2 : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `usage_daily` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `date` TEXT NOT NULL,
+                    `package_name` TEXT NOT NULL,
+                    `total_time_foreground_ms` INTEGER NOT NULL,
+                    `total_time_visible_ms` INTEGER NOT NULL DEFAULT 0,
+                    `total_time_fgs_ms` INTEGER NOT NULL DEFAULT 0,
+                    `last_time_used_ms` INTEGER NOT NULL DEFAULT 0,
+                    `app_launch_count` INTEGER NOT NULL DEFAULT 0,
+                    `collected_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_usage_daily_date_package_name` ON `usage_daily` (`date`, `package_name`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_daily_date` ON `usage_daily` (`date`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_daily_package_name` ON `usage_daily` (`package_name`)")
+        }
+    }
 
     companion object {
         private const val DB_NAME = "nightfall.db"
@@ -83,7 +113,10 @@ abstract class NightfallDatabase : RoomDatabase() {
                 DB_NAME,
             )
                 .openHelperFactory(factory)
-                .fallbackToDestructiveMigration() // v1 — pas de migration legacy à gérer
+                .addMigrations(Migration1to2)
+                // Fallback safety : si une migration future foire ou si l'utilisateur
+                // a une DB v0 inattendue, on rebuild from scratch plutôt que crasher.
+                .fallbackToDestructiveMigration()
                 .build()
         }
 
@@ -104,11 +137,13 @@ abstract class NightfallDatabase : RoomDatabase() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallDatabase` (class) — lines 19-76
-- `sleepDao` (function) — lines 32-32
-- `heartRateDao` (function) — lines 33-33
-- `stepsDao` (function) — lines 34-34
-- `exerciseDao` (function) — lines 35-35
-- `get` (function) — lines 47-51
-- `build` (function) — lines 53-65
-- `resetForTest` (function) — lines 71-74
+- `NightfallDatabase` (class) — lines 23-109
+- `sleepDao` (function) — lines 37-37
+- `heartRateDao` (function) — lines 38-38
+- `stepsDao` (function) — lines 39-39
+- `exerciseDao` (function) — lines 40-40
+- `usageStatsDao` (function) — lines 41-41
+- `migrate` (function) — lines 45-64
+- `get` (function) — lines 77-81
+- `build` (function) — lines 83-98
+- `resetForTest` (function) — lines 104-107

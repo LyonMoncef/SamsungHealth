@@ -36,6 +36,9 @@ import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
+import fr.datasaillance.nightfall.ui.screens.wellbeing.DigitalWellbeingScreen
+import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
+import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
 import fr.datasaillance.nightfall.ui.screens.auth.ForgotPasswordScreen
 import fr.datasaillance.nightfall.ui.screens.auth.LoginScreen
 import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
@@ -181,6 +184,22 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Activity.route) { ActivityScreen() }
+            composable(NavDestination.Wellbeing.route) {
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val viewModel = remember(context, db) {
+                    val helper = UsageStatsPermissionHelper(context.applicationContext)
+                    DigitalWellbeingViewModel(
+                        checkPermission = { helper.hasPermission() },
+                        dao = db.usageStatsDao(),
+                        packageResolver = fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver(
+                            context.applicationContext.packageManager
+                        ),
+                    )
+                }
+                DigitalWellbeingScreen(viewModel = viewModel)
+            }
             composable(NavDestination.Profile.route) {
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
