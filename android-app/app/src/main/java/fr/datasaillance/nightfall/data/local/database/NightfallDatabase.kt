@@ -19,6 +19,7 @@ import fr.datasaillance.nightfall.data.local.entity.SleepSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepStageEntity
 import fr.datasaillance.nightfall.data.local.entity.StepsHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
 import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
 import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
@@ -33,8 +34,9 @@ import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
         UsageDailyEntity::class,       // v2 — Phase A_us usage stats
         LocationVisitEntity::class,    // v3 — Phase A_gps location visits
         ActivitySegmentEntity::class,  // v3 — Phase A_gps activity segments
+        LocationPathEntity::class,     // v4 — timelinePath waypoints GPS (trajets réalistes)
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class NightfallDatabase : RoomDatabase() {
@@ -72,9 +74,8 @@ abstract class NightfallDatabase : RoomDatabase() {
 
     /**
      * Migration v2 → v3 : ajoute les tables `location_visits` + `activity_segments`
-     * (Phase A_gps). Convergence post-merge des branches feat/usage-stats-collector
-     * et feat/gps-collector — la v2 était usage_daily, on continue avec les tables
-     * location en v3.
+     * (Phase A_gps). Convergence post-merge des 2 branches long-lived — la v2
+     * était usage_daily, on continue avec les tables location en v3.
      */
     object Migration2to3 : Migration(2, 3) {
         override fun migrate(db: SupportSQLiteDatabase) {
@@ -125,6 +126,30 @@ abstract class NightfallDatabase : RoomDatabase() {
         }
     }
 
+    /**
+     * Migration v3 → v4 : ajoute la table `location_paths` pour stocker les waypoints
+     * `timelinePath` du nouveau format Google Takeout (trajets GPS détaillés).
+     */
+    object Migration3to4 : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `location_paths` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `start_ms` INTEGER NOT NULL,
+                    `end_ms` INTEGER NOT NULL,
+                    `points_json` TEXT NOT NULL,
+                    `point_count` INTEGER NOT NULL,
+                    `source` TEXT NOT NULL DEFAULT 'takeout',
+                    `imported_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_location_paths_start_ms_end_ms` ON `location_paths` (`start_ms`, `end_ms`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_location_paths_start_ms` ON `location_paths` (`start_ms`)")
+        }
+    }
+
     companion object {
         private const val DB_NAME = "nightfall.db"
 
@@ -151,7 +176,7 @@ abstract class NightfallDatabase : RoomDatabase() {
                 DB_NAME,
             )
                 .openHelperFactory(factory)
-                .addMigrations(Migration1to2, Migration2to3)
+                .addMigrations(Migration1to2, Migration2to3, Migration3to4)
                 // Fallback safety : si une migration future foire ou si l'utilisateur
                 // a une DB v0 inattendue, on rebuild from scratch plutôt que crasher.
                 .fallbackToDestructiveMigration()

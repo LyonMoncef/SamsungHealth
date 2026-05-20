@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/dao/LocationDao.kt
-git_blob: b2dc9136adbe8356ed21007e4abae294ab38e359
-last_synced: '2026-05-20T15:39:48Z'
-loc: 54
+git_blob: cb4c67598757cc9b39e6e84892071dc8ab7763ca
+last_synced: '2026-05-20T16:30:46Z'
+loc: 69
 annotations: []
 imports: []
 exports: []
@@ -28,6 +28,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
 
 @Dao
@@ -69,6 +70,20 @@ interface LocationDao {
 
     @Query("DELETE FROM activity_segments")
     suspend fun deleteAllSegments()
+
+    // --- Paths GPS (timelinePath du nouveau format Google) ---
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertPaths(rows: List<LocationPathEntity>): List<Long>
+
+    @Query("SELECT * FROM location_paths WHERE start_ms >= :fromMs AND start_ms < :toMs ORDER BY start_ms ASC")
+    suspend fun getPathsInRange(fromMs: Long, toMs: Long): List<LocationPathEntity>
+
+    @Query("SELECT COUNT(*) FROM location_paths")
+    suspend fun countPaths(): Int
+
+    @Query("DELETE FROM location_paths")
+    suspend fun deleteAllPaths()
 }
 
 data class ActivityTypeCount(
@@ -82,17 +97,21 @@ data class ActivityTypeCount(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `LocationDao` (class) — lines 10-49
-- `insertVisits` (function) — lines 13-14
-- `insertSegments` (function) — lines 16-17
-- `getAllVisits` (function) — lines 19-20
-- `getVisitsInRange` (function) — lines 22-23
-- `getAllSegments` (function) — lines 25-26
-- `getSegmentsInRange` (function) — lines 28-29
-- `getActivityTypeBreakdown` (function) — lines 31-32
-- `getActivityStartTimesInRange` (function) — lines 35-36
-- `countVisits` (function) — lines 38-39
-- `countSegments` (function) — lines 41-42
-- `deleteAllVisits` (function) — lines 44-45
-- `deleteAllSegments` (function) — lines 47-48
-- `ActivityTypeCount` (class) — lines 51-54
+- `LocationDao` (class) — lines 11-64
+- `insertVisits` (function) — lines 14-15
+- `insertSegments` (function) — lines 17-18
+- `getAllVisits` (function) — lines 20-21
+- `getVisitsInRange` (function) — lines 23-24
+- `getAllSegments` (function) — lines 26-27
+- `getSegmentsInRange` (function) — lines 29-30
+- `getActivityTypeBreakdown` (function) — lines 32-33
+- `getActivityStartTimesInRange` (function) — lines 36-37
+- `countVisits` (function) — lines 39-40
+- `countSegments` (function) — lines 42-43
+- `deleteAllVisits` (function) — lines 45-46
+- `deleteAllSegments` (function) — lines 48-49
+- `insertPaths` (function) — lines 53-54
+- `getPathsInRange` (function) — lines 56-57
+- `countPaths` (function) — lines 59-60
+- `deleteAllPaths` (function) — lines 62-63
+- `ActivityTypeCount` (class) — lines 66-69

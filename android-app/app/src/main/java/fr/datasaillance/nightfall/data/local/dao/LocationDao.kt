@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
 
 @Dao
@@ -46,6 +47,20 @@ interface LocationDao {
 
     @Query("DELETE FROM activity_segments")
     suspend fun deleteAllSegments()
+
+    // --- Paths GPS (timelinePath du nouveau format Google) ---
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertPaths(rows: List<LocationPathEntity>): List<Long>
+
+    @Query("SELECT * FROM location_paths WHERE start_ms >= :fromMs AND start_ms < :toMs ORDER BY start_ms ASC")
+    suspend fun getPathsInRange(fromMs: Long, toMs: Long): List<LocationPathEntity>
+
+    @Query("SELECT COUNT(*) FROM location_paths")
+    suspend fun countPaths(): Int
+
+    @Query("DELETE FROM location_paths")
+    suspend fun deleteAllPaths()
 }
 
 data class ActivityTypeCount(

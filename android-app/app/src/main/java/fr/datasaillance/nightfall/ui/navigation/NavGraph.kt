@@ -158,12 +158,19 @@ fun NavGraph(
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 val dateArg = backStackEntry.arguments?.getString("date")
-                val hypnogramRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
-                    LocalSleepRepository(db.sleepDao())
+                val hypnogramDb = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
-                    HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
+                val hypnogramRepository: SleepRepository = remember(hypnogramDb) {
+                    LocalSleepRepository(hypnogramDb.sleepDao())
+                }
+                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository, hypnogramDb) {
+                    HypnogramViewModel(
+                        sessionId = sessionId,
+                        repository = hypnogramRepository,
+                        hintDate = dateArg,
+                        locationDao = hypnogramDb.locationDao(),
+                    )
                 }
                 HypnogramScreen(
                     viewModel = hypnogramViewModel,

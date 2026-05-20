@@ -11,6 +11,8 @@ data class LocationImportResult(
     val visitsSkipped: Int,
     val segmentsInserted: Int,
     val segmentsSkipped: Int,
+    val pathsInserted: Int = 0,
+    val pathsSkipped: Int = 0,
     val filesProcessed: Int,
 )
 
@@ -32,13 +34,17 @@ class LocalLocationImportService(
         val parsed = TakeoutTimelineParser.parse(rawJson)
         val visitIds = if (parsed.visits.isNotEmpty()) dao.insertVisits(parsed.visits) else emptyList()
         val segmentIds = if (parsed.segments.isNotEmpty()) dao.insertSegments(parsed.segments) else emptyList()
+        val pathIds = if (parsed.paths.isNotEmpty()) dao.insertPaths(parsed.paths) else emptyList()
         val visitsInserted = visitIds.count { it != -1L }
         val segmentsInserted = segmentIds.count { it != -1L }
+        val pathsInserted = pathIds.count { it != -1L }
         return LocationImportResult(
             visitsInserted = visitsInserted,
             visitsSkipped = parsed.visits.size - visitsInserted,
             segmentsInserted = segmentsInserted,
             segmentsSkipped = parsed.segments.size - segmentsInserted,
+            pathsInserted = pathsInserted,
+            pathsSkipped = parsed.paths.size - pathsInserted,
             filesProcessed = 1,
         )
     }
@@ -54,6 +60,8 @@ class LocalLocationImportService(
         var visitsSkipped = 0
         var segmentsInserted = 0
         var segmentsSkipped = 0
+        var pathsInserted = 0
+        var pathsSkipped = 0
         var filesProcessed = 0
 
         ZipInputStream(input).use { zis ->
@@ -76,6 +84,8 @@ class LocalLocationImportService(
                     visitsSkipped += r.visitsSkipped
                     segmentsInserted += r.segmentsInserted
                     segmentsSkipped += r.segmentsSkipped
+                    pathsInserted += r.pathsInserted
+                    pathsSkipped += r.pathsSkipped
                     filesProcessed++
                 }
                 zis.closeEntry()
@@ -87,6 +97,8 @@ class LocalLocationImportService(
             visitsSkipped = visitsSkipped,
             segmentsInserted = segmentsInserted,
             segmentsSkipped = segmentsSkipped,
+            pathsInserted = pathsInserted,
+            pathsSkipped = pathsSkipped,
             filesProcessed = filesProcessed,
         )
     }

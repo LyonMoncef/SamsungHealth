@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/location/LocalLocationImportService.kt
-git_blob: 4809d4806cb0eb77793437c8a85c86ea28166464
-last_synced: '2026-05-09T19:12:27Z'
-loc: 103
+git_blob: 14d029693d7e64c91e5f9ace8fed70a4b4252f13
+last_synced: '2026-05-20T16:30:46Z'
+loc: 115
 annotations: []
 imports: []
 exports: []
@@ -34,6 +34,8 @@ data class LocationImportResult(
     val visitsSkipped: Int,
     val segmentsInserted: Int,
     val segmentsSkipped: Int,
+    val pathsInserted: Int = 0,
+    val pathsSkipped: Int = 0,
     val filesProcessed: Int,
 )
 
@@ -55,13 +57,17 @@ class LocalLocationImportService(
         val parsed = TakeoutTimelineParser.parse(rawJson)
         val visitIds = if (parsed.visits.isNotEmpty()) dao.insertVisits(parsed.visits) else emptyList()
         val segmentIds = if (parsed.segments.isNotEmpty()) dao.insertSegments(parsed.segments) else emptyList()
+        val pathIds = if (parsed.paths.isNotEmpty()) dao.insertPaths(parsed.paths) else emptyList()
         val visitsInserted = visitIds.count { it != -1L }
         val segmentsInserted = segmentIds.count { it != -1L }
+        val pathsInserted = pathIds.count { it != -1L }
         return LocationImportResult(
             visitsInserted = visitsInserted,
             visitsSkipped = parsed.visits.size - visitsInserted,
             segmentsInserted = segmentsInserted,
             segmentsSkipped = parsed.segments.size - segmentsInserted,
+            pathsInserted = pathsInserted,
+            pathsSkipped = parsed.paths.size - pathsInserted,
             filesProcessed = 1,
         )
     }
@@ -77,6 +83,8 @@ class LocalLocationImportService(
         var visitsSkipped = 0
         var segmentsInserted = 0
         var segmentsSkipped = 0
+        var pathsInserted = 0
+        var pathsSkipped = 0
         var filesProcessed = 0
 
         ZipInputStream(input).use { zis ->
@@ -99,6 +107,8 @@ class LocalLocationImportService(
                     visitsSkipped += r.visitsSkipped
                     segmentsInserted += r.segmentsInserted
                     segmentsSkipped += r.segmentsSkipped
+                    pathsInserted += r.pathsInserted
+                    pathsSkipped += r.pathsSkipped
                     filesProcessed++
                 }
                 zis.closeEntry()
@@ -110,6 +120,8 @@ class LocalLocationImportService(
             visitsSkipped = visitsSkipped,
             segmentsInserted = segmentsInserted,
             segmentsSkipped = segmentsSkipped,
+            pathsInserted = pathsInserted,
+            pathsSkipped = pathsSkipped,
             filesProcessed = filesProcessed,
         )
     }
@@ -131,8 +143,8 @@ class LocalLocationImportService(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `LocationImportResult` (class) — lines 9-15
-- `LocalLocationImportService` (class) — lines 26-103
-- `importJson` (function) — lines 31-44
-- `importZip` (function) — lines 51-92
-- `looksLikeSemanticHistory` (function) — lines 94-102
+- `LocationImportResult` (class) — lines 9-17
+- `LocalLocationImportService` (class) — lines 28-115
+- `importJson` (function) — lines 33-50
+- `importZip` (function) — lines 57-104
+- `looksLikeSemanticHistory` (function) — lines 106-114

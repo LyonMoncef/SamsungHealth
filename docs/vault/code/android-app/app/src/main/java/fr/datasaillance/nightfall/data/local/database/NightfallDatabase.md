@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/database/NightfallDatabase.kt
-git_blob: 5d6ad70cec67f65f6ae189d1a8c591aa4dd4e1a7
-last_synced: '2026-05-09T19:12:26Z'
-loc: 140
+git_blob: 180356db305019d9796c3fce91643d82a5fc3f7a
+last_synced: '2026-05-20T16:30:46Z'
+loc: 166
 annotations: []
 imports: []
 exports: []
@@ -41,6 +41,7 @@ import fr.datasaillance.nightfall.data.local.entity.SleepSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepStageEntity
 import fr.datasaillance.nightfall.data.local.entity.StepsHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
 import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
 
@@ -53,8 +54,9 @@ import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
         ExerciseSessionEntity::class,
         LocationVisitEntity::class,    // v2 — Phase A_gps
         ActivitySegmentEntity::class,  // v2 — Phase A_gps
+        LocationPathEntity::class,     // v3 — timelinePath (waypoints GPS pour trajets réalistes)
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class NightfallDatabase : RoomDatabase() {
@@ -120,6 +122,30 @@ abstract class NightfallDatabase : RoomDatabase() {
         }
     }
 
+    /**
+     * Migration v2 → v3 : ajoute la table `location_paths` pour stocker les waypoints
+     * `timelinePath` du nouveau format Google Takeout (trajets GPS détaillés).
+     */
+    object Migration2to3 : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `location_paths` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `start_ms` INTEGER NOT NULL,
+                    `end_ms` INTEGER NOT NULL,
+                    `points_json` TEXT NOT NULL,
+                    `point_count` INTEGER NOT NULL,
+                    `source` TEXT NOT NULL DEFAULT 'takeout',
+                    `imported_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_location_paths_start_ms_end_ms` ON `location_paths` (`start_ms`, `end_ms`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_location_paths_start_ms` ON `location_paths` (`start_ms`)")
+        }
+    }
+
     companion object {
         private const val DB_NAME = "nightfall.db"
 
@@ -146,7 +172,7 @@ abstract class NightfallDatabase : RoomDatabase() {
                 DB_NAME,
             )
                 .openHelperFactory(factory)
-                .addMigrations(Migration1to2)
+                .addMigrations(Migration1to2, Migration2to3)
                 .fallbackToDestructiveMigration()
                 .build()
         }
@@ -168,13 +194,14 @@ abstract class NightfallDatabase : RoomDatabase() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallDatabase` (class) — lines 24-140
-- `sleepDao` (function) — lines 39-39
-- `heartRateDao` (function) — lines 40-40
-- `stepsDao` (function) — lines 41-41
-- `exerciseDao` (function) — lines 42-42
-- `locationDao` (function) — lines 43-43
-- `migrate` (function) — lines 52-97
-- `get` (function) — lines 110-114
-- `build` (function) — lines 116-129
-- `resetForTest` (function) — lines 135-138
+- `NightfallDatabase` (class) — lines 25-166
+- `sleepDao` (function) — lines 41-41
+- `heartRateDao` (function) — lines 42-42
+- `stepsDao` (function) — lines 43-43
+- `exerciseDao` (function) — lines 44-44
+- `locationDao` (function) — lines 45-45
+- `migrate` (function) — lines 54-99
+- `migrate` (function) — lines 107-123
+- `get` (function) — lines 136-140
+- `build` (function) — lines 142-155
+- `resetForTest` (function) — lines 161-164

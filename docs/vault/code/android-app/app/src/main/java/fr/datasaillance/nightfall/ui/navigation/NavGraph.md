@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: 52d11f6da6b36036b355d83efc5ccff404d3249f
-last_synced: '2026-05-20T15:39:48Z'
-loc: 285
+git_blob: 45507c8cbc40c1525ab18eccfa2369748beca4b8
+last_synced: '2026-05-20T16:30:46Z'
+loc: 292
 annotations: []
 imports: []
 exports: []
@@ -178,12 +178,19 @@ fun NavGraph(
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 val dateArg = backStackEntry.arguments?.getString("date")
-                val hypnogramRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
-                    LocalSleepRepository(db.sleepDao())
+                val hypnogramDb = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
-                    HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
+                val hypnogramRepository: SleepRepository = remember(hypnogramDb) {
+                    LocalSleepRepository(hypnogramDb.sleepDao())
+                }
+                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository, hypnogramDb) {
+                    HypnogramViewModel(
+                        sessionId = sessionId,
+                        repository = hypnogramRepository,
+                        hintDate = dateArg,
+                        locationDao = hypnogramDb.locationDao(),
+                    )
                 }
                 HypnogramScreen(
                     viewModel = hypnogramViewModel,
@@ -313,17 +320,17 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 55-237
-- `NoOpSleepRepository` (class) — lines 239-244
-- `getSessions` (function) — lines 240-243
-- `NoOpImportRepository` (class) — lines 246-261
-- `pingBackend` (function) — lines 247-247
-- `extractCsvEntries` (function) — lines 249-252
-- `uploadCsv` (function) — lines 254-260
-- `NoOpNightfallApi` (class) — lines 263-269
-- `health` (function) — lines 264-264
-- `login` (function) — lines 265-265
-- `register` (function) — lines 266-266
-- `requestPasswordReset` (function) — lines 267-267
-- `googleStart` (function) — lines 268-268
-- `ensureComposeNavigators` (function) — lines 277-285
+- `NavGraph` (function) — lines 55-244
+- `NoOpSleepRepository` (class) — lines 246-251
+- `getSessions` (function) — lines 247-250
+- `NoOpImportRepository` (class) — lines 253-268
+- `pingBackend` (function) — lines 254-254
+- `extractCsvEntries` (function) — lines 256-259
+- `uploadCsv` (function) — lines 261-267
+- `NoOpNightfallApi` (class) — lines 270-276
+- `health` (function) — lines 271-271
+- `login` (function) — lines 272-272
+- `register` (function) — lines 273-273
+- `requestPasswordReset` (function) — lines 274-274
+- `googleStart` (function) — lines 275-275
+- `ensureComposeNavigators` (function) — lines 284-292

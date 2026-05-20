@@ -113,6 +113,9 @@ dependencies {
     // WorkManager — Phase B_us : collecte UsageStats quotidienne en background
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
+    // OSMDroid — carte OpenStreetMap embedded (Phase C_gps, raster tiles, no API key)
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")

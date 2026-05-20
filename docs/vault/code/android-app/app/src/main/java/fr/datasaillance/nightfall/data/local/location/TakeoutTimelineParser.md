@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/location/TakeoutTimelineParser.kt
-git_blob: 6fd9e929bbb46971bc4fee856e360ac892ee9409
-last_synced: '2026-05-20T14:36:27Z'
-loc: 241
+git_blob: 675e51259dc6d0c7c55809d12d4addb00a3a8684
+last_synced: '2026-05-20T16:30:46Z'
+loc: 282
 annotations: []
 imports: []
 exports: []
@@ -24,7 +24,9 @@ tags:
 package fr.datasaillance.nightfall.data.local.location
 
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
+import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
 
@@ -56,12 +58,14 @@ object TakeoutTimelineParser {
     data class ParseResult(
         val visits: List<LocationVisitEntity>,
         val segments: List<ActivitySegmentEntity>,
+        val paths: List<LocationPathEntity> = emptyList(),
     )
 
     fun parse(rawJson: String, importedAtMs: Long = System.currentTimeMillis()): ParseResult {
         val root = JSONObject(rawJson)
         val visits = mutableListOf<LocationVisitEntity>()
         val segments = mutableListOf<ActivitySegmentEntity>()
+        val paths = mutableListOf<LocationPathEntity>()
 
         // Format 1 — ancien : timelineObjects
         root.optJSONArray("timelineObjects")?.let { arr ->
@@ -88,11 +92,13 @@ object TakeoutTimelineParser {
                 seg.optJSONObject("activity")?.let { a ->
                     parseNewActivity(a, startMs, endMs, importedAtMs)?.let { segments.add(it) }
                 }
-                // timelinePath ignoré (sera réintroduit en Phase B_gps avec FusedLocation)
+                seg.optJSONArray("timelinePath")?.let { arr ->
+                    parseTimelinePath(arr, startMs, endMs, importedAtMs)?.let { paths.add(it) }
+                }
             }
         }
 
-        return ParseResult(visits, segments)
+        return ParseResult(visits, segments, paths)
     }
 
     // --- Format 1 (ancien) ---
@@ -234,6 +240,41 @@ object TakeoutTimelineParser {
         )
     }
 
+    /**
+     * Parse un `timelinePath` (suite de waypoints `{point, time}`) en `LocationPathEntity`.
+     * Le champ `points_json` est sérialisé manuellement (pas de dépendance kotlinx.serialization
+     * dans ce module) : `[{"lat":..,"lng":..,"t":..},...]`.
+     */
+    private fun parseTimelinePath(
+        arr: JSONArray,
+        startMs: Long,
+        endMs: Long,
+        importedAtMs: Long,
+    ): LocationPathEntity? {
+        if (arr.length() == 0) return null
+        val sb = StringBuilder()
+        sb.append('[')
+        var count = 0
+        for (i in 0 until arr.length()) {
+            val pt = arr.optJSONObject(i) ?: continue
+            val (lat, lng) = parseLatLngString(pt.optString("point")) ?: continue
+            val tMs = parseTimestamp(pt.optString("time")) ?: continue
+            if (count > 0) sb.append(',')
+            sb.append("""{"lat":$lat,"lng":$lng,"t":$tMs}""")
+            count++
+        }
+        sb.append(']')
+        if (count == 0) return null
+        return LocationPathEntity(
+            startMs = startMs,
+            endMs = endMs,
+            pointsJson = sb.toString(),
+            pointCount = count,
+            source = "takeout",
+            importedAtMs = importedAtMs,
+        )
+    }
+
     // --- Helpers ---
 
     /**
@@ -269,12 +310,13 @@ object TakeoutTimelineParser {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ParseResult` (class) — lines 33-36
-- `parse` (function) — lines 38-73
-- `parseLegacyVisit` (function) — lines 77-101
-- `parseLegacySegment` (function) — lines 103-135
-- `parseNewVisit` (function) — lines 139-176
-- `parseNewActivity` (function) — lines 178-212
-- `parseLatLngString` (function) — lines 220-227
-- `parseTimestamp` (function) — lines 233-237
-- `ifBlankOrNullDefault` (function) — lines 239-240
+- `ParseResult` (class) — lines 35-39
+- `parse` (function) — lines 41-79
+- `parseLegacyVisit` (function) — lines 83-107
+- `parseLegacySegment` (function) — lines 109-141
+- `parseNewVisit` (function) — lines 145-182
+- `parseNewActivity` (function) — lines 184-218
+- `parseTimelinePath` (function) — lines 225-253
+- `parseLatLngString` (function) — lines 261-268
+- `parseTimestamp` (function) — lines 274-278
+- `ifBlankOrNullDefault` (function) — lines 280-281
