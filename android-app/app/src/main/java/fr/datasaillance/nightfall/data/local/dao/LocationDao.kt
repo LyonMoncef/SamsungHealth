@@ -31,6 +31,10 @@ interface LocationDao {
     @Query("SELECT activity_type, COUNT(*) as cnt FROM activity_segments GROUP BY activity_type ORDER BY cnt DESC")
     suspend fun getActivityTypeBreakdown(): List<ActivityTypeCount>
 
+    /** Pour le badge "sorti du domicile" — retourne tous les start_ms d'activities dans la plage. */
+    @Query("SELECT DISTINCT start_ms FROM activity_segments WHERE start_ms >= :fromMs AND start_ms < :toMs")
+    suspend fun getActivityStartTimesInRange(fromMs: Long, toMs: Long): List<Long>
+
     @Query("SELECT COUNT(*) FROM location_visits")
     suspend fun countVisits(): Int
 

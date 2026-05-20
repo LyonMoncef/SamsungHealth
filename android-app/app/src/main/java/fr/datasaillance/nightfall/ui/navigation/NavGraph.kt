@@ -171,11 +171,15 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Timeline.route) {
-                val timelineRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val timelineRepository: SleepRepository = remember(db) {
                     LocalSleepRepository(db.sleepDao())
                 }
-                val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
+                val timelineViewModel = remember(timelineRepository, db) {
+                    TimelineViewModel(timelineRepository, db.locationDao())
+                }
                 TimelineScreen(
                     viewModel = timelineViewModel,
                     onOpenHypnogram = { sessionId, isoDate ->

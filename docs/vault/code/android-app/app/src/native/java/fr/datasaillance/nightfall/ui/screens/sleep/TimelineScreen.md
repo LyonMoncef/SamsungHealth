@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt
-git_blob: 14cb4f8d5d2c6d528f8d812cc6247699644399c9
-last_synced: '2026-05-09T14:31:05Z'
-loc: 783
+git_blob: d3393a123d930c56ac4bdbd1bf614ce13f64d618
+last_synced: '2026-05-20T15:39:49Z'
+loc: 812
 annotations: []
 imports: []
 exports: []
@@ -66,6 +66,8 @@ private const val MOUNTAIN_ROW_HEIGHT_DP = 64
 private const val AXIS_BOTTOM_DP   = 24
 private const val LABEL_WIDTH_DP   = 48
 private const val LABEL_PADDING_DP = 4
+// Marge réservée à droite pour le badge "sorti du domicile".
+private const val TRAILING_BADGE_WIDTH_DP = 12
 // Fenêtre fixe 24h pour Non-24 — les heures de sommeil glissent partout.
 private const val WINDOW_START_MIN = 0
 private const val WINDOW_END_MIN   = 1440
@@ -254,15 +256,18 @@ fun TimelineScreen(
                                     )
                                 }
                                 items(nights, key = { (date, _) -> date.toEpochDay() }) { (date, sessions) ->
+                                    val wasOutOfHome = date in state.outOfHomeDates
                                     when (viewMode) {
                                         TimelineViewMode.BARS -> NightRow(
                                             date = date,
                                             sessions = sessions,
+                                            wasOutOfHome = wasOutOfHome,
                                             onClick = { selectedNight = NightSelection(date, sessions) },
                                         )
                                         TimelineViewMode.MOUNTAIN -> NightRowMountain(
                                             date = date,
                                             sessions = sessions,
+                                            wasOutOfHome = wasOutOfHome,
                                             onClick = { selectedNight = NightSelection(date, sessions) },
                                         )
                                     }
@@ -306,7 +311,7 @@ private fun TimelineAxisHeader(modifier: Modifier = Modifier) {
     ) {
         val canvasW = size.width
         val labelPx = LABEL_WIDTH_DP.dp.toPx()
-        val drawableW = canvasW - labelPx
+        val drawableW = canvasW - labelPx - TRAILING_BADGE_WIDTH_DP.dp.toPx()
         val paint = android.graphics.Paint().apply {
             textSize = 9.sp.toPx()
             color = onSurface.copy(alpha = 0.7f).toArgb()
@@ -360,9 +365,11 @@ private fun LoadOlderSentinel(
 private fun NightRow(
     date: LocalDate,
     sessions: List<SleepSessionResponse>,
+    wasOutOfHome: Boolean,
     onClick: () -> Unit,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
+    val primary = MaterialTheme.colorScheme.primary
     val windowDuration = WINDOW_END_MIN - WINDOW_START_MIN
     val dateFmt = remember { DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH) }
     val label = remember(date) { date.format(dateFmt) }
@@ -378,7 +385,8 @@ private fun NightRow(
     ) {
         val canvasW = size.width
         val labelPx = LABEL_WIDTH_DP.dp.toPx()
-        val drawableW = canvasW - labelPx
+        val trailingPx = TRAILING_BADGE_WIDTH_DP.dp.toPx()
+        val drawableW = canvasW - labelPx - trailingPx
         val rowH = ROW_HEIGHT_DP.dp.toPx()
         val barH = BAR_HEIGHT_DP.dp.toPx()
         val barTop = (rowH - barH) / 2f
@@ -400,6 +408,15 @@ private fun NightRow(
                 strokeWidth = 1f,
             )
             h += GRID_STEP_HOURS
+        }
+
+        // Badge "sorti du domicile" — petit cercle teal dans la marge à droite.
+        if (wasOutOfHome) {
+            drawCircle(
+                color = primary,
+                radius = 3.dp.toPx(),
+                center = Offset(canvasW - trailingPx / 2f, rowH / 2f),
+            )
         }
 
         drawIntoCanvas { canvas ->
@@ -494,9 +511,11 @@ private fun buildMountainData(
 private fun NightRowMountain(
     date: LocalDate,
     sessions: List<SleepSessionResponse>,
+    wasOutOfHome: Boolean,
     onClick: () -> Unit,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
+    val primary = MaterialTheme.colorScheme.primary
     val windowDuration = WINDOW_END_MIN - WINDOW_START_MIN
     val dateFmt = remember { DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH) }
     val label = remember(date) { date.format(dateFmt) }
@@ -514,7 +533,8 @@ private fun NightRowMountain(
     ) {
         val canvasW = size.width
         val labelPx = LABEL_WIDTH_DP.dp.toPx()
-        val drawableW = canvasW - labelPx
+        val trailingPx = TRAILING_BADGE_WIDTH_DP.dp.toPx()
+        val drawableW = canvasW - labelPx - trailingPx
         val rowH = MOUNTAIN_ROW_HEIGHT_DP.dp.toPx()
         val plotTop = 6.dp.toPx()
         val plotBot = rowH - 6.dp.toPx()
@@ -534,6 +554,15 @@ private fun NightRowMountain(
             val x = labelPx + (h * 60f / windowDuration) * drawableW
             drawLine(gridColor, Offset(x, 0f), Offset(x, rowH), strokeWidth = 1f)
             h += GRID_STEP_HOURS
+        }
+
+        // Badge "sorti du domicile" — petit cercle teal dans la marge à droite.
+        if (wasOutOfHome) {
+            drawCircle(
+                color = primary,
+                radius = 3.dp.toPx(),
+                center = Offset(canvasW - trailingPx / 2f, rowH / 2f),
+            )
         }
 
         drawIntoCanvas { canvas ->
@@ -811,24 +840,24 @@ private fun formatDuration(minutes: Long): String {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `TimelineViewMode` (class) — lines 54-54
-- `mountainLevel` (function) — lines 57-63
-- `stageColor` (function) — lines 72-78
-- `stageDisplayName` (function) — lines 80-86
-- `groupByNight` (function) — lines 90-97
-- `NightSelection` (class) — lines 101-104
-- `TimelineScreen` (function) — lines 108-272
-- `TimelineAxisHeader` (function) — lines 276-302
-- `LoadOlderSentinel` (function) — lines 306-332
-- `NightRow` (function) — lines 336-416
-- `MountainSegment` (class) — lines 420-425
-- `MicroAwakeMark` (class) — lines 427-427
-- `buildMountainData` (function) — lines 437-468
-- `NightRowMountain` (function) — lines 470-588
-- `yForLevel` (function) — lines 500-500
-- `xForMin` (function) — lines 525-526
-- `drawFallbackBar` (function) — lines 592-605
-- `drawStageSegment` (function) — lines 607-622
-- `drawBar` (function) — lines 624-671
-- `NightDetailSheet` (function) — lines 675-776
-- `formatDuration` (function) — lines 778-783
+- `TimelineViewMode` (class) — lines 56-56
+- `mountainLevel` (function) — lines 59-65
+- `stageColor` (function) — lines 74-80
+- `stageDisplayName` (function) — lines 82-88
+- `groupByNight` (function) — lines 92-99
+- `NightSelection` (class) — lines 103-106
+- `TimelineScreen` (function) — lines 110-277
+- `TimelineAxisHeader` (function) — lines 281-307
+- `LoadOlderSentinel` (function) — lines 311-337
+- `NightRow` (function) — lines 341-433
+- `MountainSegment` (class) — lines 437-442
+- `MicroAwakeMark` (class) — lines 444-444
+- `buildMountainData` (function) — lines 454-485
+- `NightRowMountain` (function) — lines 487-617
+- `yForLevel` (function) — lines 520-520
+- `xForMin` (function) — lines 554-555
+- `drawFallbackBar` (function) — lines 621-634
+- `drawStageSegment` (function) — lines 636-651
+- `drawBar` (function) — lines 653-700
+- `NightDetailSheet` (function) — lines 704-805
+- `formatDuration` (function) — lines 807-812

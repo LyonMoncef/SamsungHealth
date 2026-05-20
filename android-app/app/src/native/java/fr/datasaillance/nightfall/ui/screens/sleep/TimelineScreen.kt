@@ -43,6 +43,8 @@ private const val MOUNTAIN_ROW_HEIGHT_DP = 64
 private const val AXIS_BOTTOM_DP   = 24
 private const val LABEL_WIDTH_DP   = 48
 private const val LABEL_PADDING_DP = 4
+// Marge réservée à droite pour le badge "sorti du domicile".
+private const val TRAILING_BADGE_WIDTH_DP = 12
 // Fenêtre fixe 24h pour Non-24 — les heures de sommeil glissent partout.
 private const val WINDOW_START_MIN = 0
 private const val WINDOW_END_MIN   = 1440
@@ -231,15 +233,18 @@ fun TimelineScreen(
                                     )
                                 }
                                 items(nights, key = { (date, _) -> date.toEpochDay() }) { (date, sessions) ->
+                                    val wasOutOfHome = date in state.outOfHomeDates
                                     when (viewMode) {
                                         TimelineViewMode.BARS -> NightRow(
                                             date = date,
                                             sessions = sessions,
+                                            wasOutOfHome = wasOutOfHome,
                                             onClick = { selectedNight = NightSelection(date, sessions) },
                                         )
                                         TimelineViewMode.MOUNTAIN -> NightRowMountain(
                                             date = date,
                                             sessions = sessions,
+                                            wasOutOfHome = wasOutOfHome,
                                             onClick = { selectedNight = NightSelection(date, sessions) },
                                         )
                                     }
@@ -283,7 +288,7 @@ private fun TimelineAxisHeader(modifier: Modifier = Modifier) {
     ) {
         val canvasW = size.width
         val labelPx = LABEL_WIDTH_DP.dp.toPx()
-        val drawableW = canvasW - labelPx
+        val drawableW = canvasW - labelPx - TRAILING_BADGE_WIDTH_DP.dp.toPx()
         val paint = android.graphics.Paint().apply {
             textSize = 9.sp.toPx()
             color = onSurface.copy(alpha = 0.7f).toArgb()
@@ -337,9 +342,11 @@ private fun LoadOlderSentinel(
 private fun NightRow(
     date: LocalDate,
     sessions: List<SleepSessionResponse>,
+    wasOutOfHome: Boolean,
     onClick: () -> Unit,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
+    val primary = MaterialTheme.colorScheme.primary
     val windowDuration = WINDOW_END_MIN - WINDOW_START_MIN
     val dateFmt = remember { DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH) }
     val label = remember(date) { date.format(dateFmt) }
@@ -355,7 +362,8 @@ private fun NightRow(
     ) {
         val canvasW = size.width
         val labelPx = LABEL_WIDTH_DP.dp.toPx()
-        val drawableW = canvasW - labelPx
+        val trailingPx = TRAILING_BADGE_WIDTH_DP.dp.toPx()
+        val drawableW = canvasW - labelPx - trailingPx
         val rowH = ROW_HEIGHT_DP.dp.toPx()
         val barH = BAR_HEIGHT_DP.dp.toPx()
         val barTop = (rowH - barH) / 2f
@@ -377,6 +385,15 @@ private fun NightRow(
                 strokeWidth = 1f,
             )
             h += GRID_STEP_HOURS
+        }
+
+        // Badge "sorti du domicile" — petit cercle teal dans la marge à droite.
+        if (wasOutOfHome) {
+            drawCircle(
+                color = primary,
+                radius = 3.dp.toPx(),
+                center = Offset(canvasW - trailingPx / 2f, rowH / 2f),
+            )
         }
 
         drawIntoCanvas { canvas ->
@@ -471,9 +488,11 @@ private fun buildMountainData(
 private fun NightRowMountain(
     date: LocalDate,
     sessions: List<SleepSessionResponse>,
+    wasOutOfHome: Boolean,
     onClick: () -> Unit,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
+    val primary = MaterialTheme.colorScheme.primary
     val windowDuration = WINDOW_END_MIN - WINDOW_START_MIN
     val dateFmt = remember { DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH) }
     val label = remember(date) { date.format(dateFmt) }
@@ -491,7 +510,8 @@ private fun NightRowMountain(
     ) {
         val canvasW = size.width
         val labelPx = LABEL_WIDTH_DP.dp.toPx()
-        val drawableW = canvasW - labelPx
+        val trailingPx = TRAILING_BADGE_WIDTH_DP.dp.toPx()
+        val drawableW = canvasW - labelPx - trailingPx
         val rowH = MOUNTAIN_ROW_HEIGHT_DP.dp.toPx()
         val plotTop = 6.dp.toPx()
         val plotBot = rowH - 6.dp.toPx()
@@ -511,6 +531,15 @@ private fun NightRowMountain(
             val x = labelPx + (h * 60f / windowDuration) * drawableW
             drawLine(gridColor, Offset(x, 0f), Offset(x, rowH), strokeWidth = 1f)
             h += GRID_STEP_HOURS
+        }
+
+        // Badge "sorti du domicile" — petit cercle teal dans la marge à droite.
+        if (wasOutOfHome) {
+            drawCircle(
+                color = primary,
+                radius = 3.dp.toPx(),
+                center = Offset(canvasW - trailingPx / 2f, rowH / 2f),
+            )
         }
 
         drawIntoCanvas { canvas ->

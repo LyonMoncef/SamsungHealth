@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/dao/LocationDao.kt
-git_blob: c2ec0aec659239b1d3ceeb156fdf4f1c69b64eeb
-last_synced: '2026-05-09T19:12:26Z'
-loc: 50
+git_blob: b2dc9136adbe8356ed21007e4abae294ab38e359
+last_synced: '2026-05-20T15:39:48Z'
+loc: 54
 annotations: []
 imports: []
 exports: []
@@ -54,6 +54,10 @@ interface LocationDao {
     @Query("SELECT activity_type, COUNT(*) as cnt FROM activity_segments GROUP BY activity_type ORDER BY cnt DESC")
     suspend fun getActivityTypeBreakdown(): List<ActivityTypeCount>
 
+    /** Pour le badge "sorti du domicile" — retourne tous les start_ms d'activities dans la plage. */
+    @Query("SELECT DISTINCT start_ms FROM activity_segments WHERE start_ms >= :fromMs AND start_ms < :toMs")
+    suspend fun getActivityStartTimesInRange(fromMs: Long, toMs: Long): List<Long>
+
     @Query("SELECT COUNT(*) FROM location_visits")
     suspend fun countVisits(): Int
 
@@ -78,7 +82,7 @@ data class ActivityTypeCount(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `LocationDao` (class) — lines 10-45
+- `LocationDao` (class) — lines 10-49
 - `insertVisits` (function) — lines 13-14
 - `insertSegments` (function) — lines 16-17
 - `getAllVisits` (function) — lines 19-20
@@ -86,8 +90,9 @@ data class ActivityTypeCount(
 - `getAllSegments` (function) — lines 25-26
 - `getSegmentsInRange` (function) — lines 28-29
 - `getActivityTypeBreakdown` (function) — lines 31-32
-- `countVisits` (function) — lines 34-35
-- `countSegments` (function) — lines 37-38
-- `deleteAllVisits` (function) — lines 40-41
-- `deleteAllSegments` (function) — lines 43-44
-- `ActivityTypeCount` (class) — lines 47-50
+- `getActivityStartTimesInRange` (function) — lines 35-36
+- `countVisits` (function) — lines 38-39
+- `countSegments` (function) — lines 41-42
+- `deleteAllVisits` (function) — lines 44-45
+- `deleteAllSegments` (function) — lines 47-48
+- `ActivityTypeCount` (class) — lines 51-54
