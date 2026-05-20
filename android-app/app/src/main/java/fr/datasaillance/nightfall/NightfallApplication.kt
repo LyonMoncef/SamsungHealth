@@ -10,6 +10,10 @@ class NightfallApplication : Application() {
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
         // Phase B_us : worker quotidien (idempotent via uniqueWorkName).
         // Le worker no-op silencieusement si la permission UsageStats est absente.
-        UsageStatsScheduler.schedulePeriodic(this)
+        // try/catch défensif pour Robolectric (WorkManager pas init en test) — pas
+        // d'impact prod, WorkManager est toujours initialisé sur device via le
+        // ContentProvider AndroidX par défaut.
+        runCatching { UsageStatsScheduler.schedulePeriodic(this) }
+            .onFailure { Timber.w("scope=app onCreate scheduler_failed error=${it::class.simpleName}") }
     }
 }

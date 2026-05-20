@@ -189,9 +189,13 @@ fun NavGraph(
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
                 val viewModel = remember(context, db) {
+                    val helper = UsageStatsPermissionHelper(context.applicationContext)
                     DigitalWellbeingViewModel(
-                        permissionHelper = UsageStatsPermissionHelper(context.applicationContext),
+                        checkPermission = { helper.hasPermission() },
                         dao = db.usageStatsDao(),
+                        packageResolver = fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver(
+                            context.applicationContext.packageManager
+                        ),
                     )
                 }
                 DigitalWellbeingScreen(viewModel = viewModel)

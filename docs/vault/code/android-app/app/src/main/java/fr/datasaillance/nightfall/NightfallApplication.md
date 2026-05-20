@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/NightfallApplication.kt
-git_blob: eaede47d93d15ff03dfdf106851edfb9959beb9c
-last_synced: '2026-05-20T18:28:21Z'
-loc: 15
+git_blob: 4c29484e08f98a4d0d2dff45baf03f7c5855a49b
+last_synced: '2026-05-20T18:53:28Z'
+loc: 19
 annotations: []
 imports: []
 exports: []
@@ -33,7 +33,11 @@ class NightfallApplication : Application() {
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
         // Phase B_us : worker quotidien (idempotent via uniqueWorkName).
         // Le worker no-op silencieusement si la permission UsageStats est absente.
-        UsageStatsScheduler.schedulePeriodic(this)
+        // try/catch défensif pour Robolectric (WorkManager pas init en test) — pas
+        // d'impact prod, WorkManager est toujours initialisé sur device via le
+        // ContentProvider AndroidX par défaut.
+        runCatching { UsageStatsScheduler.schedulePeriodic(this) }
+            .onFailure { Timber.w("scope=app onCreate scheduler_failed error=${it::class.simpleName}") }
     }
 }
 ```
@@ -43,5 +47,5 @@ class NightfallApplication : Application() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallApplication` (class) — lines 7-15
-- `onCreate` (function) — lines 8-14
+- `NightfallApplication` (class) — lines 7-19
+- `onCreate` (function) — lines 8-18

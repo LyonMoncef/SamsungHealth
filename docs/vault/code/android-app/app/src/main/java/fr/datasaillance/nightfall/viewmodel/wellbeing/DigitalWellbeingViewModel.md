@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/wellbeing/DigitalWellbeingViewModel.kt
-git_blob: e35b3c855be6040fe73d409bda2586428bc2ef09
-last_synced: '2026-05-20T18:28:21Z'
-loc: 158
+git_blob: 68bbe8820a30e6ad9bf8e8314b0aaead91af4761
+last_synced: '2026-05-20T18:53:28Z'
+loc: 166
 annotations: []
 imports: []
 exports: []
@@ -28,7 +28,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
-import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
+import fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver
 import fr.datasaillance.nightfall.data.local.usage.UsageStatsScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +45,7 @@ enum class WellbeingPeriod(val days: Int, val label: String) {
 /** Stats agrégées sur la période sélectionnée pour 1 package. */
 data class PeriodAppStat(
     val packageName: String,
+    val displayLabel: String,
     val totalForegroundMs: Long,
     val daysWithUsage: Int,
 )
@@ -62,8 +63,10 @@ data class WellbeingUiState(
 )
 
 class DigitalWellbeingViewModel(
-    private val permissionHelper: UsageStatsPermissionHelper,
+    private val checkPermission: () -> Boolean,
     private val dao: UsageStatsDao,
+    private val packageResolver: PackageInfoResolver? = null,
+    private val clock: () -> java.time.LocalDate = { java.time.LocalDate.now() },
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WellbeingUiState())
@@ -82,7 +85,7 @@ class DigitalWellbeingViewModel(
                 val (rowsForPeriod, lastTs) = loadPeriodRows(period)
                 val (topApps, total) = aggregate(rowsForPeriod)
                 _uiState.value = _uiState.value.copy(
-                    permissionGranted = permissionHelper.hasPermission(),
+                    permissionGranted = checkPermission(),
                     collectedDates = dates,
                     totalRows = dao.count(),
                     topApps = topApps.take(15),
@@ -106,7 +109,7 @@ class DigitalWellbeingViewModel(
     private suspend fun loadPeriodRows(
         period: WellbeingPeriod,
     ): Pair<List<UsageDailyEntity>, Long?> {
-        val today = java.time.LocalDate.now()
+        val today = clock()
         val from = today.minusDays((period.days - 1).toLong()).toString()
         val to = today.toString()
         val rows = runCatching { dao.getInRange(from, to) }.getOrDefault(emptyList())
@@ -120,7 +123,12 @@ class DigitalWellbeingViewModel(
         for (r in rows) {
             val existing = byPkg[r.packageName]
             byPkg[r.packageName] = if (existing == null) {
-                PeriodAppStat(r.packageName, r.totalTimeForegroundMs, 1)
+                PeriodAppStat(
+                    packageName = r.packageName,
+                    displayLabel = packageResolver?.labelFor(r.packageName) ?: r.packageName,
+                    totalForegroundMs = r.totalTimeForegroundMs,
+                    daysWithUsage = 1,
+                )
             } else {
                 existing.copy(
                     totalForegroundMs = existing.totalForegroundMs + r.totalTimeForegroundMs,
@@ -139,7 +147,7 @@ class DigitalWellbeingViewModel(
      * bouton est l'inverse, l'utilisateur veut voir ses stats actuelles.
      */
     fun collectNow(context: Context) {
-        val today = java.time.LocalDate.now()
+        val today = clock()
         UsageStatsScheduler.runOnce(context, target = today)
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -187,12 +195,12 @@ class DigitalWellbeingViewModel(
 
 ### Symbols
 - `WellbeingPeriod` (class) — lines 16-20
-- `PeriodAppStat` (class) — lines 23-27
-- `WellbeingUiState` (class) — lines 29-39
-- `DigitalWellbeingViewModel` (class) — lines 41-158
-- `refresh` (function) — lines 53-75
-- `setPeriod` (function) — lines 77-81
-- `loadPeriodRows` (function) — lines 83-92
-- `aggregate` (function) — lines 94-111
-- `collectNow` (function) — lines 118-137
-- `backfill` (function) — lines 139-157
+- `PeriodAppStat` (class) — lines 23-28
+- `WellbeingUiState` (class) — lines 30-40
+- `DigitalWellbeingViewModel` (class) — lines 42-166
+- `refresh` (function) — lines 56-78
+- `setPeriod` (function) — lines 80-84
+- `loadPeriodRows` (function) — lines 86-95
+- `aggregate` (function) — lines 97-119
+- `collectNow` (function) — lines 126-145
+- `backfill` (function) — lines 147-165

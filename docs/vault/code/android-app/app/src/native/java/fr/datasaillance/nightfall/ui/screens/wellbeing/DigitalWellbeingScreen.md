@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/wellbeing/DigitalWellbeingScreen.kt
-git_blob: dc7783c0d139ed5b36dffc446b68ae9b371b1687
-last_synced: '2026-05-20T18:28:21Z'
-loc: 318
+git_blob: 09f2049f6d0f9e4939fedd3e8a0320d96b22ea4b
+last_synced: '2026-05-20T18:53:28Z'
+loc: 326
 annotations: []
 imports: []
 exports: []
@@ -288,11 +288,19 @@ private fun AppPeriodRow(stat: PeriodAppStat, maxMs: Long, periodDays: Int) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stat.packageName,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stat.displayLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (stat.displayLabel != stat.packageName) {
+                    Text(
+                        text = stat.packageName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             Text(
                 text = formatDuration(stat.totalForegroundMs),
                 style = MaterialTheme.typography.bodyMedium,
@@ -350,5 +358,5 @@ private fun formatDuration(ms: Long): String {
 - `PermissionCard` (function) — lines 151-187
 - `StatusCard` (function) — lines 189-234
 - `PeriodChips` (function) — lines 236-253
-- `AppPeriodRow` (function) — lines 255-309
-- `formatDuration` (function) — lines 311-318
+- `AppPeriodRow` (function) — lines 255-317
+- `formatDuration` (function) — lines 319-326

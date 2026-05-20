@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: 0933fb8adda00335869eb97a0d56a8281b082317
-last_synced: '2026-05-20T18:28:21Z'
-loc: 289
+git_blob: ce4df44a5eb4f975ac69cab71ca2ca1d92e42c69
+last_synced: '2026-05-20T18:53:28Z'
+loc: 293
 annotations: []
 imports: []
 exports: []
@@ -212,9 +212,13 @@ fun NavGraph(
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
                 val viewModel = remember(context, db) {
+                    val helper = UsageStatsPermissionHelper(context.applicationContext)
                     DigitalWellbeingViewModel(
-                        permissionHelper = UsageStatsPermissionHelper(context.applicationContext),
+                        checkPermission = { helper.hasPermission() },
                         dao = db.usageStatsDao(),
+                        packageResolver = fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver(
+                            context.applicationContext.packageManager
+                        ),
                     )
                 }
                 DigitalWellbeingScreen(viewModel = viewModel)
@@ -317,17 +321,17 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 58-241
-- `NoOpSleepRepository` (class) — lines 243-248
-- `getSessions` (function) — lines 244-247
-- `NoOpImportRepository` (class) — lines 250-265
-- `pingBackend` (function) — lines 251-251
-- `extractCsvEntries` (function) — lines 253-256
-- `uploadCsv` (function) — lines 258-264
-- `NoOpNightfallApi` (class) — lines 267-273
-- `health` (function) — lines 268-268
-- `login` (function) — lines 269-269
-- `register` (function) — lines 270-270
-- `requestPasswordReset` (function) — lines 271-271
-- `googleStart` (function) — lines 272-272
-- `ensureComposeNavigators` (function) — lines 281-289
+- `NavGraph` (function) — lines 58-245
+- `NoOpSleepRepository` (class) — lines 247-252
+- `getSessions` (function) — lines 248-251
+- `NoOpImportRepository` (class) — lines 254-269
+- `pingBackend` (function) — lines 255-255
+- `extractCsvEntries` (function) — lines 257-260
+- `uploadCsv` (function) — lines 262-268
+- `NoOpNightfallApi` (class) — lines 271-277
+- `health` (function) — lines 272-272
+- `login` (function) — lines 273-273
+- `register` (function) — lines 274-274
+- `requestPasswordReset` (function) — lines 275-275
+- `googleStart` (function) — lines 276-276
+- `ensureComposeNavigators` (function) — lines 285-293

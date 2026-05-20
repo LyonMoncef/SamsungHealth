@@ -265,11 +265,19 @@ private fun AppPeriodRow(stat: PeriodAppStat, maxMs: Long, periodDays: Int) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stat.packageName,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stat.displayLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (stat.displayLabel != stat.packageName) {
+                    Text(
+                        text = stat.packageName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             Text(
                 text = formatDuration(stat.totalForegroundMs),
                 style = MaterialTheme.typography.bodyMedium,
