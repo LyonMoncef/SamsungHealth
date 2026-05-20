@@ -209,13 +209,27 @@ fun TimelineScreen(
                         }
 
                         // Sentinel : quand l'utilisateur scrolle jusqu'en haut de la liste, on charge
-                        // 30 jours plus anciens. distinctUntilChanged évite les triggers répétés
-                        // pendant que la pagination est déjà en cours.
-                        LaunchedEffect(listState, state.hasMore, state.loadingMore) {
+                        // 30 jours plus anciens.
+                        //
+                        // ⚠️ Les clés doivent rester stables (pas state.hasMore / state.loadingMore) :
+                        // sinon le LaunchedEffect redémarre à chaque toggle de loadingMore, le buffer
+                        // distinctUntilChanged repart à zéro et ré-émet la valeur courante (0 si l'user
+                        // est au sentinel), ce qui déclenche un nouveau loadOlder immédiat → cascade
+                        // de chargements ininterrompus jusqu'à épuisement de l'historique.
+                        //
+                        // Lecture de hasMore / loadingMore à l'INTÉRIEUR du collect (snapshot instantané
+                        // au moment du trigger), pas comme clés.
+                        LaunchedEffect(listState, initialScrollDone) {
                             snapshotFlow { listState.firstVisibleItemIndex }
                                 .distinctUntilChanged()
-                                .filter { it == 0 && state.hasMore && !state.loadingMore && initialScrollDone }
-                                .collect { viewModel.loadOlder() }
+                                .filter { it == 0 && initialScrollDone }
+                                .collect {
+                                    val current = viewModel.uiState.value as? TimelineUiState.Success
+                                        ?: return@collect
+                                    if (current.hasMore && !current.loadingMore) {
+                                        viewModel.loadOlder()
+                                    }
+                                }
                         }
 
                         Column(

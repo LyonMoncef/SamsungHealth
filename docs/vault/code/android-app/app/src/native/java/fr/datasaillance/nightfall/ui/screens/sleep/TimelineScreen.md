@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt
-git_blob: d3393a123d930c56ac4bdbd1bf614ce13f64d618
-last_synced: '2026-05-20T15:39:49Z'
-loc: 812
+git_blob: cbbbe5b43f262a0f8fef88cf68f7eaa3ef209408
+last_synced: '2026-05-20T16:29:59Z'
+loc: 826
 annotations: []
 imports: []
 exports: []
@@ -232,13 +232,27 @@ fun TimelineScreen(
                         }
 
                         // Sentinel : quand l'utilisateur scrolle jusqu'en haut de la liste, on charge
-                        // 30 jours plus anciens. distinctUntilChanged évite les triggers répétés
-                        // pendant que la pagination est déjà en cours.
-                        LaunchedEffect(listState, state.hasMore, state.loadingMore) {
+                        // 30 jours plus anciens.
+                        //
+                        // ⚠️ Les clés doivent rester stables (pas state.hasMore / state.loadingMore) :
+                        // sinon le LaunchedEffect redémarre à chaque toggle de loadingMore, le buffer
+                        // distinctUntilChanged repart à zéro et ré-émet la valeur courante (0 si l'user
+                        // est au sentinel), ce qui déclenche un nouveau loadOlder immédiat → cascade
+                        // de chargements ininterrompus jusqu'à épuisement de l'historique.
+                        //
+                        // Lecture de hasMore / loadingMore à l'INTÉRIEUR du collect (snapshot instantané
+                        // au moment du trigger), pas comme clés.
+                        LaunchedEffect(listState, initialScrollDone) {
                             snapshotFlow { listState.firstVisibleItemIndex }
                                 .distinctUntilChanged()
-                                .filter { it == 0 && state.hasMore && !state.loadingMore && initialScrollDone }
-                                .collect { viewModel.loadOlder() }
+                                .filter { it == 0 && initialScrollDone }
+                                .collect {
+                                    val current = viewModel.uiState.value as? TimelineUiState.Success
+                                        ?: return@collect
+                                    if (current.hasMore && !current.loadingMore) {
+                                        viewModel.loadOlder()
+                                    }
+                                }
                         }
 
                         Column(
@@ -846,18 +860,18 @@ private fun formatDuration(minutes: Long): String {
 - `stageDisplayName` (function) — lines 82-88
 - `groupByNight` (function) — lines 92-99
 - `NightSelection` (class) — lines 103-106
-- `TimelineScreen` (function) — lines 110-277
-- `TimelineAxisHeader` (function) — lines 281-307
-- `LoadOlderSentinel` (function) — lines 311-337
-- `NightRow` (function) — lines 341-433
-- `MountainSegment` (class) — lines 437-442
-- `MicroAwakeMark` (class) — lines 444-444
-- `buildMountainData` (function) — lines 454-485
-- `NightRowMountain` (function) — lines 487-617
-- `yForLevel` (function) — lines 520-520
-- `xForMin` (function) — lines 554-555
-- `drawFallbackBar` (function) — lines 621-634
-- `drawStageSegment` (function) — lines 636-651
-- `drawBar` (function) — lines 653-700
-- `NightDetailSheet` (function) — lines 704-805
-- `formatDuration` (function) — lines 807-812
+- `TimelineScreen` (function) — lines 110-291
+- `TimelineAxisHeader` (function) — lines 295-321
+- `LoadOlderSentinel` (function) — lines 325-351
+- `NightRow` (function) — lines 355-447
+- `MountainSegment` (class) — lines 451-456
+- `MicroAwakeMark` (class) — lines 458-458
+- `buildMountainData` (function) — lines 468-499
+- `NightRowMountain` (function) — lines 501-631
+- `yForLevel` (function) — lines 534-534
+- `xForMin` (function) — lines 568-569
+- `drawFallbackBar` (function) — lines 635-648
+- `drawStageSegment` (function) — lines 650-665
+- `drawBar` (function) — lines 667-714
+- `NightDetailSheet` (function) — lines 718-819
+- `formatDuration` (function) — lines 821-826
