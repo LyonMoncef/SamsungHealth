@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/NightfallApplication.kt
-git_blob: 2df915ee0ce4d67969c6ee73a4475f0e9fc7e986
-last_synced: '2026-05-07T00:48:24Z'
-loc: 11
+git_blob: eaede47d93d15ff03dfdf106851edfb9959beb9c
+last_synced: '2026-05-20T18:28:21Z'
+loc: 15
 annotations: []
 imports: []
 exports: []
@@ -24,12 +24,16 @@ tags:
 package fr.datasaillance.nightfall
 
 import android.app.Application
+import fr.datasaillance.nightfall.data.local.usage.UsageStatsScheduler
 import timber.log.Timber
 
 class NightfallApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+        // Phase B_us : worker quotidien (idempotent via uniqueWorkName).
+        // Le worker no-op silencieusement si la permission UsageStats est absente.
+        UsageStatsScheduler.schedulePeriodic(this)
     }
 }
 ```
@@ -39,5 +43,5 @@ class NightfallApplication : Application() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallApplication` (class) — lines 6-11
-- `onCreate` (function) — lines 7-10
+- `NightfallApplication` (class) — lines 7-15
+- `onCreate` (function) — lines 8-14

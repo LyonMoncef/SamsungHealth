@@ -110,6 +110,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
+    // WorkManager — Phase B_us : collecte UsageStats quotidienne en background
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")

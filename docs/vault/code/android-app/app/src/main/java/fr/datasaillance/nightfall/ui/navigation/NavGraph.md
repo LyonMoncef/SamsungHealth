@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: ed527f3ec32f1df389191ece895c9812ff2c5293
-last_synced: '2026-05-09T16:40:48Z'
-loc: 274
+git_blob: 0933fb8adda00335869eb97a0d56a8281b082317
+last_synced: '2026-05-20T18:28:21Z'
+loc: 289
 annotations: []
 imports: []
 exports: []
@@ -59,6 +59,9 @@ import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
+import fr.datasaillance.nightfall.ui.screens.wellbeing.DigitalWellbeingScreen
+import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
+import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
 import fr.datasaillance.nightfall.ui.screens.auth.ForgotPasswordScreen
 import fr.datasaillance.nightfall.ui.screens.auth.LoginScreen
 import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
@@ -204,6 +207,18 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Activity.route) { ActivityScreen() }
+            composable(NavDestination.Wellbeing.route) {
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val viewModel = remember(context, db) {
+                    DigitalWellbeingViewModel(
+                        permissionHelper = UsageStatsPermissionHelper(context.applicationContext),
+                        dao = db.usageStatsDao(),
+                    )
+                }
+                DigitalWellbeingScreen(viewModel = viewModel)
+            }
             composable(NavDestination.Profile.route) {
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
@@ -302,17 +317,17 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 55-226
-- `NoOpSleepRepository` (class) — lines 228-233
-- `getSessions` (function) — lines 229-232
-- `NoOpImportRepository` (class) — lines 235-250
-- `pingBackend` (function) — lines 236-236
-- `extractCsvEntries` (function) — lines 238-241
-- `uploadCsv` (function) — lines 243-249
-- `NoOpNightfallApi` (class) — lines 252-258
-- `health` (function) — lines 253-253
-- `login` (function) — lines 254-254
-- `register` (function) — lines 255-255
-- `requestPasswordReset` (function) — lines 256-256
-- `googleStart` (function) — lines 257-257
-- `ensureComposeNavigators` (function) — lines 266-274
+- `NavGraph` (function) — lines 58-241
+- `NoOpSleepRepository` (class) — lines 243-248
+- `getSessions` (function) — lines 244-247
+- `NoOpImportRepository` (class) — lines 250-265
+- `pingBackend` (function) — lines 251-251
+- `extractCsvEntries` (function) — lines 253-256
+- `uploadCsv` (function) — lines 258-264
+- `NoOpNightfallApi` (class) — lines 267-273
+- `health` (function) — lines 268-268
+- `login` (function) — lines 269-269
+- `register` (function) — lines 270-270
+- `requestPasswordReset` (function) — lines 271-271
+- `googleStart` (function) — lines 272-272
+- `ensureComposeNavigators` (function) — lines 281-289
