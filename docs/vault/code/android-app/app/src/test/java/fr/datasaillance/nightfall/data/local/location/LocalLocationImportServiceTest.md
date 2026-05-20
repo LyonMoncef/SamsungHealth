@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/test/java/fr/datasaillance/nightfall/data/local/location/LocalLocationImportServiceTest.kt
-git_blob: 3d7fc3cdf6be26e50dafa539c9466ed64fcd9493
-last_synced: '2026-05-09T19:12:27Z'
-loc: 216
+git_blob: e083ed80ee8b13fe8129c77949202b984f42308c
+last_synced: '2026-05-20T14:36:27Z'
+loc: 334
 annotations: []
 imports: []
 exports: []
@@ -236,6 +236,124 @@ class LocalLocationImportServiceTest {
           }
         }
     """.trimIndent()
+
+    // ---- Nouveau format Google Timeline 2024+ (semanticSegments) ----
+
+    private fun newFormatFixture(): String = """
+        {
+          "semanticSegments": [
+            {
+              "startTime": "2026-02-21T18:11:28.000+01:00",
+              "endTime":   "2026-02-21T21:54:05.000+01:00",
+              "visit": {
+                "hierarchyLevel": 0,
+                "probability": 0.876,
+                "topCandidate": {
+                  "placeId": "ChIJG3a7suW_9EcRF42jL3Q84rA",
+                  "semanticType": "INFERRED_HOME",
+                  "placeLocation": { "latLng": "45.81213°, 4.8888115°" }
+                }
+              }
+            },
+            {
+              "startTime": "2026-02-21T17:29:14.000+01:00",
+              "endTime":   "2026-02-21T17:30:52.000+01:00",
+              "activity": {
+                "start": { "latLng": "45.5276149°, 4.8801637°" },
+                "end":   { "latLng": "45.5277361°, 4.8801797°" },
+                "distanceMeters": 102.94,
+                "probability": 0.97,
+                "topCandidate": { "type": "WALKING", "probability": 0.74 }
+              }
+            },
+            {
+              "startTime": "2026-02-19T14:00:00.000+01:00",
+              "endTime":   "2026-02-19T16:00:00.000+01:00",
+              "timelinePath": [
+                { "point": "45.527964°, 4.8787612°", "time": "2026-02-19T14:19:00.000+01:00" }
+              ]
+            }
+          ],
+          "rawSignals": [
+            { "position": { "LatLng": "45.5280°, 4.8787°", "timestamp": "2026-04-20T16:12:08.000+02:00" } }
+          ]
+        }
+    """.trimIndent()
+
+    @Test
+    fun new_format_extracts_visits_and_activities() = runTest {
+        val r = service.importJson(newFormatFixture())
+        assertEquals(1, r.visitsInserted)
+        assertEquals(1, r.segmentsInserted)
+
+        val visit = db.locationDao().getAllVisits().first()
+        assertEquals(45.81213, visit.lat, 0.00001)
+        assertEquals(4.8888115, visit.lng, 0.00001)
+        assertEquals("ChIJG3a7suW_9EcRF42jL3Q84rA", visit.placeId)
+        assertEquals("Maison", visit.placeName)  // INFERRED_HOME → Maison
+        assertEquals("0.88", visit.confidence)
+
+        val seg = db.locationDao().getAllSegments().first()
+        assertEquals(45.5276149, seg.startLat, 0.00001)
+        assertEquals(45.5277361, seg.endLat, 0.00001)
+        assertEquals("WALKING", seg.activityType)
+        assertEquals(102, seg.distanceMeters)  // truncated from 102.94
+        assertEquals("0.97", seg.confidence)
+    }
+
+    @Test
+    fun new_format_semantic_type_mapping() = runTest {
+        val variants = """
+            {
+              "semanticSegments": [
+                {
+                  "startTime": "2026-01-01T00:00:00.000Z",
+                  "endTime":   "2026-01-01T01:00:00.000Z",
+                  "visit": { "probability": 0.5, "topCandidate": {
+                    "placeId": "p1", "semanticType": "INFERRED_WORK",
+                    "placeLocation": { "latLng": "45.0°, 4.0°" } } }
+                },
+                {
+                  "startTime": "2026-01-01T02:00:00.000Z",
+                  "endTime":   "2026-01-01T03:00:00.000Z",
+                  "visit": { "probability": 0.5, "topCandidate": {
+                    "placeId": "p2", "semanticType": "UNKNOWN",
+                    "placeLocation": { "latLng": "45.1°, 4.1°" } } }
+                }
+              ]
+            }
+        """.trimIndent()
+        service.importJson(variants)
+        val visits = db.locationDao().getAllVisits().sortedBy { it.startMs }
+        assertEquals("Travail", visits[0].placeName)
+        assertNull(visits[1].placeName)  // UNKNOWN → null
+    }
+
+    @Test
+    fun parse_latLngString_handles_negative_and_no_degree_symbol() {
+        val (lat1, lng1) = TakeoutTimelineParser.parseLatLngString("45.81213°, 4.8888115°")!!
+        assertEquals(45.81213, lat1, 0.00001)
+        assertEquals(4.8888115, lng1, 0.00001)
+
+        val (lat2, lng2) = TakeoutTimelineParser.parseLatLngString("-45.81213, -4.8888115")!!
+        assertEquals(-45.81213, lat2, 0.00001)
+        assertEquals(-4.8888115, lng2, 0.00001)
+
+        assertNull(TakeoutTimelineParser.parseLatLngString(""))
+        assertNull(TakeoutTimelineParser.parseLatLngString("not coords"))
+        assertNull(TakeoutTimelineParser.parseLatLngString("45.0"))  // une seule valeur
+    }
+
+    @Test
+    fun new_format_ignores_timeline_path_and_raw_signals() = runTest {
+        val r = service.importJson(newFormatFixture())
+        // Fixture a 1 visit + 1 activity + 1 timelinePath + 1 rawSignal
+        // Seuls visit + activity doivent être importés
+        assertEquals(1, r.visitsInserted)
+        assertEquals(1, r.segmentsInserted)
+        assertEquals(1, db.locationDao().countVisits())
+        assertEquals(1, db.locationDao().countSegments())
+    }
 }
 ```
 
@@ -244,7 +362,7 @@ class LocalLocationImportServiceTest {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `LocalLocationImportServiceTest` (class) — lines 21-216
+- `LocalLocationImportServiceTest` (class) — lines 21-334
 - `setUp` (function) — lines 27-34
 - `tearDown` (function) — lines 36-37
 - `jsonFixture` (function) — lines 39-85
@@ -256,3 +374,8 @@ class LocalLocationImportServiceTest {
 - `zip_import_extracts_only_semantic_history_files` (function) — lines 171-192
 - `query_in_range` (function) — lines 194-204
 - `segmentJson` (function) — lines 206-215
+- `newFormatFixture` (function) — lines 219-258
+- `new_format_extracts_visits_and_activities` (function) — lines 260-279
+- `new_format_semantic_type_mapping` (function) — lines 281-307
+- `parse_latLngString_handles_negative_and_no_degree_symbol` (function) — lines 309-322
+- `new_format_ignores_timeline_path_and_raw_signals` (function) — lines 324-333

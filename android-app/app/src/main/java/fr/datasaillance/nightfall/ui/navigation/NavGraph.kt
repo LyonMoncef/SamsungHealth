@@ -214,9 +214,11 @@ fun NavGraph(
             }
             composable(NavDestination.Import.route) {
                 val context = LocalContext.current
-                val repository: ImportRepository = remember(api, context) {
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val repository: ImportRepository = remember(api, db) {
                     if (api != null) {
-                        val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                         val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
                             sleepDao = db.sleepDao(),
                             heartRateDao = db.heartRateDao(),
@@ -228,7 +230,12 @@ fun NavGraph(
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember(repository) { ImportViewModel(repository) }
+                val locationService = remember(db) {
+                    fr.datasaillance.nightfall.data.local.location.LocalLocationImportService(db.locationDao())
+                }
+                val viewModel = remember(repository, locationService) {
+                    ImportViewModel(repository, locationService)
+                }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
