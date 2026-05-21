@@ -158,12 +158,19 @@ fun NavGraph(
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 val dateArg = backStackEntry.arguments?.getString("date")
-                val hypnogramRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
-                    LocalSleepRepository(db.sleepDao())
+                val hypnogramDb = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
-                    HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
+                val hypnogramRepository: SleepRepository = remember(hypnogramDb) {
+                    LocalSleepRepository(hypnogramDb.sleepDao())
+                }
+                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository, hypnogramDb) {
+                    HypnogramViewModel(
+                        sessionId = sessionId,
+                        repository = hypnogramRepository,
+                        hintDate = dateArg,
+                        locationDao = hypnogramDb.locationDao(),
+                    )
                 }
                 HypnogramScreen(
                     viewModel = hypnogramViewModel,
@@ -171,11 +178,15 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Timeline.route) {
-                val timelineRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val timelineRepository: SleepRepository = remember(db) {
                     LocalSleepRepository(db.sleepDao())
                 }
-                val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
+                val timelineViewModel = remember(timelineRepository, db) {
+                    TimelineViewModel(timelineRepository, db.locationDao())
+                }
                 TimelineScreen(
                     viewModel = timelineViewModel,
                     onOpenHypnogram = { sessionId, isoDate ->
@@ -214,9 +225,11 @@ fun NavGraph(
             }
             composable(NavDestination.Import.route) {
                 val context = LocalContext.current
-                val repository: ImportRepository = remember(api, context) {
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val repository: ImportRepository = remember(api, db) {
                     if (api != null) {
-                        val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                         val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
                             sleepDao = db.sleepDao(),
                             heartRateDao = db.heartRateDao(),
@@ -228,7 +241,12 @@ fun NavGraph(
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember(repository) { ImportViewModel(repository) }
+                val locationService = remember(db) {
+                    fr.datasaillance.nightfall.data.local.location.LocalLocationImportService(db.locationDao())
+                }
+                val viewModel = remember(repository, locationService) {
+                    ImportViewModel(repository, locationService)
+                }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },

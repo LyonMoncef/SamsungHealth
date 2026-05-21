@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: ce4df44a5eb4f975ac69cab71ca2ca1d92e42c69
-last_synced: '2026-05-20T18:53:28Z'
-loc: 293
+git_blob: 45507c8cbc40c1525ab18eccfa2369748beca4b8
+last_synced: '2026-05-20T16:30:46Z'
+loc: 292
 annotations: []
 imports: []
 exports: []
@@ -59,9 +59,6 @@ import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
-import fr.datasaillance.nightfall.ui.screens.wellbeing.DigitalWellbeingScreen
-import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
-import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
 import fr.datasaillance.nightfall.ui.screens.auth.ForgotPasswordScreen
 import fr.datasaillance.nightfall.ui.screens.auth.LoginScreen
 import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
@@ -181,12 +178,19 @@ fun NavGraph(
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 val dateArg = backStackEntry.arguments?.getString("date")
-                val hypnogramRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
-                    LocalSleepRepository(db.sleepDao())
+                val hypnogramDb = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository) {
-                    HypnogramViewModel(sessionId, hypnogramRepository, hintDate = dateArg)
+                val hypnogramRepository: SleepRepository = remember(hypnogramDb) {
+                    LocalSleepRepository(hypnogramDb.sleepDao())
+                }
+                val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository, hypnogramDb) {
+                    HypnogramViewModel(
+                        sessionId = sessionId,
+                        repository = hypnogramRepository,
+                        hintDate = dateArg,
+                        locationDao = hypnogramDb.locationDao(),
+                    )
                 }
                 HypnogramScreen(
                     viewModel = hypnogramViewModel,
@@ -194,11 +198,15 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Timeline.route) {
-                val timelineRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val timelineRepository: SleepRepository = remember(db) {
                     LocalSleepRepository(db.sleepDao())
                 }
-                val timelineViewModel = remember(timelineRepository) { TimelineViewModel(timelineRepository) }
+                val timelineViewModel = remember(timelineRepository, db) {
+                    TimelineViewModel(timelineRepository, db.locationDao())
+                }
                 TimelineScreen(
                     viewModel = timelineViewModel,
                     onOpenHypnogram = { sessionId, isoDate ->
@@ -207,22 +215,6 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Activity.route) { ActivityScreen() }
-            composable(NavDestination.Wellbeing.route) {
-                val db = remember(context) {
-                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
-                }
-                val viewModel = remember(context, db) {
-                    val helper = UsageStatsPermissionHelper(context.applicationContext)
-                    DigitalWellbeingViewModel(
-                        checkPermission = { helper.hasPermission() },
-                        dao = db.usageStatsDao(),
-                        packageResolver = fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver(
-                            context.applicationContext.packageManager
-                        ),
-                    )
-                }
-                DigitalWellbeingScreen(viewModel = viewModel)
-            }
             composable(NavDestination.Profile.route) {
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
@@ -237,9 +229,11 @@ fun NavGraph(
             }
             composable(NavDestination.Import.route) {
                 val context = LocalContext.current
-                val repository: ImportRepository = remember(api, context) {
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val repository: ImportRepository = remember(api, db) {
                     if (api != null) {
-                        val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                         val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
                             sleepDao = db.sleepDao(),
                             heartRateDao = db.heartRateDao(),
@@ -251,7 +245,12 @@ fun NavGraph(
                         NoOpImportRepository()
                     }
                 }
-                val viewModel = remember(repository) { ImportViewModel(repository) }
+                val locationService = remember(db) {
+                    fr.datasaillance.nightfall.data.local.location.LocalLocationImportService(db.locationDao())
+                }
+                val viewModel = remember(repository, locationService) {
+                    ImportViewModel(repository, locationService)
+                }
                 ImportScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
@@ -321,17 +320,17 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 58-245
-- `NoOpSleepRepository` (class) — lines 247-252
-- `getSessions` (function) — lines 248-251
-- `NoOpImportRepository` (class) — lines 254-269
-- `pingBackend` (function) — lines 255-255
-- `extractCsvEntries` (function) — lines 257-260
-- `uploadCsv` (function) — lines 262-268
-- `NoOpNightfallApi` (class) — lines 271-277
-- `health` (function) — lines 272-272
-- `login` (function) — lines 273-273
-- `register` (function) — lines 274-274
-- `requestPasswordReset` (function) — lines 275-275
-- `googleStart` (function) — lines 276-276
-- `ensureComposeNavigators` (function) — lines 285-293
+- `NavGraph` (function) — lines 55-244
+- `NoOpSleepRepository` (class) — lines 246-251
+- `getSessions` (function) — lines 247-250
+- `NoOpImportRepository` (class) — lines 253-268
+- `pingBackend` (function) — lines 254-254
+- `extractCsvEntries` (function) — lines 256-259
+- `uploadCsv` (function) — lines 261-267
+- `NoOpNightfallApi` (class) — lines 270-276
+- `health` (function) — lines 271-271
+- `login` (function) — lines 272-272
+- `register` (function) — lines 273-273
+- `requestPasswordReset` (function) — lines 274-274
+- `googleStart` (function) — lines 275-275
+- `ensureComposeNavigators` (function) — lines 284-292

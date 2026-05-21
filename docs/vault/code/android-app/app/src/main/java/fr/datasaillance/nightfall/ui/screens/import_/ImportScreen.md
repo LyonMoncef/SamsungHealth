@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/import_/ImportScreen.kt
-git_blob: 3103a4b1522e3e6ef7195f24301304182da21f28
-last_synced: '2026-05-07T03:10:49Z'
-loc: 365
+git_blob: 6b402f5dbce558a934bdbcb9a924a58cbaa77803
+last_synced: '2026-05-20T14:36:27Z'
+loc: 504
 annotations: []
 imports: []
 exports: []
@@ -75,9 +75,15 @@ fun ImportScreen(
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { viewModel.startUpload(context.contentResolver, it) }
+    }
+
+    val locationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.startLocationImport(context.contentResolver, it) }
     }
 
     Scaffold(
@@ -99,7 +105,14 @@ fun ImportScreen(
                     .padding(padding)
                     .padding(16.dp),
             ) {
-                IdleContent(onCheckConnection = { viewModel.checkConnection() })
+                IdleContent(
+                    onCheckConnection = { viewModel.checkConnection() },
+                    onSelectTimelineJson = {
+                        locationLauncher.launch(
+                            arrayOf("application/json", "application/zip", "*/*")
+                        )
+                    },
+                )
             }
             is ImportUiState.Connecting -> Box(
                 modifier = Modifier
@@ -121,7 +134,7 @@ fun ImportScreen(
                 )
             }
             is ImportUiState.Connected -> ConnectedContent(
-                onSelectFolder = { launcher.launch(null) },
+                onSelectFolder = { launcher.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) },
                 padding = padding,
             )
             is ImportUiState.Selecting -> Box(
@@ -153,6 +166,7 @@ fun ImportScreen(
             ) {
                 SuccessContent(
                     results = state.results,
+                    missingTypes = state.missingTypes,
                     onDone = {
                         viewModel.reset()
                         onNavigateBack()
@@ -172,24 +186,136 @@ fun ImportScreen(
                     onBack = onNavigateBack,
                 )
             }
+            is ImportUiState.LocationImporting -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+            ) {
+                LocationImportingContent()
+            }
+            is ImportUiState.LocationSuccess -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+            ) {
+                LocationSuccessContent(
+                    state = state,
+                    onDone = {
+                        viewModel.reset()
+                        onNavigateBack()
+                    },
+                )
+            }
+            is ImportUiState.LocationError -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+            ) {
+                ErrorContent(
+                    message = state.message,
+                    retryable = true,
+                    onRetry = { viewModel.reset() },
+                    onBack = onNavigateBack,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun IdleContent(onCheckConnection: () -> Unit) {
+private fun IdleContent(
+    onCheckConnection: () -> Unit,
+    onSelectTimelineJson: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Importer des données Samsung Health",
+            text = "Importer des données",
             style = MaterialTheme.typography.headlineSmall,
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onCheckConnection) {
-            Text("Vérifier la connexion")
+        Button(
+            onClick = onCheckConnection,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Samsung Health (via serveur)")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onSelectTimelineJson,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Google Timeline (local)")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "L'import Google Timeline ne sort jamais de l'appareil.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun LocationImportingContent() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Import Google Timeline en cours…")
+    }
+}
+
+@Composable
+private fun LocationSuccessContent(
+    state: ImportUiState.LocationSuccess,
+    onDone: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Import Google Timeline terminé",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Visites")
+            Text("${state.visitsInserted} nouvelles · ${state.visitsSkipped} déjà présentes")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Trajets")
+            Text("${state.segmentsInserted} nouveaux · ${state.segmentsSkipped} déjà présents")
+        }
+        if (state.filesProcessed > 1) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "${state.filesProcessed} fichiers traités",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(onClick = onDone) {
+            Text("Terminer")
         }
     }
 }
@@ -248,7 +374,7 @@ private fun ConnectedContent(
             onClick = onSelectFolder,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Sélectionner le dossier Samsung Health")
+            Text("Sélectionner l'archive Samsung Health (.zip)")
         }
     }
 }
@@ -288,7 +414,7 @@ private fun SelectingContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Sélectionnez le dossier Samsung Health…")
+        Text("Sélectionnez l'archive Samsung Health…")
     }
 }
 
@@ -324,6 +450,7 @@ private fun UploadingContent(
 @Composable
 private fun SuccessContent(
     results: List<fr.datasaillance.nightfall.domain.import_.ImportResult>,
+    missingTypes: List<fr.datasaillance.nightfall.domain.import_.ImportDataType>,
     onDone: () -> Unit,
 ) {
     Column(
@@ -346,7 +473,19 @@ private fun SuccessContent(
                 if (result.errorMessage != null) {
                     Text("Erreur", color = MaterialTheme.colorScheme.error)
                 } else {
-                    Text("${result.inserted} insérés, ${result.skipped} ignorés")
+                    Text("${result.inserted} nouveaux · ${result.skipped} déjà présents")
+                }
+            }
+        }
+        if (missingTypes.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            missingTypes.forEach { type ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(type.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Absent du ZIP", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -393,13 +532,15 @@ private fun ErrorContent(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportScreen` (function) — lines 45-154
-- `IdleContent` (function) — lines 156-172
-- `ConnectingContent` (function) — lines 174-185
-- `ConnectionFailedContent` (function) — lines 187-204
-- `ConnectedContent` (function) — lines 206-231
-- `RgpdNoticeCard` (function) — lines 233-259
-- `SelectingContent` (function) — lines 261-270
-- `UploadingContent` (function) — lines 272-299
-- `SuccessContent` (function) — lines 301-335
-- `ErrorContent` (function) — lines 337-365
+- `ImportScreen` (function) — lines 45-203
+- `IdleContent` (function) — lines 205-240
+- `LocationImportingContent` (function) — lines 242-253
+- `LocationSuccessContent` (function) — lines 255-298
+- `ConnectingContent` (function) — lines 300-311
+- `ConnectionFailedContent` (function) — lines 313-330
+- `ConnectedContent` (function) — lines 332-357
+- `RgpdNoticeCard` (function) — lines 359-385
+- `SelectingContent` (function) — lines 387-396
+- `UploadingContent` (function) — lines 398-425
+- `SuccessContent` (function) — lines 427-474
+- `ErrorContent` (function) — lines 476-504

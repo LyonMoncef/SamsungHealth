@@ -2,8 +2,8 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/build.gradle.kts
-git_blob: 161e53797fddda284439be8265a56c9cb30e9ec0
-last_synced: '2026-05-20T18:28:21Z'
+git_blob: 17ccea6ae24e77beca222ee83bae180677f10de1
+last_synced: '2026-05-20T16:30:46Z'
 loc: 135
 annotations: []
 imports: []
@@ -133,8 +133,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
-    // WorkManager — Phase B_us : collecte UsageStats quotidienne en background
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    // OSMDroid — carte OpenStreetMap embedded (Phase C_gps, raster tiles, no API key)
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     // Test dependencies
     testImplementation("junit:junit:4.13.2")

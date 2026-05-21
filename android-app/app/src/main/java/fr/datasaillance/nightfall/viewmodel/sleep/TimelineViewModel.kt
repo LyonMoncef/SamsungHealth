@@ -2,6 +2,7 @@ package fr.datasaillance.nightfall.viewmodel.sleep
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,8 +12,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import timber.log.Timber
 import java.io.IOException
+import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneId
 
 private const val PAGE_DAYS = 30L
 // Pour le 1er chargement : on n'a pas de borne d'historique, donc on étend la
@@ -24,6 +27,7 @@ sealed class TimelineUiState {
     object Loading : TimelineUiState()
     data class Success(
         val sessions: List<SleepSessionResponse>,
+        val outOfHomeDates: Set<LocalDate> = emptySet(),
         val loadingMore: Boolean = false,
         val hasMore: Boolean = true,
     ) : TimelineUiState()
@@ -33,6 +37,8 @@ sealed class TimelineUiState {
 
 class TimelineViewModel(
     private val repository: SleepRepository,
+    private val locationDao: LocationDao? = null,
+    private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TimelineUiState>(TimelineUiState.Idle)
@@ -80,8 +86,10 @@ class TimelineViewModel(
                     _uiState.value = TimelineUiState.Empty
                     return@launch
                 }
+                val sorted = sortSessions(sessions)
                 _uiState.value = TimelineUiState.Success(
-                    sessions = sortSessions(sessions),
+                    sessions = sorted,
+                    outOfHomeDates = computeOutOfHomeDates(sorted),
                     hasMore = true,
                 )
             } catch (e: Exception) {
@@ -124,6 +132,7 @@ class TimelineViewModel(
                 val merged = sortSessions(current.sessions + batch)
                 _uiState.value = current.copy(
                     sessions = merged,
+                    outOfHomeDates = computeOutOfHomeDates(merged),
                     loadingMore = false,
                     hasMore = true,
                 )
@@ -138,6 +147,33 @@ class TimelineViewModel(
         list.sortedBy { session ->
             runCatching { OffsetDateTime.parse(session.sleep_start).toInstant() }.getOrNull()
         }
+
+    /**
+     * Pour chaque session, calcule la journée associée (= date de `sleep_start`)
+     * et vérifie s'il y a au moins une activité GPS ce jour-là. Une seule query
+     * Room couvre toute la fenêtre, puis groupement local.
+     */
+    private suspend fun computeOutOfHomeDates(
+        sessions: List<SleepSessionResponse>,
+    ): Set<LocalDate> {
+        val dao = locationDao ?: return emptySet()
+        if (sessions.isEmpty()) return emptySet()
+        val sessionDates = sessions.mapNotNull { session ->
+            runCatching { OffsetDateTime.parse(session.sleep_start).toLocalDate() }.getOrNull()
+        }.toSet()
+        if (sessionDates.isEmpty()) return emptySet()
+        val minDate = sessionDates.min()
+        val maxDate = sessionDates.max()
+        val fromMs = minDate.atStartOfDay(zone).toInstant().toEpochMilli()
+        val toMs = maxDate.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val activityStarts = runCatching {
+            dao.getActivityStartTimesInRange(fromMs, toMs)
+        }.getOrDefault(emptyList())
+        return activityStarts.asSequence()
+            .map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+            .toSet()
+            .intersect(sessionDates)
+    }
 
     private fun mapError(throwable: Throwable?): String = when (throwable) {
         is IOException -> "Vérifiez votre connexion réseau"

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/TimelineViewModel.kt
-git_blob: 0846e3a7cbd041f20a2abf4c029f4655e28157e6
-last_synced: '2026-05-09T14:31:04Z'
-loc: 151
+git_blob: f2677df4926e9f1ea5baf7d67c9cf40bd644f0c5
+last_synced: '2026-05-20T15:39:49Z'
+loc: 187
 annotations: []
 imports: []
 exports: []
@@ -25,6 +25,7 @@ package fr.datasaillance.nightfall.viewmodel.sleep
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,8 +35,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import timber.log.Timber
 import java.io.IOException
+import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneId
 
 private const val PAGE_DAYS = 30L
 // Pour le 1er chargement : on n'a pas de borne d'historique, donc on étend la
@@ -47,6 +50,7 @@ sealed class TimelineUiState {
     object Loading : TimelineUiState()
     data class Success(
         val sessions: List<SleepSessionResponse>,
+        val outOfHomeDates: Set<LocalDate> = emptySet(),
         val loadingMore: Boolean = false,
         val hasMore: Boolean = true,
     ) : TimelineUiState()
@@ -56,6 +60,8 @@ sealed class TimelineUiState {
 
 class TimelineViewModel(
     private val repository: SleepRepository,
+    private val locationDao: LocationDao? = null,
+    private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TimelineUiState>(TimelineUiState.Idle)
@@ -103,8 +109,10 @@ class TimelineViewModel(
                     _uiState.value = TimelineUiState.Empty
                     return@launch
                 }
+                val sorted = sortSessions(sessions)
                 _uiState.value = TimelineUiState.Success(
-                    sessions = sortSessions(sessions),
+                    sessions = sorted,
+                    outOfHomeDates = computeOutOfHomeDates(sorted),
                     hasMore = true,
                 )
             } catch (e: Exception) {
@@ -147,6 +155,7 @@ class TimelineViewModel(
                 val merged = sortSessions(current.sessions + batch)
                 _uiState.value = current.copy(
                     sessions = merged,
+                    outOfHomeDates = computeOutOfHomeDates(merged),
                     loadingMore = false,
                     hasMore = true,
                 )
@@ -161,6 +170,33 @@ class TimelineViewModel(
         list.sortedBy { session ->
             runCatching { OffsetDateTime.parse(session.sleep_start).toInstant() }.getOrNull()
         }
+
+    /**
+     * Pour chaque session, calcule la journée associée (= date de `sleep_start`)
+     * et vérifie s'il y a au moins une activité GPS ce jour-là. Une seule query
+     * Room couvre toute la fenêtre, puis groupement local.
+     */
+    private suspend fun computeOutOfHomeDates(
+        sessions: List<SleepSessionResponse>,
+    ): Set<LocalDate> {
+        val dao = locationDao ?: return emptySet()
+        if (sessions.isEmpty()) return emptySet()
+        val sessionDates = sessions.mapNotNull { session ->
+            runCatching { OffsetDateTime.parse(session.sleep_start).toLocalDate() }.getOrNull()
+        }.toSet()
+        if (sessionDates.isEmpty()) return emptySet()
+        val minDate = sessionDates.min()
+        val maxDate = sessionDates.max()
+        val fromMs = minDate.atStartOfDay(zone).toInstant().toEpochMilli()
+        val toMs = maxDate.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val activityStarts = runCatching {
+            dao.getActivityStartTimesInRange(fromMs, toMs)
+        }.getOrDefault(emptyList())
+        return activityStarts.asSequence()
+            .map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+            .toSet()
+            .intersect(sessionDates)
+    }
 
     private fun mapError(throwable: Throwable?): String = when (throwable) {
         is IOException -> "Vérifiez votre connexion réseau"
@@ -179,12 +215,13 @@ class TimelineViewModel(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `TimelineUiState` (class) — lines 22-32
-- `Success` (class) — lines 25-29
-- `Error` (class) — lines 31-31
-- `TimelineViewModel` (class) — lines 34-151
-- `retry` (function) — lines 49-49
-- `loadInitial` (function) — lines 51-92
-- `loadOlder` (function) — lines 94-135
-- `sortSessions` (function) — lines 137-140
-- `mapError` (function) — lines 142-150
+- `TimelineUiState` (class) — lines 25-36
+- `Success` (class) — lines 28-33
+- `Error` (class) — lines 35-35
+- `TimelineViewModel` (class) — lines 38-187
+- `retry` (function) — lines 55-55
+- `loadInitial` (function) — lines 57-100
+- `loadOlder` (function) — lines 102-144
+- `sortSessions` (function) — lines 146-149
+- `computeOutOfHomeDates` (function) — lines 156-176
+- `mapError` (function) — lines 178-186
