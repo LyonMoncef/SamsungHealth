@@ -3,9 +3,11 @@ package fr.datasaillance.nightfall.viewmodel.sleep
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
+import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
+import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,12 +27,19 @@ data class DayLocation(
     val paths: List<LocationPathEntity> = emptyList(),
 )
 
+/** Snapshot d'usage numérique pour la journée associée à la nuit affichée. */
+data class DayUsage(
+    val rows: List<UsageDailyEntity>,
+    val totalForegroundMs: Long,
+)
+
 sealed class HypnogramUiState {
     object Idle    : HypnogramUiState()
     object Loading : HypnogramUiState()
     data class Success(
         val sessions: List<SleepSessionResponse>,
         val dayLocation: DayLocation? = null,
+        val dayUsage: DayUsage? = null,
     ) : HypnogramUiState()
     data class Error(val message: String) : HypnogramUiState()
 }
@@ -40,6 +49,7 @@ class HypnogramViewModel(
     private val repository: SleepRepository,
     private val hintDate: String? = null,
     private val locationDao: LocationDao? = null,
+    private val usageStatsDao: UsageStatsDao? = null,
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
 
@@ -100,11 +110,16 @@ class HypnogramViewModel(
                 Timber.d("scope=hypno_vm night_sessions=${nightSessions.size} total_stages=${nightSessions.sumOf { it.stages?.size ?: 0 }}")
                 _uiState.value = HypnogramUiState.Success(nightSessions)
 
-                // Charge les données GPS du jour en arrière-plan — l'hypnogramme s'affiche
-                // tout de suite, la map apparaît dès que les données sont prêtes.
+                // Charge les données GPS + usage numérique du jour en arrière-plan —
+                // l'hypnogramme s'affiche tout de suite, le reste apparaît dès que prêt.
                 if (targetDate != null) {
                     val dayLoc = loadDayLocation(targetDate)
-                    _uiState.value = HypnogramUiState.Success(nightSessions, dayLocation = dayLoc)
+                    val dayUse = loadDayUsage(targetDate)
+                    _uiState.value = HypnogramUiState.Success(
+                        sessions = nightSessions,
+                        dayLocation = dayLoc,
+                        dayUsage = dayUse,
+                    )
                 }
             } catch (e: Exception) {
                 Timber.w("scope=hypno_vm error=${e::class.simpleName}")
@@ -124,6 +139,19 @@ class HypnogramViewModel(
                 paths = dao.getPathsInRange(fromMs, toMs),
             )
         }.onFailure { Timber.w("scope=hypno_vm location_load_failed error=${it::class.simpleName}") }
+            .getOrNull()
+    }
+
+    private suspend fun loadDayUsage(date: LocalDate): DayUsage? {
+        val dao = usageStatsDao ?: return null
+        val dateStr = date.toString()
+        return runCatching {
+            val rows = dao.getByDate(dateStr)
+            DayUsage(
+                rows = rows,
+                totalForegroundMs = rows.sumOf { it.totalTimeForegroundMs },
+            )
+        }.onFailure { Timber.w("scope=hypno_vm usage_load_failed error=${it::class.simpleName}") }
             .getOrNull()
     }
 
