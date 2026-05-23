@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/sleep/HypnogramViewModel.kt
-git_blob: 0f988a37d511847466556d5bf371ce7e8f7a30e0
-last_synced: '2026-05-20T16:30:46Z'
-loc: 139
+git_blob: 604e63601fcc54595eebf602451bfb71e3cb2624
+last_synced: '2026-05-23T19:13:13Z'
+loc: 167
 annotations: []
 imports: []
 exports: []
@@ -26,9 +26,11 @@ package fr.datasaillance.nightfall.viewmodel.sleep
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
+import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
+import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,12 +50,19 @@ data class DayLocation(
     val paths: List<LocationPathEntity> = emptyList(),
 )
 
+/** Snapshot d'usage numérique pour la journée associée à la nuit affichée. */
+data class DayUsage(
+    val rows: List<UsageDailyEntity>,
+    val totalForegroundMs: Long,
+)
+
 sealed class HypnogramUiState {
     object Idle    : HypnogramUiState()
     object Loading : HypnogramUiState()
     data class Success(
         val sessions: List<SleepSessionResponse>,
         val dayLocation: DayLocation? = null,
+        val dayUsage: DayUsage? = null,
     ) : HypnogramUiState()
     data class Error(val message: String) : HypnogramUiState()
 }
@@ -63,6 +72,7 @@ class HypnogramViewModel(
     private val repository: SleepRepository,
     private val hintDate: String? = null,
     private val locationDao: LocationDao? = null,
+    private val usageStatsDao: UsageStatsDao? = null,
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
 
@@ -123,11 +133,16 @@ class HypnogramViewModel(
                 Timber.d("scope=hypno_vm night_sessions=${nightSessions.size} total_stages=${nightSessions.sumOf { it.stages?.size ?: 0 }}")
                 _uiState.value = HypnogramUiState.Success(nightSessions)
 
-                // Charge les données GPS du jour en arrière-plan — l'hypnogramme s'affiche
-                // tout de suite, la map apparaît dès que les données sont prêtes.
+                // Charge les données GPS + usage numérique du jour en arrière-plan —
+                // l'hypnogramme s'affiche tout de suite, le reste apparaît dès que prêt.
                 if (targetDate != null) {
                     val dayLoc = loadDayLocation(targetDate)
-                    _uiState.value = HypnogramUiState.Success(nightSessions, dayLocation = dayLoc)
+                    val dayUse = loadDayUsage(targetDate)
+                    _uiState.value = HypnogramUiState.Success(
+                        sessions = nightSessions,
+                        dayLocation = dayLoc,
+                        dayUsage = dayUse,
+                    )
                 }
             } catch (e: Exception) {
                 Timber.w("scope=hypno_vm error=${e::class.simpleName}")
@@ -150,6 +165,19 @@ class HypnogramViewModel(
             .getOrNull()
     }
 
+    private suspend fun loadDayUsage(date: LocalDate): DayUsage? {
+        val dao = usageStatsDao ?: return null
+        val dateStr = date.toString()
+        return runCatching {
+            val rows = dao.getByDate(dateStr)
+            DayUsage(
+                rows = rows,
+                totalForegroundMs = rows.sumOf { it.totalTimeForegroundMs },
+            )
+        }.onFailure { Timber.w("scope=hypno_vm usage_load_failed error=${it::class.simpleName}") }
+            .getOrNull()
+    }
+
     private fun mapError(throwable: Throwable?): String = when (throwable) {
         is IOException -> "Vérifiez votre connexion réseau"
         is retrofit2.HttpException -> when (throwable.code()) {
@@ -167,12 +195,14 @@ class HypnogramViewModel(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DayLocation` (class) — lines 22-26
-- `HypnogramUiState` (class) — lines 28-36
-- `Success` (class) — lines 31-34
-- `Error` (class) — lines 35-35
-- `HypnogramViewModel` (class) — lines 38-139
-- `retry` (function) — lines 53-53
-- `loadSession` (function) — lines 55-114
-- `loadDayLocation` (function) — lines 116-128
-- `mapError` (function) — lines 130-138
+- `DayLocation` (class) — lines 24-28
+- `DayUsage` (class) — lines 31-34
+- `HypnogramUiState` (class) — lines 36-45
+- `Success` (class) — lines 39-43
+- `Error` (class) — lines 44-44
+- `HypnogramViewModel` (class) — lines 47-167
+- `retry` (function) — lines 63-63
+- `loadSession` (function) — lines 65-129
+- `loadDayLocation` (function) — lines 131-143
+- `loadDayUsage` (function) — lines 145-156
+- `mapError` (function) — lines 158-166

@@ -214,6 +214,8 @@ fun HypnogramScreen(
                             Spacer(modifier = Modifier.height(24.dp))
                             DayMapSection(dayLocation = state.dayLocation)
                             Spacer(modifier = Modifier.height(24.dp))
+                            DayUsageSection(dayUsage = state.dayUsage)
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }

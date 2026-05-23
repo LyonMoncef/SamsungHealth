@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavGraph.kt
-git_blob: 45507c8cbc40c1525ab18eccfa2369748beca4b8
-last_synced: '2026-05-20T16:30:46Z'
-loc: 292
+git_blob: 4051219592fcd219a0f46ec0eacc4344ef3387ac
+last_synced: '2026-05-23T19:13:13Z'
+loc: 312
 annotations: []
 imports: []
 exports: []
@@ -59,6 +59,9 @@ import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
+import fr.datasaillance.nightfall.ui.screens.wellbeing.DigitalWellbeingScreen
+import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
+import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
 import fr.datasaillance.nightfall.ui.screens.auth.ForgotPasswordScreen
 import fr.datasaillance.nightfall.ui.screens.auth.LoginScreen
 import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
@@ -190,6 +193,7 @@ fun NavGraph(
                         repository = hypnogramRepository,
                         hintDate = dateArg,
                         locationDao = hypnogramDb.locationDao(),
+                        usageStatsDao = hypnogramDb.usageStatsDao(),
                     )
                 }
                 HypnogramScreen(
@@ -215,6 +219,22 @@ fun NavGraph(
                 )
             }
             composable(NavDestination.Activity.route) { ActivityScreen() }
+            composable(NavDestination.Wellbeing.route) {
+                val db = remember(context) {
+                    fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
+                }
+                val viewModel = remember(context, db) {
+                    val helper = UsageStatsPermissionHelper(context.applicationContext)
+                    DigitalWellbeingViewModel(
+                        checkPermission = { helper.hasPermission() },
+                        dao = db.usageStatsDao(),
+                        packageResolver = fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver(
+                            context.applicationContext.packageManager
+                        ),
+                    )
+                }
+                DigitalWellbeingScreen(viewModel = viewModel)
+            }
             composable(NavDestination.Profile.route) {
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
@@ -320,17 +340,17 @@ private fun ensureComposeNavigators(navController: NavHostController) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavGraph` (function) — lines 55-244
-- `NoOpSleepRepository` (class) — lines 246-251
-- `getSessions` (function) — lines 247-250
-- `NoOpImportRepository` (class) — lines 253-268
-- `pingBackend` (function) — lines 254-254
-- `extractCsvEntries` (function) — lines 256-259
-- `uploadCsv` (function) — lines 261-267
-- `NoOpNightfallApi` (class) — lines 270-276
-- `health` (function) — lines 271-271
-- `login` (function) — lines 272-272
-- `register` (function) — lines 273-273
-- `requestPasswordReset` (function) — lines 274-274
-- `googleStart` (function) — lines 275-275
-- `ensureComposeNavigators` (function) — lines 284-292
+- `NavGraph` (function) — lines 58-264
+- `NoOpSleepRepository` (class) — lines 266-271
+- `getSessions` (function) — lines 267-270
+- `NoOpImportRepository` (class) — lines 273-288
+- `pingBackend` (function) — lines 274-274
+- `extractCsvEntries` (function) — lines 276-279
+- `uploadCsv` (function) — lines 281-287
+- `NoOpNightfallApi` (class) — lines 290-296
+- `health` (function) — lines 291-291
+- `login` (function) — lines 292-292
+- `register` (function) — lines 293-293
+- `requestPasswordReset` (function) — lines 294-294
+- `googleStart` (function) — lines 295-295
+- `ensureComposeNavigators` (function) — lines 304-312

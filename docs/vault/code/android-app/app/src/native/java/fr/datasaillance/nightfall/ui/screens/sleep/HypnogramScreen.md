@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/HypnogramScreen.kt
-git_blob: a53d4063cfab9f32c2981e5542a498f18e529198
-last_synced: '2026-05-20T16:30:46Z'
-loc: 724
+git_blob: 4a6fd6b89bf7db9f569e838d412a5afe86b47e5c
+last_synced: '2026-05-23T19:13:13Z'
+loc: 726
 annotations: []
 imports: []
 exports: []
@@ -236,6 +236,8 @@ fun HypnogramScreen(
                             HypnogramStatsSection(sessions = state.sessions)
                             Spacer(modifier = Modifier.height(24.dp))
                             DayMapSection(dayLocation = state.dayLocation)
+                            Spacer(modifier = Modifier.height(24.dp))
+                            DayUsageSection(dayUsage = state.dayUsage)
                             Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
@@ -758,17 +760,17 @@ private fun LegendItem(color: Color, label: String) {
 - `hypnoStageDisplayName` (function) — lines 64-70
 - `stageAtTime` (function) — lines 76-83
 - `nightTitle` (function) — lines 85-93
-- `HypnogramScreen` (function) — lines 95-223
-- `HypnogramSummarySection` (function) — lines 225-271
-- `HypnogramCanvas` (function) — lines 273-369
-- `drawAxisFourTicks` (function) — lines 371-408
-- `ScrubTooltip` (function) — lines 410-454
-- `drawRoundedSegment` (function) — lines 456-512
-- `HypnoMountainSegment` (class) — lines 516-521
-- `HypnoMicroAwake` (class) — lines 523-523
-- `buildHypnoMountain` (function) — lines 525-553
-- `HypnogramMountainCanvas` (function) — lines 555-696
-- `yForLevel` (function) — lines 595-595
-- `xForMs` (function) — lines 596-596
-- `HypnogramLegend` (function) — lines 698-711
-- `LegendItem` (function) — lines 713-724
+- `HypnogramScreen` (function) — lines 95-225
+- `HypnogramSummarySection` (function) — lines 227-273
+- `HypnogramCanvas` (function) — lines 275-371
+- `drawAxisFourTicks` (function) — lines 373-410
+- `ScrubTooltip` (function) — lines 412-456
+- `drawRoundedSegment` (function) — lines 458-514
+- `HypnoMountainSegment` (class) — lines 518-523
+- `HypnoMicroAwake` (class) — lines 525-525
+- `buildHypnoMountain` (function) — lines 527-555
+- `HypnogramMountainCanvas` (function) — lines 557-698
+- `yForLevel` (function) — lines 597-597
+- `xForMs` (function) — lines 598-598
+- `HypnogramLegend` (function) — lines 700-713
+- `LegendItem` (function) — lines 715-726

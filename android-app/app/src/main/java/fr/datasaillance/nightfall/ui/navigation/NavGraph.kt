@@ -170,6 +170,7 @@ fun NavGraph(
                         repository = hypnogramRepository,
                         hintDate = dateArg,
                         locationDao = hypnogramDb.locationDao(),
+                        usageStatsDao = hypnogramDb.usageStatsDao(),
                     )
                 }
                 HypnogramScreen(
