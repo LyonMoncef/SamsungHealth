@@ -4,6 +4,9 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Phase D unifiée — Vue Sleep × Usage × Location (section Bien-être numérique sous l'hypnogramme, top 5 apps + total écran pour la journée associée à la nuit) | `viewmodel/sleep/HypnogramViewModel.kt`, `ui/screens/sleep/DayUsageSection.kt`, `ui/navigation/NavGraph.kt` | [`9cb1f20`](#2026-05-23-9cb1f20) |
+| Phase A_gps + C_gps — Import Google Takeout (format 2024+ `semanticSegments` + ancien `timelineObjects`) + map OSMDroid embarquée + badge "sorti du domicile" Timeline + DB v3→v4 (`location_visits` + `activity_segments` + `location_paths`) | `data/local/entity/location/`, `data/local/location/TakeoutTimelineParser.kt`, `data/local/location/LocalLocationImportService.kt`, `ui/screens/sleep/DayMapSection.kt`, `ui/screens/sleep/TimelineScreen.kt`, `data/local/database/NightfallDatabase.kt` | [`73ccadc`](#2026-05-21-73ccadc) |
+| Phase A_us + B_us + C_us — Bien-être numérique local (collecte `UsageStatsManager` via WorkManager quotidien + écran 5e onglet avec sélecteur de période + DB v2 `usage_daily`) | `data/local/usage/`, `viewmodel/wellbeing/DigitalWellbeingViewModel.kt`, `ui/screens/wellbeing/DigitalWellbeingScreen.kt`, `NightfallApplication.kt` | [`174a545`](#2026-05-20-174a545) |
 | Foundation docs — VISION.md + CLAUDE.md | `VISION.md`, `CLAUDE.md` | [`523a981`](#2026-05-06-523a981) |
 | Agent migration Phase 2+3 — suppressions locaux obsolètes + vision-keeper projet | `.claude/agents/vision-keeper.md`, `.claude/skills/vision/SKILL.md`, `agents/contracts/vision_keeper.py` | [`pending`](#pending) |
 | Phase 6 — MVP CI/CD VPS perso — Dockerfile multi-stage + GHCR + deploy-dev + deploy-prod (auto-rollback) + /healthz /readyz + requirements.lock + ci.yml security gates (pip-audit, gitleaks, docker-build smoke). Pentester ACCEPT_WITH_CAVEATS — 5 HIGH levés + 5 D décisions + 4 issues résiduelles (#issues). | `Dockerfile`, `docker-compose.prod.yml`, `.github/workflows/{ci,deploy-dev,deploy-prod}.yml`, `server/routers/health.py`, `server/main.py`, `tests/server/test_healthz.py`, `requirements.{in,lock}`, `.env.prod.example` | [`9b825b1`](#2026-04-30-9b825b1) |
@@ -40,6 +43,44 @@
 ---
 
 ## Changelog
+
+### 2026-05-23 `9cb1f20`
+feat(unified): Phase D.3 — vue unifiée sleep × usage × location dans HypnogramScreen
+- `HypnogramViewModel` enrichi : nouveau param `usageStatsDao: UsageStatsDao?` + data class `DayUsage(rows, totalForegroundMs)` exposé dans `Success`
+- `loadDayUsage(date)` : query `dao.getByDate(date)` en arrière-plan après le 1er emit Success (hypnogramme s'affiche tout de suite, usage apparaît dès qu'il est prêt — pattern identique à `loadDayLocation`)
+- `DayUsageSection.kt` (nouveau, flavor native) : section Compose avec total écran + top 5 apps via `PackageInfoResolver` pour labels lisibles + mini-barre proportionnelle (cohérent avec l'écran Bien-être principal)
+- `HypnogramScreen.kt` : insertion sous `DayMapSection` avec spacer 24dp → la page Détails de la journée empile désormais sommeil + map + bien-être numérique sur un scroll unique
+- `NavGraph.kt` : passe `hypnogramDb.usageStatsDao()` au ViewModel
+- Fix sécurité bundle : starlette 1.0.0 → 1.1.0 (PYSEC-2026-161)
+
+### 2026-05-21 `73ccadc`
+feat(gps): Phase A_gps + extension format 2024+ + Phase C_gps partielle (badge timeline + map OSMDroid embarquée + DB v3→v4)
+- DB v3 : tables `location_visits` + `activity_segments` via `Migration2to3` (post-merge feat/usage-stats-collector qui occupait v2)
+- DB v4 : table `location_paths` (waypoints GPS sérialisés JSON) via `Migration3to4`
+- `TakeoutTimelineParser` — supporte 2 formats : legacy `timelineObjects` + nouveau 2024+ `semanticSegments` ; helper `parseLatLngString` pour `"45.81213°, 4.8888115°" ` ; mapping sémantique `INFERRED_HOME → "Maison"`, `INFERRED_WORK → "Travail"`, `UNKNOWN → null`
+- `LocalLocationImportService` — pipeline JSON/ZIP idempotent (`OnConflictStrategy.IGNORE`), filtre ZIP `looksLikeSemanticHistory`, limite décompression 500 MB
+- Bouton "Google Timeline (local)" dans `ImportScreen` — bypass ping VPS, 100% local
+- Badge "sorti du domicile" sur `TimelineScreen` (cercle teal à droite de chaque ligne quand ≥1 trajet GPS le jour `sleep_start.date`)
+- Map OSMDroid embarquée sous l'hypnogramme : Markers visites + Polylines colorées par mode de transport (cyan WALKING, teal CYCLING, amber IN_PASSENGER_VEHICLE) ; trajets réalistes via `timelinePath` waypoints (jusqu'à 120 points/path), fallback vol d'oiseau pointillé quand pas de path matché
+- Fix Timeline cascade : `LaunchedEffect` keys instables (`state.hasMore`, `state.loadingMore`) causaient une cascade ininterrompue de `loadOlder()` au sentinel — clés stabilisées + lecture de l'état dans le `collect`
+- 11/11 tests Robolectric verts (LocalLocationImportServiceTest)
+- Validé device : import Takeout 12 MB → 61 visites + 71 trajets + 974 paths
+- Dependency : `org.osmdroid:osmdroid-android:6.1.20`
+
+### 2026-05-20 `174a545`
+feat(usage): Phase A_us + B_us + C_us partielle — Bien-être numérique local-first
+- DB v2 : table `usage_daily` (date + package + foreground_ms + visible_ms + fgs_ms + lastTimeUsed + appLaunchCount + collectedAt) via `Migration1to2`
+- `LocalUsageStatsService.collectDailyStats(date)` + `backfillDays(N)` — agrège par package via `UsageStatsManager.queryUsageStats(INTERVAL_DAILY)`, upsert via `OnConflictStrategy.REPLACE` sur `(date, package_name)`
+- `UsageStatsPermissionHelper` — check appop `GET_USAGE_STATS` via `AppOpsManager.unsafeCheckOpNoThrow` + intent `Settings.ACTION_USAGE_ACCESS_SETTINGS`
+- `UsageStatsCollectionWorker` (CoroutineWorker) — skip silencieux si perm absente, retry sur erreur
+- `UsageStatsScheduler` — PeriodicWorkRequest 1×/24h avec `ExistingPeriodicWorkPolicy.KEEP`, `runOnce(target)` + `backfill(days)` chaîné via `beginUniqueWork`
+- Bootstrap dans `NightfallApplication.onCreate()` (try/catch défensif pour Robolectric)
+- Écran `DigitalWellbeingScreen` en 5e onglet BottomNav (icône `PhoneAndroid`) : carte permission + boutons "Collecter maintenant" / "Backfill 7j" + sélecteur période (Aujourd'hui / 7j / 30j) via FilterChips + top 15 apps agrégées avec mini-barre proportionnelle + labels lisibles via `PackageInfoResolver` (cache `PackageManager.getApplicationLabel`)
+- 10/10 tests Robolectric verts (5 service + 5 ViewModel)
+- Compromis : `appLaunchCount` reste à 0 (champ package-private AOSP, non exposé par API publique)
+- Permission PACKAGE_USAGE_STATS déclarée dans AndroidManifest avec `tools:ignore="ProtectedPermissions"`
+- Fix sécurité : bump `idna 3.13→3.15`, `urllib3 2.6.3→2.7.0` ; ignore `PYSEC-2025-183 pyjwt` (sans fix upstream, 2.12.1 dernière dispo)
+- Dependency : `androidx.work:work-runtime-ktx:2.10.0`
 
 ### 2026-05-09 `0e79abe`
 feat: Timeline V2 — 1 ligne/nuit, phases colorées, bottom sheet
