@@ -43,11 +43,7 @@ fun DayMapSection(
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text(
-            text = "Déplacements",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+        fr.datasaillance.nightfall.ui.components.Eyebrow(text = "Déplacements")
         Spacer(modifier = Modifier.height(8.dp))
 
         when {

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/TimelineScreen.kt
-git_blob: cbbbe5b43f262a0f8fef88cf68f7eaa3ef209408
-last_synced: '2026-05-20T16:29:59Z'
-loc: 826
+git_blob: 638d2db1ec54ad58508e3aa0856df3abf4eb6504
+last_synced: '2026-05-24T12:46:41Z'
+loc: 824
 annotations: []
 imports: []
 exports: []
@@ -146,9 +146,10 @@ fun TimelineScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Drift circadien", style = MaterialTheme.typography.headlineMedium) },
-                    actions = {
+                fr.datasaillance.nightfall.ui.components.DsTopBar(
+                    title = "Drift circadien",
+                    eyebrow = "Cadran circadien",
+                    trailing = {
                         TextButton(
                             onClick = {
                                 viewMode = if (viewMode == TimelineViewMode.BARS) TimelineViewMode.MOUNTAIN else TimelineViewMode.BARS
@@ -161,9 +162,6 @@ fun TimelineScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
                 )
             }
         ) { innerPadding ->
@@ -860,18 +858,18 @@ private fun formatDuration(minutes: Long): String {
 - `stageDisplayName` (function) — lines 82-88
 - `groupByNight` (function) — lines 92-99
 - `NightSelection` (class) — lines 103-106
-- `TimelineScreen` (function) — lines 110-291
-- `TimelineAxisHeader` (function) — lines 295-321
-- `LoadOlderSentinel` (function) — lines 325-351
-- `NightRow` (function) — lines 355-447
-- `MountainSegment` (class) — lines 451-456
-- `MicroAwakeMark` (class) — lines 458-458
-- `buildMountainData` (function) — lines 468-499
-- `NightRowMountain` (function) — lines 501-631
-- `yForLevel` (function) — lines 534-534
-- `xForMin` (function) — lines 568-569
-- `drawFallbackBar` (function) — lines 635-648
-- `drawStageSegment` (function) — lines 650-665
-- `drawBar` (function) — lines 667-714
-- `NightDetailSheet` (function) — lines 718-819
-- `formatDuration` (function) — lines 821-826
+- `TimelineScreen` (function) — lines 110-289
+- `TimelineAxisHeader` (function) — lines 293-319
+- `LoadOlderSentinel` (function) — lines 323-349
+- `NightRow` (function) — lines 353-445
+- `MountainSegment` (class) — lines 449-454
+- `MicroAwakeMark` (class) — lines 456-456
+- `buildMountainData` (function) — lines 466-497
+- `NightRowMountain` (function) — lines 499-629
+- `yForLevel` (function) — lines 532-532
+- `xForMin` (function) — lines 566-567
+- `drawFallbackBar` (function) — lines 633-646
+- `drawStageSegment` (function) — lines 648-663
+- `drawBar` (function) — lines 665-712
+- `NightDetailSheet` (function) — lines 716-817
+- `formatDuration` (function) — lines 819-824

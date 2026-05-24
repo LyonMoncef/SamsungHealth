@@ -37,11 +37,7 @@ fun DayUsageSection(
     val resolver = remember(context) { PackageInfoResolver(context.packageManager) }
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text(
-            text = "Bien-être numérique",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+        fr.datasaillance.nightfall.ui.components.Eyebrow(text = "Bien-être numérique")
         Spacer(modifier = Modifier.height(8.dp))
 
         when {
