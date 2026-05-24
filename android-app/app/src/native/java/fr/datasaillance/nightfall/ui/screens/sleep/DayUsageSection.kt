@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
 import fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver
+import fr.datasaillance.nightfall.ui.screens.wellbeing.AppIcon
 import fr.datasaillance.nightfall.viewmodel.sleep.DayUsage
 
 /**
@@ -60,7 +61,12 @@ fun DayUsageSection(
                     .take(5)
                 val maxMs = top.firstOrNull()?.totalTimeForegroundMs ?: 1L
                 top.forEach { row ->
-                    AppRow(row = row, label = resolver.labelFor(row.packageName), maxMs = maxMs)
+                    AppRow(
+                        row = row,
+                        label = resolver.labelFor(row.packageName),
+                        resolver = resolver,
+                        maxMs = maxMs,
+                    )
                 }
             }
         }
@@ -82,7 +88,12 @@ private fun UsagePlaceholder(message: String) {
 }
 
 @Composable
-private fun AppRow(row: UsageDailyEntity, label: String, maxMs: Long) {
+private fun AppRow(
+    row: UsageDailyEntity,
+    label: String,
+    resolver: PackageInfoResolver,
+    maxMs: Long,
+) {
     val ratio = if (maxMs <= 0) 0f else (row.totalTimeForegroundMs.toFloat() / maxMs.toFloat()).coerceIn(0f, 1f)
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
@@ -90,6 +101,8 @@ private fun AppRow(row: UsageDailyEntity, label: String, maxMs: Long) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            AppIcon(packageName = row.packageName, resolver = resolver, size = 28.dp)
+            Spacer(modifier = Modifier.padding(end = 8.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,

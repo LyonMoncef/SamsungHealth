@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/DayMapSection.kt
-git_blob: 963a19eddf67bdfe63c37f652d647b546f9b5ba3
-last_synced: '2026-05-20T16:30:46Z'
-loc: 279
+git_blob: d26495ca5fda4a2a5f57dfece97b7552c4534d2a
+last_synced: '2026-05-24T00:52:50Z'
+loc: 327
 annotations: []
 imports: []
 exports: []
@@ -24,6 +24,7 @@ tags:
 package fr.datasaillance.nightfall.ui.screens.sleep
 
 import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -107,8 +108,47 @@ fun DayMapSection(
                         .height(280.dp)
                         .testTag("hyp_day_map"),
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                ActivityLegend(dayLocation = dayLocation)
             }
         }
+    }
+}
+
+/**
+ * Légende dynamique : n'affiche que les types d'activité réellement présents
+ * dans la journée. Évite la légende statique surchargée quand l'utilisateur n'a
+ * fait que marcher (par ex.) — il ne verra que "Marche".
+ */
+@Composable
+private fun ActivityLegend(dayLocation: DayLocation) {
+    val typesPresent = dayLocation.segments.map { it.activityType }.distinct()
+    if (typesPresent.isEmpty()) return
+    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        typesPresent.forEach { type ->
+            LegendChip(label = humanizeActivityType(type), colorInt = blendActivityColorInternal(type))
+            Spacer(modifier = Modifier.padding(end = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun LegendChip(label: String, colorInt: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .padding(end = 4.dp)
+                .background(
+                    androidx.compose.ui.graphics.Color(colorInt),
+                    MaterialTheme.shapes.extraSmall,
+                )
+                .padding(6.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -291,15 +331,23 @@ internal fun humanizeActivityType(type: String): String = when (type) {
 
 /**
  * Couleur du polyline selon le type d'activité.
- * On reste sur la palette DataSaillance (teal/amber/cyan) — pas de gradient décoratif.
+ * Palette DataSaillance (teal/amber/cyan) — pas de gradient décoratif.
+ * Retourne `null` pour les types inconnus → le caller décide du fallback.
  */
-private fun blendActivityColor(type: String, fallback: Int): Int = when (type) {
+private fun colorForActivityType(type: String): Int? = when (type) {
     "WALKING", "RUNNING" -> AndroidColor.parseColor("#3be5e7")  // cyan
     "CYCLING" -> AndroidColor.parseColor("#0e9eb0")             // teal
     "IN_PASSENGER_VEHICLE", "IN_BUS", "IN_SUBWAY", "IN_TRAIN" -> AndroidColor.parseColor("#d37c04")  // amber
     "FLYING" -> AndroidColor.parseColor("#8b5cf6")              // violet sobre
-    else -> fallback
+    else -> null
 }
+
+private fun blendActivityColor(type: String, fallback: Int): Int =
+    colorForActivityType(type) ?: fallback
+
+/** Variante sans fallback pour la légende — gris pour les types inconnus. */
+private fun blendActivityColorInternal(type: String): Int =
+    colorForActivityType(type) ?: AndroidColor.parseColor("#888888")
 ```
 
 ---
@@ -307,15 +355,19 @@ private fun blendActivityColor(type: String, fallback: Int): Int = when (type) {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DayMapSection` (function) — lines 35-90
-- `LocationPlaceholder` (function) — lines 92-106
-- `DayStatsRow` (function) — lines 108-129
-- `StatChip` (function) — lines 131-145
-- `populateMap` (function) — lines 147-219
-- `decodePathPoints` (function) — lines 222-235
-- `buildVisitTitle` (function) — lines 237-238
-- `formatVisitTimes` (function) — lines 240-246
-- `formatSegmentMeta` (function) — lines 248-251
-- `formatDistance` (function) — lines 253-254
-- `humanizeActivityType` (function) — lines 256-267
-- `blendActivityColor` (function) — lines 273-279
+- `DayMapSection` (function) — lines 36-93
+- `ActivityLegend` (function) — lines 100-110
+- `LegendChip` (function) — lines 112-130
+- `LocationPlaceholder` (function) — lines 132-146
+- `DayStatsRow` (function) — lines 148-169
+- `StatChip` (function) — lines 171-185
+- `populateMap` (function) — lines 187-259
+- `decodePathPoints` (function) — lines 262-275
+- `buildVisitTitle` (function) — lines 277-278
+- `formatVisitTimes` (function) — lines 280-286
+- `formatSegmentMeta` (function) — lines 288-291
+- `formatDistance` (function) — lines 293-294
+- `humanizeActivityType` (function) — lines 296-307
+- `colorForActivityType` (function) — lines 314-320
+- `blendActivityColor` (function) — lines 322-323
+- `blendActivityColorInternal` (function) — lines 326-327

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/wellbeing/DigitalWellbeingViewModel.kt
-git_blob: 68bbe8820a30e6ad9bf8e8314b0aaead91af4761
-last_synced: '2026-05-20T18:53:28Z'
-loc: 166
+git_blob: 6f3304b3e999219d52fb04c8cd546bbf18c73e28
+last_synced: '2026-05-24T00:52:50Z'
+loc: 197
 annotations: []
 imports: []
 exports: []
@@ -60,6 +60,12 @@ data class WellbeingUiState(
     val selectedPeriod: WellbeingPeriod = WellbeingPeriod.TODAY,
     val topApps: List<PeriodAppStat> = emptyList(),
     val totalScreenTimeMs: Long = 0,
+    /**
+     * Pour le mini bar-chart par jour (tap-to-expand) :
+     * `packageName → liste ordonnée de paires (date ISO, foreground_ms)` couvrant
+     * tous les jours de la période, 0 inclus pour les jours sans usage.
+     */
+    val dailyByPackage: Map<String, List<Pair<String, Long>>> = emptyMap(),
 )
 
 class DigitalWellbeingViewModel(
@@ -84,12 +90,14 @@ class DigitalWellbeingViewModel(
                 val period = _uiState.value.selectedPeriod
                 val (rowsForPeriod, lastTs) = loadPeriodRows(period)
                 val (topApps, total) = aggregate(rowsForPeriod)
+                val dailyByPkg = buildDailyByPackage(rowsForPeriod, period)
                 _uiState.value = _uiState.value.copy(
                     permissionGranted = checkPermission(),
                     collectedDates = dates,
                     totalRows = dao.count(),
                     topApps = topApps.take(15),
                     totalScreenTimeMs = total,
+                    dailyByPackage = dailyByPkg,
                     isRefreshing = false,
                     lastCollectionAtMs = lastTs,
                 )
@@ -139,6 +147,29 @@ class DigitalWellbeingViewModel(
         val sorted = byPkg.values.sortedByDescending { it.totalForegroundMs }
         val total = sorted.sumOf { it.totalForegroundMs }
         return sorted to total
+    }
+
+    /**
+     * Pour chaque package, retourne la liste ordonnée (par date asc) des paires
+     * `(date ISO, foreground_ms)` couvrant tous les jours de la période. Les jours
+     * sans usage sont remplis avec 0 — le mini bar-chart peut ainsi afficher des
+     * vides à la bonne position chronologique.
+     */
+    private fun buildDailyByPackage(
+        rows: List<UsageDailyEntity>,
+        period: WellbeingPeriod,
+    ): Map<String, List<Pair<String, Long>>> {
+        if (rows.isEmpty()) return emptyMap()
+        val today = clock()
+        val allDates: List<String> = (0 until period.days)
+            .map { offset -> today.minusDays((period.days - 1 - offset).toLong()).toString() }
+        val byPkgByDate: Map<String, Map<String, Long>> = rows.groupBy { it.packageName }
+            .mapValues { (_, rowsForPkg) ->
+                rowsForPkg.associate { it.date to it.totalTimeForegroundMs }
+            }
+        return byPkgByDate.mapValues { (_, byDate) ->
+            allDates.map { date -> date to (byDate[date] ?: 0L) }
+        }
     }
 
     /**
@@ -196,11 +227,12 @@ class DigitalWellbeingViewModel(
 ### Symbols
 - `WellbeingPeriod` (class) — lines 16-20
 - `PeriodAppStat` (class) — lines 23-28
-- `WellbeingUiState` (class) — lines 30-40
-- `DigitalWellbeingViewModel` (class) — lines 42-166
-- `refresh` (function) — lines 56-78
-- `setPeriod` (function) — lines 80-84
-- `loadPeriodRows` (function) — lines 86-95
-- `aggregate` (function) — lines 97-119
-- `collectNow` (function) — lines 126-145
-- `backfill` (function) — lines 147-165
+- `WellbeingUiState` (class) — lines 30-46
+- `DigitalWellbeingViewModel` (class) — lines 48-197
+- `refresh` (function) — lines 62-86
+- `setPeriod` (function) — lines 88-92
+- `loadPeriodRows` (function) — lines 94-103
+- `aggregate` (function) — lines 105-127
+- `buildDailyByPackage` (function) — lines 135-150
+- `collectNow` (function) — lines 157-176
+- `backfill` (function) — lines 178-196
