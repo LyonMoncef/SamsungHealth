@@ -1,6 +1,7 @@
 package fr.datasaillance.nightfall.ui.screens.sleep
 
 import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,8 +85,47 @@ fun DayMapSection(
                         .height(280.dp)
                         .testTag("hyp_day_map"),
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                ActivityLegend(dayLocation = dayLocation)
             }
         }
+    }
+}
+
+/**
+ * Légende dynamique : n'affiche que les types d'activité réellement présents
+ * dans la journée. Évite la légende statique surchargée quand l'utilisateur n'a
+ * fait que marcher (par ex.) — il ne verra que "Marche".
+ */
+@Composable
+private fun ActivityLegend(dayLocation: DayLocation) {
+    val typesPresent = dayLocation.segments.map { it.activityType }.distinct()
+    if (typesPresent.isEmpty()) return
+    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        typesPresent.forEach { type ->
+            LegendChip(label = humanizeActivityType(type), colorInt = blendActivityColorInternal(type))
+            Spacer(modifier = Modifier.padding(end = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun LegendChip(label: String, colorInt: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .padding(end = 4.dp)
+                .background(
+                    androidx.compose.ui.graphics.Color(colorInt),
+                    MaterialTheme.shapes.extraSmall,
+                )
+                .padding(6.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -268,12 +308,20 @@ internal fun humanizeActivityType(type: String): String = when (type) {
 
 /**
  * Couleur du polyline selon le type d'activité.
- * On reste sur la palette DataSaillance (teal/amber/cyan) — pas de gradient décoratif.
+ * Palette DataSaillance (teal/amber/cyan) — pas de gradient décoratif.
+ * Retourne `null` pour les types inconnus → le caller décide du fallback.
  */
-private fun blendActivityColor(type: String, fallback: Int): Int = when (type) {
+private fun colorForActivityType(type: String): Int? = when (type) {
     "WALKING", "RUNNING" -> AndroidColor.parseColor("#3be5e7")  // cyan
     "CYCLING" -> AndroidColor.parseColor("#0e9eb0")             // teal
     "IN_PASSENGER_VEHICLE", "IN_BUS", "IN_SUBWAY", "IN_TRAIN" -> AndroidColor.parseColor("#d37c04")  // amber
     "FLYING" -> AndroidColor.parseColor("#8b5cf6")              // violet sobre
-    else -> fallback
+    else -> null
 }
+
+private fun blendActivityColor(type: String, fallback: Int): Int =
+    colorForActivityType(type) ?: fallback
+
+/** Variante sans fallback pour la légende — gris pour les types inconnus. */
+private fun blendActivityColorInternal(type: String): Int =
+    colorForActivityType(type) ?: AndroidColor.parseColor("#888888")

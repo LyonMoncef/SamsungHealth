@@ -37,6 +37,12 @@ data class WellbeingUiState(
     val selectedPeriod: WellbeingPeriod = WellbeingPeriod.TODAY,
     val topApps: List<PeriodAppStat> = emptyList(),
     val totalScreenTimeMs: Long = 0,
+    /**
+     * Pour le mini bar-chart par jour (tap-to-expand) :
+     * `packageName → liste ordonnée de paires (date ISO, foreground_ms)` couvrant
+     * tous les jours de la période, 0 inclus pour les jours sans usage.
+     */
+    val dailyByPackage: Map<String, List<Pair<String, Long>>> = emptyMap(),
 )
 
 class DigitalWellbeingViewModel(
@@ -61,12 +67,14 @@ class DigitalWellbeingViewModel(
                 val period = _uiState.value.selectedPeriod
                 val (rowsForPeriod, lastTs) = loadPeriodRows(period)
                 val (topApps, total) = aggregate(rowsForPeriod)
+                val dailyByPkg = buildDailyByPackage(rowsForPeriod, period)
                 _uiState.value = _uiState.value.copy(
                     permissionGranted = checkPermission(),
                     collectedDates = dates,
                     totalRows = dao.count(),
                     topApps = topApps.take(15),
                     totalScreenTimeMs = total,
+                    dailyByPackage = dailyByPkg,
                     isRefreshing = false,
                     lastCollectionAtMs = lastTs,
                 )
@@ -116,6 +124,29 @@ class DigitalWellbeingViewModel(
         val sorted = byPkg.values.sortedByDescending { it.totalForegroundMs }
         val total = sorted.sumOf { it.totalForegroundMs }
         return sorted to total
+    }
+
+    /**
+     * Pour chaque package, retourne la liste ordonnée (par date asc) des paires
+     * `(date ISO, foreground_ms)` couvrant tous les jours de la période. Les jours
+     * sans usage sont remplis avec 0 — le mini bar-chart peut ainsi afficher des
+     * vides à la bonne position chronologique.
+     */
+    private fun buildDailyByPackage(
+        rows: List<UsageDailyEntity>,
+        period: WellbeingPeriod,
+    ): Map<String, List<Pair<String, Long>>> {
+        if (rows.isEmpty()) return emptyMap()
+        val today = clock()
+        val allDates: List<String> = (0 until period.days)
+            .map { offset -> today.minusDays((period.days - 1 - offset).toLong()).toString() }
+        val byPkgByDate: Map<String, Map<String, Long>> = rows.groupBy { it.packageName }
+            .mapValues { (_, rowsForPkg) ->
+                rowsForPkg.associate { it.date to it.totalTimeForegroundMs }
+            }
+        return byPkgByDate.mapValues { (_, byDate) ->
+            allDates.map { date -> date to (byDate[date] ?: 0L) }
+        }
     }
 
     /**

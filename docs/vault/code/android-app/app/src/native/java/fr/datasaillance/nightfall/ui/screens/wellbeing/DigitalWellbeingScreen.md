@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/wellbeing/DigitalWellbeingScreen.kt
-git_blob: 09f2049f6d0f9e4939fedd3e8a0320d96b22ea4b
-last_synced: '2026-05-20T18:53:28Z'
-loc: 326
+git_blob: 525281ec3ad22fc47262032d2ea29b345a478174
+last_synced: '2026-05-24T00:52:50Z'
+loc: 453
 annotations: []
 imports: []
 exports: []
@@ -55,8 +55,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.size
+import fr.datasaillance.nightfall.data.local.usage.PackageInfoResolver
 import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
 import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
 import fr.datasaillance.nightfall.viewmodel.wellbeing.PeriodAppStat
@@ -161,8 +175,21 @@ fun DigitalWellbeingScreen(
                         )
                     } else {
                         val maxMs = state.topApps.firstOrNull()?.totalForegroundMs ?: 1L
+                        // Resolver partagé pour toute la liste (cache mémoire des icônes/labels)
+                        val resolver = remember(context) { PackageInfoResolver(context.packageManager) }
+                        var expandedPkg by remember { mutableStateOf<String?>(null) }
                         state.topApps.forEach { app ->
-                            AppPeriodRow(app, maxMs, state.selectedPeriod.days)
+                            AppPeriodRow(
+                                stat = app,
+                                maxMs = maxMs,
+                                periodDays = state.selectedPeriod.days,
+                                resolver = resolver,
+                                isExpanded = expandedPkg == app.packageName,
+                                dailyHistory = state.dailyByPackage[app.packageName].orEmpty(),
+                                onToggle = {
+                                    expandedPkg = if (expandedPkg == app.packageName) null else app.packageName
+                                },
+                            )
                         }
                     }
                 }
@@ -276,11 +303,20 @@ private fun PeriodChips(
 }
 
 @Composable
-private fun AppPeriodRow(stat: PeriodAppStat, maxMs: Long, periodDays: Int) {
+private fun AppPeriodRow(
+    stat: PeriodAppStat,
+    maxMs: Long,
+    periodDays: Int,
+    resolver: PackageInfoResolver,
+    isExpanded: Boolean = false,
+    dailyHistory: List<Pair<String, Long>> = emptyList(),
+    onToggle: () -> Unit = {},
+) {
     val ratio = if (maxMs <= 0) 0f else (stat.totalForegroundMs.toFloat() / maxMs.toFloat()).coerceIn(0f, 1f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = periodDays > 1) { onToggle() }
             .padding(vertical = 6.dp),
     ) {
         Row(
@@ -288,6 +324,8 @@ private fun AppPeriodRow(stat: PeriodAppStat, maxMs: Long, periodDays: Int) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            AppIcon(packageName = stat.packageName, resolver = resolver, size = 32.dp)
+            Spacer(modifier = Modifier.padding(end = 8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stat.displayLabel,
@@ -331,11 +369,100 @@ private fun AppPeriodRow(stat: PeriodAppStat, maxMs: Long, periodDays: Int) {
         if (periodDays > 1) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "${stat.daysWithUsage}/${periodDays}j",
+                text = if (isExpanded) "${stat.daysWithUsage}/${periodDays}j · tap pour replier"
+                       else "${stat.daysWithUsage}/${periodDays}j · tap pour détail",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        if (isExpanded && dailyHistory.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            DailyHistoryBars(history = dailyHistory)
+        }
+    }
+}
+
+/**
+ * Mini bar-chart horizontal — 1 barre par jour de la période, hauteur
+ * proportionnelle au temps écran du jour. Affiche la date min/max en label
+ * sous les barres pour donner le contexte temporel.
+ */
+@Composable
+private fun DailyHistoryBars(history: List<Pair<String, Long>>) {
+    val maxMs = history.maxOfOrNull { it.second } ?: 0L
+    val barColor = MaterialTheme.colorScheme.primary
+    val emptyColor = MaterialTheme.colorScheme.surfaceVariant
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            history.forEach { (_, ms) ->
+                val ratio = if (maxMs <= 0L) 0f else (ms.toFloat() / maxMs.toFloat()).coerceIn(0f, 1f)
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    verticalArrangement = Arrangement.Bottom,
+                ) {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(ratio.coerceAtLeast(0.02f))
+                            .background(
+                                if (ms > 0L) barColor else emptyColor.copy(alpha = 0.3f),
+                                MaterialTheme.shapes.extraSmall,
+                            ),
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = history.first().first.takeLast(5),  // MM-DD
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "max ${formatDuration(maxMs)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = history.last().first.takeLast(5),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Affiche l'icône d'une app via PackageManager. Placeholder gris en CircleShape
+ * si le package est introuvable (désinstallé après collecte).
+ */
+@Composable
+internal fun AppIcon(packageName: String, resolver: PackageInfoResolver, size: Dp = 32.dp) {
+    val bitmap = remember(packageName) { resolver.iconFor(packageName) }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(size).clip(CircleShape),
+        )
+    } else {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        )
     }
 }
 
@@ -354,9 +481,11 @@ private fun formatDuration(ms: Long): String {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DigitalWellbeingScreen` (function) — lines 42-149
-- `PermissionCard` (function) — lines 151-187
-- `StatusCard` (function) — lines 189-234
-- `PeriodChips` (function) — lines 236-253
-- `AppPeriodRow` (function) — lines 255-317
-- `formatDuration` (function) — lines 319-326
+- `DigitalWellbeingScreen` (function) — lines 56-176
+- `PermissionCard` (function) — lines 178-214
+- `StatusCard` (function) — lines 216-261
+- `PeriodChips` (function) — lines 263-280
+- `AppPeriodRow` (function) — lines 282-360
+- `DailyHistoryBars` (function) — lines 367-420
+- `AppIcon` (function) — lines 426-444
+- `formatDuration` (function) — lines 446-453
