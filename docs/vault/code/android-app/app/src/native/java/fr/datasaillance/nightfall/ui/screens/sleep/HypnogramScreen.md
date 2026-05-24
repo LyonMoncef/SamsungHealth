@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/HypnogramScreen.kt
-git_blob: 4a6fd6b89bf7db9f569e838d412a5afe86b47e5c
-last_synced: '2026-05-23T19:13:13Z'
-loc: 726
+git_blob: 1d11f5ce00c58abb562f20ca42a6039312d87c32
+last_synced: '2026-05-24T12:38:05Z'
+loc: 735
 annotations: []
 imports: []
 exports: []
@@ -275,23 +275,32 @@ private fun HypnogramSummarySection(
             if (ss != null && se != null) Duration.between(ss, se).toMinutes() else 0L
         }
     val deepPct = if (totalMin > 0 && deepMin > 0) (deepMin * 100 / totalMin).toInt() else null
+    val ds = fr.datasaillance.nightfall.ui.theme.DataSaillance.extras
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Text(durationText, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
+        // Hero "bedTime → wakeTime" en tabular nums
+        Text(
+            text = "$bedTime → $wakeTime",
+            fontSize = 28.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            letterSpacing = (-0.4).sp,
+            color = ds.textStrong,
+        )
         Spacer(modifier = Modifier.height(4.dp))
-        Row {
-            Text("Coucher $bedTime", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text("Réveil $wakeTime", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
-        }
-        if (deepPct != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("$deepPct% sommeil profond", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-        }
+        val subRow = buildList {
+            if (durationText.isNotEmpty()) add(durationText)
+            add("${sessions.size} session${if (sessions.size > 1) "s" else ""}")
+            if (deepPct != null) add("profond $deepPct %")
+        }.joinToString(" · ")
+        Text(
+            text = subRow,
+            style = MaterialTheme.typography.bodySmall,
+            color = ds.textMuted,
+        )
     }
 }
 
@@ -761,16 +770,16 @@ private fun LegendItem(color: Color, label: String) {
 - `stageAtTime` (function) — lines 76-83
 - `nightTitle` (function) — lines 85-93
 - `HypnogramScreen` (function) — lines 95-225
-- `HypnogramSummarySection` (function) — lines 227-273
-- `HypnogramCanvas` (function) — lines 275-371
-- `drawAxisFourTicks` (function) — lines 373-410
-- `ScrubTooltip` (function) — lines 412-456
-- `drawRoundedSegment` (function) — lines 458-514
-- `HypnoMountainSegment` (class) — lines 518-523
-- `HypnoMicroAwake` (class) — lines 525-525
-- `buildHypnoMountain` (function) — lines 527-555
-- `HypnogramMountainCanvas` (function) — lines 557-698
-- `yForLevel` (function) — lines 597-597
-- `xForMs` (function) — lines 598-598
-- `HypnogramLegend` (function) — lines 700-713
-- `LegendItem` (function) — lines 715-726
+- `HypnogramSummarySection` (function) — lines 227-282
+- `HypnogramCanvas` (function) — lines 284-380
+- `drawAxisFourTicks` (function) — lines 382-419
+- `ScrubTooltip` (function) — lines 421-465
+- `drawRoundedSegment` (function) — lines 467-523
+- `HypnoMountainSegment` (class) — lines 527-532
+- `HypnoMicroAwake` (class) — lines 534-534
+- `buildHypnoMountain` (function) — lines 536-564
+- `HypnogramMountainCanvas` (function) — lines 566-707
+- `yForLevel` (function) — lines 606-606
+- `xForMs` (function) — lines 607-607
+- `HypnogramLegend` (function) — lines 709-722
+- `LegendItem` (function) — lines 724-735

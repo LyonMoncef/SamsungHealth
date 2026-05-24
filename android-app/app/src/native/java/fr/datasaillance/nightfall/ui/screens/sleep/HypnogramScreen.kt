@@ -252,23 +252,32 @@ private fun HypnogramSummarySection(
             if (ss != null && se != null) Duration.between(ss, se).toMinutes() else 0L
         }
     val deepPct = if (totalMin > 0 && deepMin > 0) (deepMin * 100 / totalMin).toInt() else null
+    val ds = fr.datasaillance.nightfall.ui.theme.DataSaillance.extras
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Text(durationText, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
+        // Hero "bedTime → wakeTime" en tabular nums
+        Text(
+            text = "$bedTime → $wakeTime",
+            fontSize = 28.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            letterSpacing = (-0.4).sp,
+            color = ds.textStrong,
+        )
         Spacer(modifier = Modifier.height(4.dp))
-        Row {
-            Text("Coucher $bedTime", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text("Réveil $wakeTime", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
-        }
-        if (deepPct != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("$deepPct% sommeil profond", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-        }
+        val subRow = buildList {
+            if (durationText.isNotEmpty()) add(durationText)
+            add("${sessions.size} session${if (sessions.size > 1) "s" else ""}")
+            if (deepPct != null) add("profond $deepPct %")
+        }.joinToString(" · ")
+        Text(
+            text = subRow,
+            style = MaterialTheme.typography.bodySmall,
+            color = ds.textMuted,
+        )
     }
 }
 

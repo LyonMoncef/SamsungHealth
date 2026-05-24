@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/SleepScreen.kt
-git_blob: db3d26570568a69df9d5762fc6f26b1bbe5d6e95
-last_synced: '2026-05-09T04:03:35Z'
-loc: 129
+git_blob: 7e23a3624fee6fde420fc1b06598461bc7c10a20
+last_synced: '2026-05-24T12:38:05Z'
+loc: 126
 annotations: []
 imports: []
 exports: []
@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import fr.datasaillance.nightfall.ui.components.DsTopBar
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepUiState
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 
@@ -61,12 +62,7 @@ fun SleepScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "Mes nuits",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-            )
+            DsTopBar(title = "Sommeil", eyebrow = "Vos nuits")
 
             when (val state = uiState) {
                 is SleepUiState.Idle -> {}
@@ -109,9 +105,10 @@ fun SleepScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Aucune nuit enregistrée",
+                            text = "Pas encore de signaux. Connectez une source pour lever l'ancre.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(horizontal = 32.dp),
                         )
                     }
                 }
@@ -157,4 +154,4 @@ fun SleepScreen(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SleepScreen` (function) — lines 29-129
+- `SleepScreen` (function) — lines 30-126

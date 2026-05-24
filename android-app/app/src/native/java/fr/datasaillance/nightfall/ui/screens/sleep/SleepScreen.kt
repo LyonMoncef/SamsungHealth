@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import fr.datasaillance.nightfall.ui.components.DsTopBar
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepUiState
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 
@@ -38,12 +39,7 @@ fun SleepScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "Mes nuits",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-            )
+            DsTopBar(title = "Sommeil", eyebrow = "Vos nuits")
 
             when (val state = uiState) {
                 is SleepUiState.Idle -> {}
@@ -86,9 +82,10 @@ fun SleepScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Aucune nuit enregistrée",
+                            text = "Pas encore de signaux. Connectez une source pour lever l'ancre.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(horizontal = 32.dp),
                         )
                     }
                 }
