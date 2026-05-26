@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/theme/DataSaillanceTheme.kt
-git_blob: 7c246605c3da5d1d2929e15a681513c305f03f12
-last_synced: '2026-05-24T01:17:33Z'
-loc: 156
+git_blob: bf5098d243d5373dfa2e73c7a2ac7c9da96a4186
+last_synced: '2026-05-26T03:04:09Z'
+loc: 165
 annotations: []
 imports: []
 exports: []
@@ -50,8 +50,11 @@ data class ExtraColors(
     val border: androidx.compose.ui.graphics.Color,
     val borderStrong: androidx.compose.ui.graphics.Color,
     val divider: androidx.compose.ui.graphics.Color,
+    val textStrong: androidx.compose.ui.graphics.Color,
     val textMuted: androidx.compose.ui.graphics.Color,
     val textFaint: androidx.compose.ui.graphics.Color,
+    val success: androidx.compose.ui.graphics.Color,
+    val warning: androidx.compose.ui.graphics.Color,
     val stageAwake: androidx.compose.ui.graphics.Color,
     val stageRem: androidx.compose.ui.graphics.Color,
     val stageLight: androidx.compose.ui.graphics.Color,
@@ -119,8 +122,11 @@ private val DarkExtras = ExtraColors(
     border          = DarkPalette.Border,
     borderStrong    = DarkPalette.BorderStrong,
     divider         = DarkPalette.Divider,
+    textStrong      = DarkPalette.TextStrong,
     textMuted       = DarkPalette.TextMuted,
     textFaint       = DarkPalette.TextFaint,
+    success         = DarkPalette.Success,
+    warning         = DarkPalette.Warning,
     stageAwake      = DarkPalette.StageAwake,
     stageRem        = DarkPalette.StageRem,
     stageLight      = DarkPalette.StageLight,
@@ -134,8 +140,11 @@ private val LightExtras = ExtraColors(
     border          = LightPalette.Border,
     borderStrong    = LightPalette.BorderStrong,
     divider         = LightPalette.Divider,
+    textStrong      = LightPalette.TextStrong,
     textMuted       = LightPalette.TextMuted,
     textFaint       = LightPalette.TextFaint,
+    success         = LightPalette.Success,
+    warning         = LightPalette.Warning,
     stageAwake      = LightPalette.StageAwake,
     stageRem        = LightPalette.StageRem,
     stageLight      = LightPalette.StageLight,
@@ -184,6 +193,6 @@ fun NightfallTheme(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ExtraColors` (class) — lines 24-37
-- `DataSaillanceTheme` (function) — lines 123-138
-- `NightfallTheme` (function) — lines 150-156
+- `ExtraColors` (class) — lines 24-40
+- `DataSaillanceTheme` (function) — lines 132-147
+- `NightfallTheme` (function) — lines 159-165

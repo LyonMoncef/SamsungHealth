@@ -123,9 +123,10 @@ fun TimelineScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Drift circadien", style = MaterialTheme.typography.headlineMedium) },
-                    actions = {
+                fr.datasaillance.nightfall.ui.components.DsTopBar(
+                    title = "Drift circadien",
+                    eyebrow = "Cadran circadien",
+                    trailing = {
                         TextButton(
                             onClick = {
                                 viewMode = if (viewMode == TimelineViewMode.BARS) TimelineViewMode.MOUNTAIN else TimelineViewMode.BARS
@@ -138,9 +139,6 @@ fun TimelineScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
                 )
             }
         ) { innerPadding ->

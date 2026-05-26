@@ -67,11 +67,9 @@ fun DigitalWellbeingScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Bien-être numérique", style = MaterialTheme.typography.headlineMedium) },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
+                fr.datasaillance.nightfall.ui.components.DsTopBar(
+                    title = "Bien-être",
+                    eyebrow = "Temps d'écran",
                 )
             },
         ) { padding ->

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/DayMapSection.kt
-git_blob: d26495ca5fda4a2a5f57dfece97b7552c4534d2a
-last_synced: '2026-05-24T00:52:50Z'
-loc: 327
+git_blob: fd9dac3259d13c1cbc23a005fe5b6f59b0770253
+last_synced: '2026-05-26T03:04:09Z'
+loc: 323
 annotations: []
 imports: []
 exports: []
@@ -66,11 +66,7 @@ fun DayMapSection(
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text(
-            text = "Déplacements",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+        fr.datasaillance.nightfall.ui.components.Eyebrow(text = "Déplacements")
         Spacer(modifier = Modifier.height(8.dp))
 
         when {
@@ -355,19 +351,19 @@ private fun blendActivityColorInternal(type: String): Int =
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DayMapSection` (function) — lines 36-93
-- `ActivityLegend` (function) — lines 100-110
-- `LegendChip` (function) — lines 112-130
-- `LocationPlaceholder` (function) — lines 132-146
-- `DayStatsRow` (function) — lines 148-169
-- `StatChip` (function) — lines 171-185
-- `populateMap` (function) — lines 187-259
-- `decodePathPoints` (function) — lines 262-275
-- `buildVisitTitle` (function) — lines 277-278
-- `formatVisitTimes` (function) — lines 280-286
-- `formatSegmentMeta` (function) — lines 288-291
-- `formatDistance` (function) — lines 293-294
-- `humanizeActivityType` (function) — lines 296-307
-- `colorForActivityType` (function) — lines 314-320
-- `blendActivityColor` (function) — lines 322-323
-- `blendActivityColorInternal` (function) — lines 326-327
+- `DayMapSection` (function) — lines 36-89
+- `ActivityLegend` (function) — lines 96-106
+- `LegendChip` (function) — lines 108-126
+- `LocationPlaceholder` (function) — lines 128-142
+- `DayStatsRow` (function) — lines 144-165
+- `StatChip` (function) — lines 167-181
+- `populateMap` (function) — lines 183-255
+- `decodePathPoints` (function) — lines 258-271
+- `buildVisitTitle` (function) — lines 273-274
+- `formatVisitTimes` (function) — lines 276-282
+- `formatSegmentMeta` (function) — lines 284-287
+- `formatDistance` (function) — lines 289-290
+- `humanizeActivityType` (function) — lines 292-303
+- `colorForActivityType` (function) — lines 310-316
+- `blendActivityColor` (function) — lines 318-319
+- `blendActivityColorInternal` (function) — lines 322-323
