@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt
-git_blob: 03d0d92dd930ae6768049dfe6dc03a0beb19aa5c
-last_synced: '2026-05-20T18:28:21Z'
-loc: 27
+git_blob: b7029815b7b51501d5510e14c8fedb6063ae4c7c
+last_synced: '2026-05-26T03:20:22Z'
+loc: 29
 annotations: []
 imports: []
 exports: []
@@ -32,7 +32,9 @@ sealed class NavDestination(
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
     object Sleep    : NavDestination("sleep",    "Sommeil")
     object Timeline : NavDestination("timeline", "Timeline")
-    object Activity : NavDestination("activity", "Activité")
+    // 'activity' route conservée pour rétro-compat tests, mais le label affiché
+    // est désormais 'Cadran' — radial clock = évolution moderne de l'écran Activité.
+    object Activity : NavDestination("activity", "Cadran")
     object Wellbeing : NavDestination("wellbeing", "Bien-être")
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")
@@ -55,6 +57,6 @@ sealed class NavDestination(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavDestination` (class) — lines 3-27
-- `route` (function) — lines 20-21
-- `bottomNavItems` (function) — lines 25-25
+- `NavDestination` (class) — lines 3-29
+- `route` (function) — lines 22-23
+- `bottomNavItems` (function) — lines 27-27
