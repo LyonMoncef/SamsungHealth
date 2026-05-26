@@ -9,7 +9,9 @@ sealed class NavDestination(
     object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
     object Sleep    : NavDestination("sleep",    "Sommeil")
     object Timeline : NavDestination("timeline", "Timeline")
-    object Activity : NavDestination("activity", "Activité")
+    // 'activity' route conservée pour rétro-compat tests, mais le label affiché
+    // est désormais 'Cadran' — radial clock = évolution moderne de l'écran Activité.
+    object Activity : NavDestination("activity", "Cadran")
     object Wellbeing : NavDestination("wellbeing", "Bien-être")
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")

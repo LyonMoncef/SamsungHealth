@@ -36,6 +36,7 @@ import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
+import fr.datasaillance.nightfall.ui.screens.radial.RadialRoute
 import fr.datasaillance.nightfall.ui.screens.wellbeing.DigitalWellbeingScreen
 import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
 import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
@@ -195,7 +196,10 @@ fun NavGraph(
                     },
                 )
             }
-            composable(NavDestination.Activity.route) { ActivityScreen() }
+            // Route 'activity' rendered as the new MultiDonutClock radial view
+            // (phase 4a) — l'ancien ActivityScreen placeholder reste compilé pour
+            // les flavors qui n'ont pas Compose Canvas natif.
+            composable(NavDestination.Activity.route) { RadialRoute() }
             composable(NavDestination.Wellbeing.route) {
                 val db = remember(context) {
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)

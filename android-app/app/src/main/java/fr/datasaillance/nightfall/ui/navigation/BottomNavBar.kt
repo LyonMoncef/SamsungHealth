@@ -2,7 +2,7 @@ package fr.datasaillance.nightfall.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.ShowChart
@@ -17,7 +17,7 @@ private fun iconForDestination(destination: NavDestination): ImageVector = when 
     is NavDestination.Sleep     -> Icons.Default.Home
     is NavDestination.Timeline  -> Icons.Default.ShowChart
     is NavDestination.Wellbeing -> Icons.Default.PhoneAndroid
-    is NavDestination.Activity  -> Icons.Default.FitnessCenter
+    is NavDestination.Activity  -> Icons.Default.DonutLarge  // route 'activity' = Cadran radial
     is NavDestination.Profile   -> Icons.Default.AccountCircle
     else                        -> Icons.Default.Home
 }
