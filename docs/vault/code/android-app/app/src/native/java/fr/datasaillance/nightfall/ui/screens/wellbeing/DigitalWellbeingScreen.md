@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/wellbeing/DigitalWellbeingScreen.kt
-git_blob: 525281ec3ad22fc47262032d2ea29b345a478174
-last_synced: '2026-05-24T00:52:50Z'
-loc: 453
+git_blob: 58772d85d3e4b457588ddf35615b6fb228bfcd8b
+last_synced: '2026-05-26T03:04:10Z'
+loc: 451
 annotations: []
 imports: []
 exports: []
@@ -90,11 +90,9 @@ fun DigitalWellbeingScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Bien-être numérique", style = MaterialTheme.typography.headlineMedium) },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
+                fr.datasaillance.nightfall.ui.components.DsTopBar(
+                    title = "Bien-être",
+                    eyebrow = "Temps d'écran",
                 )
             },
         ) { padding ->
@@ -481,11 +479,11 @@ private fun formatDuration(ms: Long): String {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DigitalWellbeingScreen` (function) — lines 56-176
-- `PermissionCard` (function) — lines 178-214
-- `StatusCard` (function) — lines 216-261
-- `PeriodChips` (function) — lines 263-280
-- `AppPeriodRow` (function) — lines 282-360
-- `DailyHistoryBars` (function) — lines 367-420
-- `AppIcon` (function) — lines 426-444
-- `formatDuration` (function) — lines 446-453
+- `DigitalWellbeingScreen` (function) — lines 56-174
+- `PermissionCard` (function) — lines 176-212
+- `StatusCard` (function) — lines 214-259
+- `PeriodChips` (function) — lines 261-278
+- `AppPeriodRow` (function) — lines 280-358
+- `DailyHistoryBars` (function) — lines 365-418
+- `AppIcon` (function) — lines 424-442
+- `formatDuration` (function) — lines 444-451

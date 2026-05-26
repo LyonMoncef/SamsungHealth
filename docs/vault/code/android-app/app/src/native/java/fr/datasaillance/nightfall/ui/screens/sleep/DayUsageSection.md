@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/sleep/DayUsageSection.kt
-git_blob: f273b4ffd004a629c4445a92538cc5c044b09112
-last_synced: '2026-05-24T00:52:50Z'
-loc: 147
+git_blob: 15632c9d1bc383326ee182dc9fbb915147f24fac
+last_synced: '2026-05-26T03:04:09Z'
+loc: 143
 annotations: []
 imports: []
 exports: []
@@ -60,11 +60,7 @@ fun DayUsageSection(
     val resolver = remember(context) { PackageInfoResolver(context.packageManager) }
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text(
-            text = "Bien-être numérique",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+        fr.datasaillance.nightfall.ui.components.Eyebrow(text = "Bien-être numérique")
         Spacer(modifier = Modifier.height(8.dp))
 
         when {
@@ -175,7 +171,7 @@ private fun formatScreenTime(ms: Long): String {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DayUsageSection` (function) — lines 31-74
-- `UsagePlaceholder` (function) — lines 76-88
-- `AppRow` (function) — lines 90-138
-- `formatScreenTime` (function) — lines 140-147
+- `DayUsageSection` (function) — lines 31-70
+- `UsagePlaceholder` (function) — lines 72-84
+- `AppRow` (function) — lines 86-134
+- `formatScreenTime` (function) — lines 136-143
