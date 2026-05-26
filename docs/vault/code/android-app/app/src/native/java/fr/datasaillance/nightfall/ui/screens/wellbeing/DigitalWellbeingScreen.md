@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/wellbeing/DigitalWellbeingScreen.kt
-git_blob: 58772d85d3e4b457588ddf35615b6fb228bfcd8b
-last_synced: '2026-05-24T12:46:41Z'
-loc: 451
+git_blob: 614e94cdd2b48e7911cfb5cdddb2d2ffec26d51b
+last_synced: '2026-05-26T02:40:22Z'
+loc: 487
 annotations: []
 imports: []
 exports: []
@@ -23,6 +23,7 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.ui.screens.wellbeing
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -149,6 +150,41 @@ fun DigitalWellbeingScreen(
                         ) {
                             Text("Backfill 7j")
                         }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // DEBUG : export ephemeral JSON pour design (location + usage_daily).
+                    // A retirer post-livraison batch 3 design (cf followup issue).
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    var exportMsg by androidx.compose.runtime.remember {
+                        androidx.compose.runtime.mutableStateOf<String?>(null)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                exportMsg = "Export en cours…"
+                                runCatching {
+                                    fr.datasaillance.nightfall.data.local.debug.DebugExporter
+                                        .exportAll(context, windowDays = 90)
+                                }
+                                    .onSuccess { files ->
+                                        exportMsg = "Export OK : ${files.joinToString("\n") { it.absolutePath }}"
+                                    }
+                                    .onFailure { e ->
+                                        exportMsg = "Erreur : ${e::class.simpleName} ${e.message}"
+                                    }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Export debug JSON (3 mois)")
+                    }
+                    exportMsg?.let { msg ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -479,11 +515,11 @@ private fun formatDuration(ms: Long): String {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `DigitalWellbeingScreen` (function) — lines 56-174
-- `PermissionCard` (function) — lines 176-212
-- `StatusCard` (function) — lines 214-259
-- `PeriodChips` (function) — lines 261-278
-- `AppPeriodRow` (function) — lines 280-358
-- `DailyHistoryBars` (function) — lines 365-418
-- `AppIcon` (function) — lines 424-442
-- `formatDuration` (function) — lines 444-451
+- `DigitalWellbeingScreen` (function) — lines 57-210
+- `PermissionCard` (function) — lines 212-248
+- `StatusCard` (function) — lines 250-295
+- `PeriodChips` (function) — lines 297-314
+- `AppPeriodRow` (function) — lines 316-394
+- `DailyHistoryBars` (function) — lines 401-454
+- `AppIcon` (function) — lines 460-478
+- `formatDuration` (function) — lines 480-487

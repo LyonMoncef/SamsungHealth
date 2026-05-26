@@ -1,5 +1,6 @@
 package fr.datasaillance.nightfall.ui.screens.wellbeing
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -126,6 +127,41 @@ fun DigitalWellbeingScreen(
                         ) {
                             Text("Backfill 7j")
                         }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // DEBUG : export ephemeral JSON pour design (location + usage_daily).
+                    // A retirer post-livraison batch 3 design (cf followup issue).
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    var exportMsg by androidx.compose.runtime.remember {
+                        androidx.compose.runtime.mutableStateOf<String?>(null)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                exportMsg = "Export en cours…"
+                                runCatching {
+                                    fr.datasaillance.nightfall.data.local.debug.DebugExporter
+                                        .exportAll(context, windowDays = 90)
+                                }
+                                    .onSuccess { files ->
+                                        exportMsg = "Export OK : ${files.joinToString("\n") { it.absolutePath }}"
+                                    }
+                                    .onFailure { e ->
+                                        exportMsg = "Erreur : ${e::class.simpleName} ${e.message}"
+                                    }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Export debug JSON (3 mois)")
+                    }
+                    exportMsg?.let { msg ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
 
