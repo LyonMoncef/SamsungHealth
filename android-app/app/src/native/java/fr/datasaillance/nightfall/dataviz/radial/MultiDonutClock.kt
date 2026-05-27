@@ -55,8 +55,9 @@ import kotlin.math.sqrt
  *   • Inner   — timeline. Place visits as wedges, activity segments
  *               drawn within the inner half of the same band.
  *
- * Tap inside the donut → fires onQuadrantTap(0..3) where the quadrant
- * is the 6-hour block under the touch.
+ * Tap inside the donut → fires onSelectionChange with a two-level
+ * RadialSelection (layer first, then precise segment on re-tap). See
+ * hitTestRadial / DT-2.
  *
  * The composable is "pure paint" — pass a `RadialDay` (immutable),
  * a variant, and (optionally) the typical-day usage distribution.
@@ -88,15 +89,37 @@ data class RadialVisit(
 data class RadialActivity(val startMs: Long, val endMs: Long, val activityType: String, val distanceMeters: Int)
 data class RadialUsageRow(val packageName: String, val totalTimeForegroundMs: Long, val lastTimeUsedMs: Long)
 
+/**
+ * Session d'usage foreground aux horaires réels (DT-9). DTO minimaliste local à
+ * la spec cadran-v2 — sera aligné/remplacé par la spec `usage-sessions`.
+ */
+data class UsageSession(
+    val packageName: String,
+    val startMs: Long,
+    val endMs: Long,
+)
+
 data class RadialDay(
     val date: LocalDate,
     val sleepStages: List<StageInterval> = emptyList(),
     val visits: List<RadialVisit> = emptyList(),
     val activities: List<RadialActivity> = emptyList(),
-    val usageRows: List<RadialUsageRow> = emptyList(),
+    val usageRows: List<RadialUsageRow> = emptyList(),      // conservé pour la liste apps
+    val usageSessions: List<UsageSession> = emptyList(),    // vide → état dégradé anneau usage
 )
 
 enum class UsageVariant { Heat, Apps }
+
+// ─────────────────────────────────────────────────────────────
+// Sélection à deux niveaux (DT-1)
+// ─────────────────────────────────────────────────────────────
+enum class RadialLayer { SLEEP, USAGE, TIMELINE }
+
+data class RadialSelection(
+    val layer: RadialLayer,
+    val segmentStartMs: Long? = null,   // null = couche entière sélectionnée (Niveau 1)
+    val segmentEndMs: Long? = null,
+)
 
 // ─────────────────────────────────────────────────────────────
 // Brand-aware activity color resolver
@@ -153,8 +176,8 @@ fun MultiDonutClock(
     modifier: Modifier = Modifier,
     usageVariant: UsageVariant = UsageVariant.Heat,
     typicalUsageHourDist: FloatArray? = null,
-    selectedQuadrant: Int? = null,
-    onQuadrantTap: (Int) -> Unit = {},
+    selection: RadialSelection? = null,
+    onSelectionChange: (RadialSelection?) -> Unit = {},
     zone: ZoneId = ZoneId.systemDefault(),
 ) {
     val palette = MaterialTheme.colorScheme
@@ -180,6 +203,10 @@ fun MultiDonutClock(
         day.usageRows.sortedByDescending { it.totalTimeForegroundMs }.take(6)
     }
 
+    // Opacités focus mode (DT-3) : anneau non sélectionné dimé.
+    fun layerAlpha(layer: RadialLayer): Float =
+        if (selection == null || selection.layer == layer) 1.0f else 0.35f
+
     BoxWithConstraints(
         modifier = modifier.aspectRatio(1f),
         contentAlignment = Alignment.Center,
@@ -197,41 +224,53 @@ fun MultiDonutClock(
         val rTimelineInner  = sizePx * 0.135f
         val rCenter         = sizePx * 0.130f
 
+        val geo = RadialGeometry(
+            cx = cx, cy = cy,
+            rSleepOuter = rSleepOuter + 25f, rSleepInner = rSleepDeepInner,
+            rUsageOuter = rUsageOuter, rUsageInner = rUsageInner,
+            rTimelineOuter = rTimelineOuter, rTimelineInner = rTimelineInner,
+        )
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(day, selection, zone) {
                     detectTapGestures { offset ->
-                        val q = hitTestQuadrant(offset, cx, cy,
-                            rInner = rTimelineInner, rOuter = rSleepOuter + 25f)
-                        if (q != null) onQuadrantTap(q)
+                        onSelectionChange(hitTestRadial(offset, geo, selection, day, zone))
                     }
                 },
         ) {
-            // 1. Selected-quadrant highlight (behind everything)
-            selectedQuadrant?.let { q ->
-                val color = palette.secondary.copy(alpha = 0.10f)
-                drawDonutWedge(cx, cy, rSleepOuter + 25f, rTimelineInner,
-                    h1 = q * 6f, h2 = q * 6f + 6f, color = color)
-            }
-
-            // 2. Sleep donut
+            // 1. Sleep donut
             drawSleepDonut(day.sleepStages, cx, cy,
-                rOuter = rSleepOuter, rInner = rSleepDeepInner, zone, extras)
+                rOuter = rSleepOuter, rInner = rSleepDeepInner, zone, extras,
+                alpha = layerAlpha(RadialLayer.SLEEP),
+                selection = selection?.takeIf { it.layer == RadialLayer.SLEEP },
+                highlight = extras.highlight)
 
-            // 3. Usage donut
+            // 2. Usage donut
             when (usageVariant) {
-                UsageVariant.Heat -> drawUsageHeat(hourBuckets, cx, cy,
-                    rOuter = rUsageOuter, rInner = rUsageInner, palette.background)
-                UsageVariant.Apps -> drawUsageApps(topApps, cx, cy,
-                    rOuter = rUsageOuter, rInner = rUsageInner, zone)
+                UsageVariant.Heat -> drawUsageHeat(hourBuckets, day.usageSessions, cx, cy,
+                    rOuter = rUsageOuter, rInner = rUsageInner,
+                    bgColor = palette.background, emptyColor = palette.surface,
+                    degradedColor = extras.divider, zone = zone,
+                    alpha = layerAlpha(RadialLayer.USAGE))
+                UsageVariant.Apps -> drawUsageApps(topApps, day.usageSessions, cx, cy,
+                    rOuter = rUsageOuter, rInner = rUsageInner, zone,
+                    emptyColor = extras.borderStrong,
+                    faintColor = palette.onBackground,
+                    degradedColor = extras.divider,
+                    alpha = layerAlpha(RadialLayer.USAGE))
             }
 
-            // 4. Timeline donut
+            // 3. Timeline donut
             drawTimelineDonut(day.visits, day.activities,
-                cx, cy, rTimelineOuter, rTimelineInner, zone, extras.divider)
+                cx, cy, rTimelineOuter, rTimelineInner, zone, extras.divider,
+                mutedColor = extras.textMuted,
+                alpha = layerAlpha(RadialLayer.TIMELINE),
+                selection = selection?.takeIf { it.layer == RadialLayer.TIMELINE },
+                highlight = extras.highlight)
 
-            // 5. Quadrant separator hairlines
+            // 4. Quadrant separator hairlines (repères horaires, pas une sélection)
             listOf(0f, 6f, 12f, 18f).forEach { h ->
                 val a = hourToRad(h)
                 val p1 = polar(cx, cy, rTimelineInner, a)
@@ -239,10 +278,10 @@ fun MultiDonutClock(
                 drawLine(extras.divider, p1, p2, strokeWidth = 1f)
             }
 
-            // 6. Hour ticks
+            // 5. Hour ticks
             drawHourTicks(cx, cy, rHourTicks, extras.textMuted, extras.textFaint)
 
-            // 7. Center hub
+            // 6. Center hub
             drawCircle(palette.background, radius = rCenter, center = Offset(cx, cy))
             drawCircle(extras.divider, radius = rCenter, center = Offset(cx, cy),
                        style = Stroke(width = 1f))
@@ -250,7 +289,7 @@ fun MultiDonutClock(
 
         // Overlay text labels (Compose Text for crisp typography)
         HourLabels(cx, cy, rHourTicks + 30f, density)
-        CenterLabel(day, cx, cy, density)
+        CenterLabel(day, selection, cx, cy, density)
     }
 }
 
@@ -263,15 +302,19 @@ private fun DrawScope.drawSleepDonut(
     rOuter: Float, rInner: Float,
     zone: ZoneId,
     extras: fr.datasaillance.nightfall.ui.theme.ExtraColors,
+    alpha: Float = 1f,
+    selection: RadialSelection? = null,
+    highlight: Color = Color(0xFF0E9EB0),
 ) {
     if (stages.isEmpty()) {
-        drawEmptyBand(cx, cy, rOuter, rInner, extras.divider)
+        drawEmptyBand(cx, cy, rOuter, rInner, extras.divider.copy(alpha = alpha))
         return
     }
 
     val range = rOuter - rInner
+    val hasSegment = selection?.segmentStartMs != null
     // Background hint band so the donut shape is always visible
-    drawCircle(extras.divider.copy(alpha = 0.5f), radius = (rOuter + rInner) / 2f,
+    drawCircle(extras.divider.copy(alpha = 0.5f * alpha), radius = (rOuter + rInner) / 2f,
                center = Offset(cx, cy), style = Stroke(width = range))
 
     // Merge consecutive identical-stage intervals for cleaner wedges
@@ -289,7 +332,16 @@ private fun DrawScope.drawSleepDonut(
         val rIn = rOuter - depth * range
         val h1 = localHour(st.startMs, zone)
         val h2 = localHour(st.endMs, zone)
-        drawDonutWedge(cx, cy, rOuter, rIn, h1, h2, stageColor(st.type, extras).copy(alpha = 0.92f))
+        val isSelected = hasSegment &&
+            st.startMs < (selection!!.segmentEndMs ?: Long.MAX_VALUE) &&
+            st.endMs > (selection.segmentStartMs ?: Long.MIN_VALUE)
+        // Segment sélectionné = opacité nominale ; autres segments du même anneau dimés.
+        val segAlpha = if (!hasSegment) alpha else if (isSelected) 1f else 0.45f * alpha
+        drawDonutWedge(cx, cy, rOuter, rIn, h1, h2,
+            stageColor(st.type, extras).copy(alpha = 0.92f * segAlpha))
+        if (isSelected) {
+            drawDonutWedgeStroke(cx, cy, rOuter, rIn, h1, h2, highlight, 2f)
+        }
     }
 }
 
@@ -298,14 +350,31 @@ private fun DrawScope.drawSleepDonut(
 // ─────────────────────────────────────────────────────────────
 private fun DrawScope.drawUsageHeat(
     buckets: FloatArray,
+    sessions: List<UsageSession>,
     cx: Float, cy: Float,
     rOuter: Float, rInner: Float,
     bgColor: Color,
+    emptyColor: Color,
+    degradedColor: Color,
+    zone: ZoneId,
+    alpha: Float = 1f,
 ) {
-    val peak = (buckets.maxOrNull() ?: 0f).coerceAtLeast(1f)
+    // État dégradé (DT-5/L6) : aucune session réelle → anneau grisé uniforme.
+    if (sessions.isEmpty()) {
+        drawEmptyBand(cx, cy, rOuter, rInner, degradedColor.copy(alpha = 0.4f * alpha))
+        return
+    }
+
+    // Sessions réelles : densité d'usage par tranche horaire (minutes foreground).
+    val realBuckets = FloatArray(24)
+    sessions.forEach { s ->
+        val h = localHour(s.startMs, zone).toInt().coerceIn(0, 23)
+        realBuckets[h] += (s.endMs - s.startMs).toFloat() / 60_000f
+    }
+    val peak = (realBuckets.maxOrNull() ?: 0f).coerceAtLeast(1f)
     for (h in 0 until 24) {
-        val v = buckets[h]
-        val color = if (v == 0f) Color(0xFF1E262B) else heatColor(v / peak)
+        val v = realBuckets[h]
+        val color = if (v == 0f) emptyColor.copy(alpha = alpha) else heatColor(v / peak).copy(alpha = alpha)
         drawDonutWedge(cx, cy, rOuter, rInner, h.toFloat(), h + 1f, color)
     }
     // Hairline separators between hour wedges
@@ -313,7 +382,7 @@ private fun DrawScope.drawUsageHeat(
         val a = hourToRad(h.toFloat())
         val p1 = polar(cx, cy, rInner, a)
         val p2 = polar(cx, cy, rOuter, a)
-        drawLine(bgColor.copy(alpha = 0.7f), p1, p2, strokeWidth = 1f)
+        drawLine(bgColor.copy(alpha = 0.7f * alpha), p1, p2, strokeWidth = 1f)
     }
 }
 
@@ -322,32 +391,43 @@ private fun DrawScope.drawUsageHeat(
 // ─────────────────────────────────────────────────────────────
 private fun DrawScope.drawUsageApps(
     apps: List<RadialUsageRow>,
+    sessions: List<UsageSession>,
     cx: Float, cy: Float,
     rOuter: Float, rInner: Float,
     zone: ZoneId,
+    emptyColor: Color,
+    faintColor: Color,
+    degradedColor: Color,
+    alpha: Float = 1f,
 ) {
     if (apps.isEmpty()) {
-        drawEmptyBand(cx, cy, rOuter, rInner, Color(0xFF2E3D44))
+        drawEmptyBand(cx, cy, rOuter, rInner, emptyColor.copy(alpha = alpha))
         return
     }
     val bandH = (rOuter - rInner) / apps.size
-    val peakMs = apps.maxOf { it.totalTimeForegroundMs }.toFloat()
 
     apps.forEachIndexed { i, app ->
         val rOut = rOuter - i * bandH
         val rIn  = rOut - bandH * 0.85f
-        val h = localHour(app.lastTimeUsedMs, zone)
-        val widthH = 0.4f + (app.totalTimeForegroundMs / peakMs) * 1.8f
         // Faint background sub-ring
         drawCircle(
-            color = Color(0xFFE8EFF2).copy(alpha = 0.05f),
+            color = faintColor.copy(alpha = 0.05f * alpha),
             radius = (rOut + rIn) / 2f,
             center = Offset(cx, cy),
             style = Stroke(width = rOut - rIn),
         )
-        // Per-app marker arc
-        val color = heatColor(0.4f + (i.toFloat() / apps.size) * 0.5f)
-        drawDonutWedge(cx, cy, rOut, rIn, h - widthH, h, color)
+        val color = heatColor(0.4f + (i.toFloat() / apps.size) * 0.5f).copy(alpha = alpha)
+        // DT-5 : l'arc horaire faux est supprimé. On trace les VRAIS intervalles
+        // de session pour cette app si disponibles ; sinon rien sur le cadran
+        // (la liste apps reste visible dans la carte contextuelle).
+        sessions.filter { it.packageName == app.packageName }.forEach { s ->
+            drawDonutWedge(cx, cy, rOut, rIn,
+                localHour(s.startMs, zone), localHour(s.endMs, zone), color)
+        }
+    }
+    // Si aucune session réelle, signaler l'état dégradé par un voile gris discret.
+    if (sessions.isEmpty()) {
+        drawEmptyBand(cx, cy, rOuter, rInner, degradedColor.copy(alpha = 0.18f * alpha))
     }
 }
 
@@ -361,29 +441,61 @@ private fun DrawScope.drawTimelineDonut(
     rOuter: Float, rInner: Float,
     zone: ZoneId,
     dividerColor: Color,
+    mutedColor: Color,
+    alpha: Float = 1f,
+    selection: RadialSelection? = null,
+    highlight: Color = Color(0xFF0E9EB0),
 ) {
     if (visits.isEmpty() && activities.isEmpty()) {
-        drawEmptyBand(cx, cy, rOuter, rInner, dividerColor)
+        drawEmptyBand(cx, cy, rOuter, rInner, dividerColor.copy(alpha = alpha))
         return
     }
+    val hasSegment = selection?.segmentStartMs != null
+    fun segAlpha(startMs: Long, endMs: Long): Float {
+        if (!hasSegment) return alpha
+        val sel = startMs < (selection!!.segmentEndMs ?: Long.MAX_VALUE) &&
+            endMs > (selection.segmentStartMs ?: Long.MIN_VALUE)
+        return if (sel) 1f else 0.45f * alpha
+    }
+    fun isSelected(startMs: Long, endMs: Long): Boolean = hasSegment &&
+        startMs < (selection!!.segmentEndMs ?: Long.MAX_VALUE) &&
+        endMs > (selection.segmentStartMs ?: Long.MIN_VALUE)
+
     // Faint background band
-    drawCircle(dividerColor.copy(alpha = 0.5f),
+    drawCircle(dividerColor.copy(alpha = 0.5f * alpha),
         radius = (rOuter + rInner) / 2f, center = Offset(cx, cy),
         style = Stroke(width = rOuter - rInner))
 
+    // DT-6 : binaire ancré (amber) / non labellisé (muted). Couleur d'activité
+    // pour les segments de déplacement (palette Activity).
     visits.forEach { v ->
+        val a = segAlpha(v.startMs, v.endMs)
+        val baseAlpha = if (v.anchored) 0.85f else 0.55f
+        val color = timelineVisitColor(v, mutedColor).copy(alpha = baseAlpha * a)
         drawDonutWedge(cx, cy, rOuter, rInner,
-            localHour(v.startMs, zone), localHour(v.endMs, zone),
-            placeColor(v.placeName).copy(alpha = 0.85f))
+            localHour(v.startMs, zone), localHour(v.endMs, zone), color)
+        if (isSelected(v.startMs, v.endMs)) {
+            drawDonutWedgeStroke(cx, cy, rOuter, rInner,
+                localHour(v.startMs, zone), localHour(v.endMs, zone), highlight, 1.5f)
+        }
     }
     val rActOuter = rInner + (rOuter - rInner) * 0.65f
-    activities.forEach { a ->
-        val color = Activity.resolve(a.activityType).first
+    activities.forEach { act ->
+        val a = segAlpha(act.startMs, act.endMs)
+        val color = Activity.resolve(act.activityType).first
         drawDonutWedge(cx, cy, rActOuter, rInner,
-            localHour(a.startMs, zone), localHour(a.endMs, zone),
-            color.copy(alpha = 0.95f))
+            localHour(act.startMs, zone), localHour(act.endMs, zone),
+            color.copy(alpha = 0.95f * a))
+        if (isSelected(act.startMs, act.endMs)) {
+            drawDonutWedgeStroke(cx, cy, rActOuter, rInner,
+                localHour(act.startMs, zone), localHour(act.endMs, zone), highlight, 1.5f)
+        }
     }
 }
+
+/** Couleur d'une visite timeline (DT-6) : amber si ancré, muted sinon. */
+internal fun timelineVisitColor(v: RadialVisit, mutedColor: Color): Color =
+    if (v.anchored) Color(0xFFD37C04) else mutedColor
 
 // ─────────────────────────────────────────────────────────────
 // Hour ticks (24, with majors at 0/6/12/18)
@@ -413,13 +525,14 @@ private fun BoxWithConstraintsScope.HourLabels(
     val labels = listOf(
         0 to "minuit", 6 to "06h", 12 to "midi", 18 to "18h",
     )
+    val onBg = MaterialTheme.colorScheme.onBackground
     labels.forEach { (h, label) ->
         val a = hourToRad(h.toFloat())
         val px = cx + r * cos(a)
         val py = cy + r * sin(a)
         Text(
             text = label,
-            color = if (h == 0 || h == 12) Color(0xFFF2F6F8) else Color(0xFFE8EFF2),
+            color = if (h == 0 || h == 12) onBg else onBg.copy(alpha = 0.82f),
             style = MaterialTheme.typography.labelMedium.copy(
                 fontSize = if (h == 0 || h == 12) 13.sp else 12.sp,
                 fontWeight = if (h == 0 || h == 12) FontWeight.Bold else FontWeight.Medium,
@@ -435,25 +548,17 @@ private fun BoxWithConstraintsScope.HourLabels(
 // ─────────────────────────────────────────────────────────────
 @Composable
 private fun BoxWithConstraintsScope.CenterLabel(
-    day: RadialDay, cx: Float, cy: Float, density: androidx.compose.ui.unit.Density,
+    day: RadialDay, selection: RadialSelection?,
+    cx: Float, cy: Float, density: androidx.compose.ui.unit.Density,
 ) {
     val extras = DataSaillance.extras
-    val sleepMin = day.sleepStages.sumOf { (it.endMs - it.startMs) }.toFloat() / 60_000f
-    val usageMin = day.usageRows.sumOf { it.totalTimeForegroundMs }.toFloat() / 60_000f
-    val main    = if (sleepMin > 0f) sleepMin else usageMin
-    val label   = when {
-        sleepMin > 0f -> "sommeil"
-        usageMin > 0f -> "téléphone"
-        else          -> "—"
-    }
-    val h = (main / 60).toInt()
-    val m = (main % 60).toInt()
+    val metric = centerMetric(day, selection)
     Column(
         modifier = Modifier.absoluteOffsetPx(cx, cy, density),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = label,
+            text = metric.label,
             color = extras.textMuted,
             style = MaterialTheme.typography.labelSmall.copy(
                 letterSpacing = 2.5.sp,
@@ -461,18 +566,13 @@ private fun BoxWithConstraintsScope.CenterLabel(
             ),
         )
         Text(
-            text = if (main > 0f) "${h}h${"%02d".format(m)}" else "—",
-            color = Color(0xFFF2F6F8),
+            text = metric.value,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontSize = 34.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.6).sp,
             ),
-        )
-        Text(
-            text = "${day.visits.size + day.activities.size} déplacements",
-            color = extras.textFaint,
-            style = MaterialTheme.typography.labelSmall,
         )
     }
 }
@@ -501,12 +601,93 @@ internal fun DrawScope.drawDonutWedge(
     drawPath(path, color)
 }
 
+internal fun DrawScope.drawDonutWedgeStroke(
+    cx: Float, cy: Float, rOuter: Float, rInner: Float,
+    h1: Float, h2: Float, color: Color, strokeWidth: Float,
+) {
+    val h2Adj = if (h2 <= h1) h2 + 24f else h2
+    val sweepDeg = ((h2Adj - h1) / 24f) * 360f
+    val startDeg = (h1 / 24f) * 360f - 90f
+    val outerRect = Rect(cx - rOuter, cy - rOuter, cx + rOuter, cy + rOuter)
+    val innerRect = Rect(cx - rInner, cy - rInner, cx + rInner, cy + rInner)
+    val path = Path().apply {
+        arcTo(rect = outerRect, startAngleDegrees = startDeg,
+              sweepAngleDegrees = sweepDeg, forceMoveTo = true)
+        arcTo(rect = innerRect, startAngleDegrees = startDeg + sweepDeg,
+              sweepAngleDegrees = -sweepDeg, forceMoveTo = false)
+        close()
+    }
+    drawPath(path, color, style = Stroke(width = strokeWidth))
+}
+
 internal fun DrawScope.drawEmptyBand(
     cx: Float, cy: Float, rOuter: Float, rInner: Float, color: Color,
 ) {
     drawCircle(color.copy(alpha = 0.55f),
         radius = (rOuter + rInner) / 2f, center = Offset(cx, cy),
         style = Stroke(width = rOuter - rInner))
+}
+
+// ─────────────────────────────────────────────────────────────
+// Métrique centre cadran (DT-4) — pure, testable
+// ─────────────────────────────────────────────────────────────
+/** Valeur + label affichés au centre selon la couche sélectionnée. */
+data class CenterMetric(val label: String, val value: String)
+
+/**
+ * Calcule la métrique contextuelle du centre du cadran (DT-4).
+ *
+ * - Pas de sélection : durée sommeil prioritaire, sinon durée usage. Jamais de
+ *   somme `visits + activities`.
+ * - SLEEP : durée sommeil + nb de sessions.
+ * - USAGE : temps écran total.
+ * - TIMELINE : nb de sorties (`activities` uniquement, pas `visits`) + km totaux.
+ */
+internal fun centerMetric(day: RadialDay, selection: RadialSelection?): CenterMetric {
+    val sleepMin = day.sleepStages.sumOf { (it.endMs - it.startMs) }.toFloat() / 60_000f
+    val usageMin = day.usageRows.sumOf { it.totalTimeForegroundMs }.toFloat() / 60_000f
+
+    fun dur(min: Float): String {
+        val h = (min / 60).toInt(); val m = (min % 60).toInt()
+        return "${h}h${"%02d".format(m)}"
+    }
+
+    return when (selection?.layer) {
+        RadialLayer.SLEEP -> CenterMetric(
+            label = "sommeil · ${countSleepSessions(day)} session" +
+                if (countSleepSessions(day) > 1) "s" else "",
+            value = if (sleepMin > 0f) dur(sleepMin) else "—",
+        )
+        RadialLayer.USAGE -> CenterMetric(
+            label = "téléphone",
+            value = if (usageMin > 0f) dur(usageMin) else "—",
+        )
+        RadialLayer.TIMELINE -> {
+            val km = day.activities.sumOf { it.distanceMeters }.toFloat() / 1000f
+            CenterMetric(
+                label = "sorties" + if (km > 0f) " · %.1f km".format(km) else "",
+                value = "${day.activities.size}",
+            )
+        }
+        null -> when {
+            sleepMin > 0f -> CenterMetric("sommeil", dur(sleepMin))
+            usageMin > 0f -> CenterMetric("téléphone", dur(usageMin))
+            else -> CenterMetric("—", "—")
+        }
+    }
+}
+
+/** Nb de sessions de sommeil = nb de groupes séparés par un trou > 30 min. */
+internal fun countSleepSessions(day: RadialDay): Int {
+    val sorted = day.sleepStages.sortedBy { it.startMs }
+    if (sorted.isEmpty()) return 0
+    var sessions = 1
+    var prevEnd = sorted.first().endMs
+    for (s in sorted.drop(1)) {
+        if (s.startMs - prevEnd > 30 * 60_000L) sessions++
+        prevEnd = maxOf(prevEnd, s.endMs)
+    }
+    return sessions
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -523,17 +704,107 @@ internal fun localHour(ms: Long, zone: ZoneId): Float {
     return z.hour + z.minute / 60f + z.second / 3600f
 }
 
-private fun hitTestQuadrant(
-    offset: Offset, cx: Float, cy: Float, rInner: Float, rOuter: Float,
-): Int? {
+/**
+ * Géométrie radiale des anneaux pour le hit-test (DT-2). Toutes les valeurs en px,
+ * relatives au centre (cx, cy). Extrait du calcul de rendu pour rester testable pur.
+ */
+data class RadialGeometry(
+    val cx: Float,
+    val cy: Float,
+    val rSleepOuter: Float,
+    val rSleepInner: Float,
+    val rUsageOuter: Float,
+    val rUsageInner: Float,
+    val rTimelineOuter: Float,
+    val rTimelineInner: Float,
+)
+
+/**
+ * Heure locale (0.0..24.0) sous le tap, dérivée de l'angle. Identique à la
+ * convention de rendu : minuit au sommet, sens horaire.
+ */
+internal fun hourAtTap(offset: Offset, cx: Float, cy: Float): Float {
     val dx = offset.x - cx
     val dy = offset.y - cy
-    val r = sqrt(dx * dx + dy * dy)
-    if (r !in rInner..rOuter) return null
     val a = atan2(dy, dx)
     val raw = (((a + PI / 2) / (2 * PI)) * 24f).toFloat()
-    val hour = ((raw % 24f) + 24f) % 24f
-    return (hour / 6f).toInt().coerceIn(0, 3)
+    return ((raw % 24f) + 24f) % 24f
+}
+
+/** Anneau touché par le tap, ou null si hors des bandes (hub central / hors cadran). */
+internal fun layerAtRadius(offset: Offset, geo: RadialGeometry): RadialLayer? {
+    val dx = offset.x - geo.cx
+    val dy = offset.y - geo.cy
+    val r = sqrt(dx * dx + dy * dy)
+    return when {
+        r in geo.rTimelineInner..geo.rTimelineOuter -> RadialLayer.TIMELINE
+        r in geo.rUsageInner..geo.rUsageOuter -> RadialLayer.USAGE
+        r in geo.rSleepInner..geo.rSleepOuter -> RadialLayer.SLEEP
+        else -> null
+    }
+}
+
+/**
+ * Hit-test radial à deux étages (DT-2). Renvoie la sélection résultante :
+ *  1. Hors zone / hub → null (désélection).
+ *  2. Anneau différent de la sélection courante → Niveau 1 (couche entière).
+ *  3. Même anneau que la sélection courante :
+ *     - segment contenant l'heure tappée trouvé → Niveau 2 (start/end remplis).
+ *     - sinon → null (re-tap couche déjà sélectionnée en Niveau 1 → désélection).
+ */
+internal fun hitTestRadial(
+    offset: Offset,
+    geo: RadialGeometry,
+    current: RadialSelection?,
+    day: RadialDay,
+    zone: ZoneId,
+): RadialSelection? {
+    val layer = layerAtRadius(offset, geo) ?: return null
+    val hour = hourAtTap(offset, geo.cx, geo.cy)
+
+    // Anneau distinct (ou aucune sélection) → Niveau 1.
+    if (current?.layer != layer) {
+        return RadialSelection(layer)
+    }
+
+    // Même anneau déjà sélectionné → chercher le segment précis.
+    val segment = segmentAt(layer, hour, day, zone)
+    return if (segment != null) {
+        RadialSelection(layer, segment.first, segment.second)
+    } else {
+        // Re-tap couche déjà en Niveau 1 sans segment → désélection.
+        null
+    }
+}
+
+/** Trouve le segment (startMs, endMs) de la couche contenant `hour`, ou null. */
+internal fun segmentAt(
+    layer: RadialLayer,
+    hour: Float,
+    day: RadialDay,
+    zone: ZoneId,
+): Pair<Long, Long>? {
+    fun spans(startMs: Long, endMs: Long): Boolean {
+        val h1 = localHour(startMs, zone)
+        val h2Raw = localHour(endMs, zone)
+        val h2 = if (h2Raw <= h1) h2Raw + 24f else h2Raw
+        val h = if (hour < h1) hour + 24f else hour
+        return h in h1..h2
+    }
+    return when (layer) {
+        RadialLayer.SLEEP -> day.sleepStages
+            .firstOrNull { spans(it.startMs, it.endMs) }
+            ?.let { it.startMs to it.endMs }
+        RadialLayer.USAGE -> day.usageSessions
+            .firstOrNull { spans(it.startMs, it.endMs) }
+            ?.let { it.startMs to it.endMs }
+        RadialLayer.TIMELINE -> {
+            day.visits.firstOrNull { spans(it.startMs, it.endMs) }
+                ?.let { return it.startMs to it.endMs }
+            day.activities.firstOrNull { spans(it.startMs, it.endMs) }
+                ?.let { it.startMs to it.endMs }
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────

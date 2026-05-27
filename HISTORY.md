@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Cadran v2 — interaction sélection anneau/segment (remplace quadrant 6h) + focus mode + `LayerContextCard` contextuelle + intégration usage réel/timeline ancré + light mode + `TrajetMapRenderer` déférée, 18 tests TDD | `dataviz/radial/{MultiDonutClock,RadialClockScreen,TrajetMapRenderer}.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/screens/radial/RadialRoute.kt` | [`cadran-v2-impl`](#2026-05-27-cadran-v2-impl) |
 | Labeled Places — lieux labellisés configurables (domicile/travail/famille/vacances) + `PlaceResolver` haversine + écran config Compose (DB v5→v6), 15 tests TDD | `data/local/entity/location/{LabeledPlaceEntity,PlaceCategory}.kt`, `data/local/dao/LabeledPlaceDao.kt`, `data/local/location/{PlaceResolver,PlaceSuggestionService,LabeledPlace}.kt`, `ui/screens/places/`, `viewmodel/places/` | [`labeled-places-impl`](#2026-05-27-labeled-places-impl) |
 | Usage Sessions (Phase B_us) — sessions d'usage intra-journée via `queryEvents` → table Room `usage_session` (DB v4→v5), 19 tests TDD | `data/local/usage/{UsageEventsSource,UsageSessionsService}.kt`, `data/local/entity/usage/UsageSessionEntity.kt`, `data/local/dao/UsageSessionDao.kt`, `data/local/database/NightfallDatabase.kt` | [`usage-sessions-impl`](#2026-05-27-usage-sessions-impl) |
 | Cadran v2 — specs (interaction 2 niveaux anneau/segment + cartes contextuelles) + deps data `usage-sessions` (Phase B_us sessions intra-journée) + `labeled-places` (lieux ancrés) | `docs/vault/specs/2026-05-27-{cadran-v2,usage-sessions,labeled-places}.md` | [`cadran-specs`](#2026-05-27-cadran-specs) |
@@ -46,6 +47,16 @@
 ---
 
 ## Changelog
+
+### 2026-05-27 `cadran-v2-impl`
+feat(android): Cadran v2 — sélection anneau/segment + intégration usage/lieux + light mode (TDD, 18 tests GREEN)
+- Sélection 2 niveaux : `RadialLayer`{SLEEP,USAGE,TIMELINE} + `RadialSelection` remplacent le quadrant 6h ; `hitTestRadial` pur (anneau via rayon, segment via heure), focus mode/dim + liseré teal du segment actif.
+- `CenterLabel` métrique contextuelle par couche (supprime le faux compteur `visits + activities`).
+- `LayerContextCard` : overview + vues sommeil/usage/timeline niveaux 1 (global) et 2 (détail segment) ; remplace QuadrantsCard/DaySummaryCard/TopAppsCard.
+- Intégration réelle des deps : `RadialDay.usageSessions` câblé via `UsageSessionDao` (anneau usage = sessions réelles par tranche + variante Apps en vrais intervalles) ; timeline binaire amber=ancré (via `RadialVisit.anchored`) / couleur activité / gris non-labellisé.
+- DT-8 light mode réparé : `Color(0xFF...)` structurels → `MaterialTheme.colorScheme` / `DataSaillance.extras`.
+- `TrajetMapRenderer` + `NullTrajetMapRenderer` (carte déférée, zéro fuite réseau C1, cartes texte uniquement).
+- Tests : 16 `RadialSelectionTest` (hit-test, métrique, couleur binaire) + 2 ViewModel usage sessions (`src/testNative`). Suite : 253 tests, 25 pré-existants inchangés. À relire (visuel non testé) : focus mode, light mode WCAG, layout cards, anneau usage réel. `placeColor()` est désormais code mort.
 
 ### 2026-05-27 `labeled-places-impl`
 feat(android): lieux labellisés configurables + résolution ancré/déplacement (TDD, 15 tests GREEN)

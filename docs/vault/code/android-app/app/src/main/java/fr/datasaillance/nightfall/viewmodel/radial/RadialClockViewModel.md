@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/viewmodel/radial/RadialClockViewModel.kt
-git_blob: e36c971c6845534c60702f235b2c6f53142303b5
-last_synced: '2026-05-27T05:17:18Z'
-loc: 182
+git_blob: 2f27993ebc60fc4d4a49c36bcceb03d62c7f665a
+last_synced: '2026-05-27T06:16:08Z'
+loc: 193
 annotations: []
 imports: []
 exports: []
@@ -28,6 +28,7 @@ import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.data.local.dao.LabeledPlaceDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
+import fr.datasaillance.nightfall.data.local.dao.UsageSessionDao
 import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.location.PlaceResolver
 import fr.datasaillance.nightfall.data.local.location.toLabeledPlace
@@ -37,6 +38,7 @@ import fr.datasaillance.nightfall.dataviz.radial.RadialUsageRow
 import fr.datasaillance.nightfall.dataviz.radial.RadialVisit
 import fr.datasaillance.nightfall.dataviz.radial.SleepStage
 import fr.datasaillance.nightfall.dataviz.radial.StageInterval
+import fr.datasaillance.nightfall.dataviz.radial.UsageSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +68,7 @@ class RadialClockViewModel(
     private val locationDao: LocationDao,
     private val usageStatsDao: UsageStatsDao,
     private val labeledPlaceDao: LabeledPlaceDao? = null,
+    private val usageSessionDao: UsageSessionDao? = null,
     private val windowDays: Int = 30,
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val clock: () -> LocalDate = { LocalDate.now() },
@@ -140,6 +143,11 @@ class RadialClockViewModel(
             usageStatsDao.getInRange(from.toString(), today.toString())
         }.getOrDefault(emptyList())
 
+        // --- Usage sessions (horaires réels) — vide si DAO absent ou table vide ---
+        val allSessions = usageSessionDao
+            ?.let { runCatching { it.getSessionsInRange(fromMs, toMs) }.getOrDefault(emptyList()) }
+            .orEmpty()
+
         val result = HashMap<LocalDate, RadialDay>()
         for (offset in 0 until windowDays) {
             val date = today.minusDays(offset.toLong())
@@ -168,6 +176,9 @@ class RadialClockViewModel(
                 usageRows = allUsage
                     .filter { it.date == dateStr }
                     .map { RadialUsageRow(it.packageName, it.totalTimeForegroundMs, it.lastTimeUsedMs) },
+                usageSessions = allSessions
+                    .filter { it.startMs < dayEnd && it.endMs > dayStart }
+                    .map { UsageSession(it.packageName, it.startMs, it.endMs) },
             )
         }
         return result
@@ -210,10 +221,10 @@ class RadialClockViewModel(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `RadialUiState` (class) — lines 34-39
-- `RadialClockViewModel` (class) — lines 41-182
-- `reload` (function) — lines 58-58
-- `load` (function) — lines 60-78
-- `buildDaysMap` (function) — lines 80-151
-- `computeTypicalHourDist` (function) — lines 158-173
-- `stageEnum` (function) — lines 175-181
+- `RadialUiState` (class) — lines 36-41
+- `RadialClockViewModel` (class) — lines 43-193
+- `reload` (function) — lines 61-61
+- `load` (function) — lines 63-81
+- `buildDaysMap` (function) — lines 83-162
+- `computeTypicalHourDist` (function) — lines 169-184
+- `stageEnum` (function) — lines 186-192

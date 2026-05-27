@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.data.local.dao.LabeledPlaceDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
+import fr.datasaillance.nightfall.data.local.dao.UsageSessionDao
 import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.location.PlaceResolver
 import fr.datasaillance.nightfall.data.local.location.toLabeledPlace
@@ -14,6 +15,7 @@ import fr.datasaillance.nightfall.dataviz.radial.RadialUsageRow
 import fr.datasaillance.nightfall.dataviz.radial.RadialVisit
 import fr.datasaillance.nightfall.dataviz.radial.SleepStage
 import fr.datasaillance.nightfall.dataviz.radial.StageInterval
+import fr.datasaillance.nightfall.dataviz.radial.UsageSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +45,7 @@ class RadialClockViewModel(
     private val locationDao: LocationDao,
     private val usageStatsDao: UsageStatsDao,
     private val labeledPlaceDao: LabeledPlaceDao? = null,
+    private val usageSessionDao: UsageSessionDao? = null,
     private val windowDays: Int = 30,
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val clock: () -> LocalDate = { LocalDate.now() },
@@ -117,6 +120,11 @@ class RadialClockViewModel(
             usageStatsDao.getInRange(from.toString(), today.toString())
         }.getOrDefault(emptyList())
 
+        // --- Usage sessions (horaires réels) — vide si DAO absent ou table vide ---
+        val allSessions = usageSessionDao
+            ?.let { runCatching { it.getSessionsInRange(fromMs, toMs) }.getOrDefault(emptyList()) }
+            .orEmpty()
+
         val result = HashMap<LocalDate, RadialDay>()
         for (offset in 0 until windowDays) {
             val date = today.minusDays(offset.toLong())
@@ -145,6 +153,9 @@ class RadialClockViewModel(
                 usageRows = allUsage
                     .filter { it.date == dateStr }
                     .map { RadialUsageRow(it.packageName, it.totalTimeForegroundMs, it.lastTimeUsedMs) },
+                usageSessions = allSessions
+                    .filter { it.startMs < dayEnd && it.endMs > dayStart }
+                    .map { UsageSession(it.packageName, it.startMs, it.endMs) },
             )
         }
         return result
