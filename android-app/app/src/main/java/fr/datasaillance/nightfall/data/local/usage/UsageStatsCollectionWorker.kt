@@ -38,9 +38,16 @@ class UsageStatsCollectionWorker(
             return Result.success()
         }
 
+        val database = NightfallDatabase.get(ctx)
         val service = LocalUsageStatsService(
-            dao = NightfallDatabase.get(ctx).usageStatsDao(),
+            dao = database.usageStatsDao(),
             source = AndroidUsageStatsSource(mgr),
+            zone = ZoneId.systemDefault(),
+        )
+        val sessionDao = database.usageSessionDao()
+        val sessionsService = UsageSessionsService(
+            dao = sessionDao,
+            eventsSource = AndroidUsageEventsSource(mgr),
             zone = ZoneId.systemDefault(),
         )
 
@@ -48,7 +55,8 @@ class UsageStatsCollectionWorker(
             runCatching { LocalDate.parse(it) }.getOrNull()
         } ?: LocalDate.now().minusDays(1)
 
-        return runCatching {
+        // 1. Daily stats (inchangé) — un échec ici déclenche un retry.
+        val dailyResult = runCatching {
             val rows = service.collectDailyStats(target)
             Timber.i("scope=usage_worker date=$target rows=$rows")
             Result.success()
@@ -56,10 +64,29 @@ class UsageStatsCollectionWorker(
             Timber.w("scope=usage_worker error=${e::class.simpleName} msg=${e.message}")
             Result.retry()
         }
+
+        // 2. Sessions (nouveau) — échec indépendant : ne doit pas faire échouer
+        //    la collecte daily. On backfill si la table est encore vide.
+        runCatching {
+            if (sessionDao.count() == 0) {
+                val backfilled = sessionsService.backfillSessions(days = BACKFILL_DAYS)
+                Timber.i("scope=usage_sessions_worker backfill=$backfilled")
+            } else {
+                val sessions = sessionsService.collectSessions(target)
+                Timber.i("scope=usage_sessions_worker date=$target sessions=$sessions")
+            }
+        }.onFailure { e ->
+            Timber.w("scope=usage_sessions_worker error=${e::class.simpleName} msg=${e.message}")
+        }
+
+        return dailyResult
     }
 
     companion object {
         /** Optionnel — si présent, override la date cible (sinon = veille). */
         const val KEY_TARGET_DATE = "target_date"
+
+        /** Nb de jours backfillés au premier lancement (rétention Android ~7-10j). */
+        private const val BACKFILL_DAYS = 10
     }
 }

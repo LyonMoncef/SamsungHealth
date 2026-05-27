@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Usage Sessions (Phase B_us) — sessions d'usage intra-journée via `queryEvents` → table Room `usage_session` (DB v4→v5), 19 tests TDD | `data/local/usage/{UsageEventsSource,UsageSessionsService}.kt`, `data/local/entity/usage/UsageSessionEntity.kt`, `data/local/dao/UsageSessionDao.kt`, `data/local/database/NightfallDatabase.kt` | [`usage-sessions-impl`](#2026-05-27-usage-sessions-impl) |
 | Cadran v2 — specs (interaction 2 niveaux anneau/segment + cartes contextuelles) + deps data `usage-sessions` (Phase B_us sessions intra-journée) + `labeled-places` (lieux ancrés) | `docs/vault/specs/2026-05-27-{cadran-v2,usage-sessions,labeled-places}.md` | [`cadran-specs`](#2026-05-27-cadran-specs) |
 | Phase D unifiée — Vue Sleep × Usage × Location (section Bien-être numérique sous l'hypnogramme, top 5 apps + total écran pour la journée associée à la nuit) | `viewmodel/sleep/HypnogramViewModel.kt`, `ui/screens/sleep/DayUsageSection.kt`, `ui/navigation/NavGraph.kt` | [`9cb1f20`](#2026-05-23-9cb1f20) |
 | Phase A_gps + C_gps — Import Google Takeout (format 2024+ `semanticSegments` + ancien `timelineObjects`) + map OSMDroid embarquée + badge "sorti du domicile" Timeline + DB v3→v4 (`location_visits` + `activity_segments` + `location_paths`) | `data/local/entity/location/`, `data/local/location/TakeoutTimelineParser.kt`, `data/local/location/LocalLocationImportService.kt`, `ui/screens/sleep/DayMapSection.kt`, `ui/screens/sleep/TimelineScreen.kt`, `data/local/database/NightfallDatabase.kt` | [`73ccadc`](#2026-05-21-73ccadc) |
@@ -44,6 +45,15 @@
 ---
 
 ## Changelog
+
+### 2026-05-27 `usage-sessions-impl`
+feat(android): Phase B_us — sessions d'usage intra-journée (TDD, 19 tests GREEN)
+- `UsageEventsSource` (interface mockable) + `UsageEventRecord` DTO + `AndroidUsageEventsSource` wrappant `UsageStatsManager.queryEvents()`.
+- Algorithme pur `reconstructSessions()` : appariement RESUMED(1)/PAUSED(2)/STOPPED(23), fermeture globale écran éteint (12/14), RESUMED orphelin, sessions ouvertes fermées à `toMs`, filtre durée ≤ 0.
+- `UsageSessionEntity` (table `usage_session`, index unique `(package_name, start_ms)` idempotent) + `UsageSessionDao`.
+- `UsageSessionsService.collectSessions/backfillSessions` ; `UsageStatsCollectionWorker` étendu (daily + sessions, backfill 10j au 1er run).
+- Migration Room v4→v5 additive + bump version DB.
+- Tests : 10 reconstruction pure (JUnit) + 4 DAO (Room in-memory) + 5 service. C1 respecté (zéro réseau). Scope data-layer strict — câblage `RadialDay.usageSessions` laissé à cadran-v2.
 
 ### 2026-05-27 `test-baseline`
 fix(android-test): aligne NightfallThemeTest sur les tokens DataSaillance courants

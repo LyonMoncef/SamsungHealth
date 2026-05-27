@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/usage/UsageStatsCollectionWorker.kt
-git_blob: ff4aa1ded17d9ca3306842f8f1cb709cd6926f37
-last_synced: '2026-05-20T18:28:21Z'
-loc: 65
+git_blob: 809731765c53e43c333bdc2e352e09ab27b081a5
+last_synced: '2026-05-27T00:40:51Z'
+loc: 92
 annotations: []
 imports: []
 exports: []
@@ -61,9 +61,16 @@ class UsageStatsCollectionWorker(
             return Result.success()
         }
 
+        val database = NightfallDatabase.get(ctx)
         val service = LocalUsageStatsService(
-            dao = NightfallDatabase.get(ctx).usageStatsDao(),
+            dao = database.usageStatsDao(),
             source = AndroidUsageStatsSource(mgr),
+            zone = ZoneId.systemDefault(),
+        )
+        val sessionDao = database.usageSessionDao()
+        val sessionsService = UsageSessionsService(
+            dao = sessionDao,
+            eventsSource = AndroidUsageEventsSource(mgr),
             zone = ZoneId.systemDefault(),
         )
 
@@ -71,7 +78,8 @@ class UsageStatsCollectionWorker(
             runCatching { LocalDate.parse(it) }.getOrNull()
         } ?: LocalDate.now().minusDays(1)
 
-        return runCatching {
+        // 1. Daily stats (inchangé) — un échec ici déclenche un retry.
+        val dailyResult = runCatching {
             val rows = service.collectDailyStats(target)
             Timber.i("scope=usage_worker date=$target rows=$rows")
             Result.success()
@@ -79,11 +87,30 @@ class UsageStatsCollectionWorker(
             Timber.w("scope=usage_worker error=${e::class.simpleName} msg=${e.message}")
             Result.retry()
         }
+
+        // 2. Sessions (nouveau) — échec indépendant : ne doit pas faire échouer
+        //    la collecte daily. On backfill si la table est encore vide.
+        runCatching {
+            if (sessionDao.count() == 0) {
+                val backfilled = sessionsService.backfillSessions(days = BACKFILL_DAYS)
+                Timber.i("scope=usage_sessions_worker backfill=$backfilled")
+            } else {
+                val sessions = sessionsService.collectSessions(target)
+                Timber.i("scope=usage_sessions_worker date=$target sessions=$sessions")
+            }
+        }.onFailure { e ->
+            Timber.w("scope=usage_sessions_worker error=${e::class.simpleName} msg=${e.message}")
+        }
+
+        return dailyResult
     }
 
     companion object {
         /** Optionnel — si présent, override la date cible (sinon = veille). */
         const val KEY_TARGET_DATE = "target_date"
+
+        /** Nb de jours backfillés au premier lancement (rétention Android ~7-10j). */
+        private const val BACKFILL_DAYS = 10
     }
 }
 ```
@@ -93,5 +120,5 @@ class UsageStatsCollectionWorker(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `UsageStatsCollectionWorker` (class) — lines 22-65
-- `doWork` (function) — lines 27-59
+- `UsageStatsCollectionWorker` (class) — lines 22-92
+- `doWork` (function) — lines 27-83

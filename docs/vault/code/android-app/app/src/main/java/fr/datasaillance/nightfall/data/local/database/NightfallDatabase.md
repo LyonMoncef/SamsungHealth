@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/database/NightfallDatabase.kt
-git_blob: 180356db305019d9796c3fce91643d82a5fc3f7a
-last_synced: '2026-05-20T16:30:46Z'
-loc: 166
+git_blob: 02e187fa2856cea72975461d8fa814848f6b520c
+last_synced: '2026-05-27T00:40:51Z'
+loc: 226
 annotations: []
 imports: []
 exports: []
@@ -35,6 +35,8 @@ import fr.datasaillance.nightfall.data.local.dao.HeartRateDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
 import fr.datasaillance.nightfall.data.local.dao.StepsDao
+import fr.datasaillance.nightfall.data.local.dao.UsageSessionDao
+import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.entity.ExerciseSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.HeartRateHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepSessionEntity
@@ -43,6 +45,8 @@ import fr.datasaillance.nightfall.data.local.entity.StepsHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
+import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
+import fr.datasaillance.nightfall.data.local.entity.usage.UsageSessionEntity
 import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
 
 @Database(
@@ -52,11 +56,13 @@ import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
         HeartRateHourlyEntity::class,
         StepsHourlyEntity::class,
         ExerciseSessionEntity::class,
-        LocationVisitEntity::class,    // v2 — Phase A_gps
-        ActivitySegmentEntity::class,  // v2 — Phase A_gps
-        LocationPathEntity::class,     // v3 — timelinePath (waypoints GPS pour trajets réalistes)
+        UsageDailyEntity::class,       // v2 — Phase A_us usage stats
+        LocationVisitEntity::class,    // v3 — Phase A_gps location visits
+        ActivitySegmentEntity::class,  // v3 — Phase A_gps activity segments
+        LocationPathEntity::class,     // v4 — timelinePath waypoints GPS (trajets réalistes)
+        UsageSessionEntity::class,     // v5 — Phase B_us sessions foreground intra-journée
     ],
-    version = 3,
+    version = 5,
     exportSchema = false,
 )
 abstract class NightfallDatabase : RoomDatabase() {
@@ -65,15 +71,40 @@ abstract class NightfallDatabase : RoomDatabase() {
     abstract fun heartRateDao(): HeartRateDao
     abstract fun stepsDao(): StepsDao
     abstract fun exerciseDao(): ExerciseDao
+    abstract fun usageStatsDao(): UsageStatsDao
+    abstract fun usageSessionDao(): UsageSessionDao
     abstract fun locationDao(): LocationDao
 
-    /**
-     * Migration v1 → v2 : ajoute les tables `location_visits` + `activity_segments`
-     * (Phase A_gps). À noter : la branche soeur `feat/usage-stats-collector` fait sa
-     * propre v1→v2 avec `usage_daily`. La consolidation finale (intégration des 2
-     * branches sur main) bumpera à v3 avec les 3 tables.
-     */
+    /** Migration v1 → v2 : ajoute la table `usage_daily` (Phase A_us). */
     object Migration1to2 : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `usage_daily` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `date` TEXT NOT NULL,
+                    `package_name` TEXT NOT NULL,
+                    `total_time_foreground_ms` INTEGER NOT NULL,
+                    `total_time_visible_ms` INTEGER NOT NULL DEFAULT 0,
+                    `total_time_fgs_ms` INTEGER NOT NULL DEFAULT 0,
+                    `last_time_used_ms` INTEGER NOT NULL DEFAULT 0,
+                    `app_launch_count` INTEGER NOT NULL DEFAULT 0,
+                    `collected_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_usage_daily_date_package_name` ON `usage_daily` (`date`, `package_name`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_daily_date` ON `usage_daily` (`date`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_daily_package_name` ON `usage_daily` (`package_name`)")
+        }
+    }
+
+    /**
+     * Migration v2 → v3 : ajoute les tables `location_visits` + `activity_segments`
+     * (Phase A_gps). Convergence post-merge des 2 branches long-lived — la v2
+     * était usage_daily, on continue avec les tables location en v3.
+     */
+    object Migration2to3 : Migration(2, 3) {
         override fun migrate(db: SupportSQLiteDatabase) {
             // location_visits
             db.execSQL(
@@ -123,10 +154,10 @@ abstract class NightfallDatabase : RoomDatabase() {
     }
 
     /**
-     * Migration v2 → v3 : ajoute la table `location_paths` pour stocker les waypoints
+     * Migration v3 → v4 : ajoute la table `location_paths` pour stocker les waypoints
      * `timelinePath` du nouveau format Google Takeout (trajets GPS détaillés).
      */
-    object Migration2to3 : Migration(2, 3) {
+    object Migration3to4 : Migration(3, 4) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
@@ -143,6 +174,33 @@ abstract class NightfallDatabase : RoomDatabase() {
             )
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_location_paths_start_ms_end_ms` ON `location_paths` (`start_ms`, `end_ms`)")
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_location_paths_start_ms` ON `location_paths` (`start_ms`)")
+        }
+    }
+
+    /**
+     * Migration v4 → v5 : ajoute la table `usage_session` (Phase B_us — sessions
+     * foreground intra-journée). Additive — aucun ALTER destructif sur l'existant.
+     */
+    object Migration4to5 : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `usage_session` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `package_name` TEXT NOT NULL,
+                    `start_ms` INTEGER NOT NULL,
+                    `end_ms` INTEGER NOT NULL,
+                    `duration_ms` INTEGER NOT NULL,
+                    `date` TEXT NOT NULL,
+                    `source` TEXT NOT NULL DEFAULT 'events',
+                    `collected_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_usage_session_package_name_start_ms` ON `usage_session` (`package_name`, `start_ms`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_session_date` ON `usage_session` (`date`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_session_start_ms` ON `usage_session` (`start_ms`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_session_package_name` ON `usage_session` (`package_name`)")
         }
     }
 
@@ -172,7 +230,9 @@ abstract class NightfallDatabase : RoomDatabase() {
                 DB_NAME,
             )
                 .openHelperFactory(factory)
-                .addMigrations(Migration1to2, Migration2to3)
+                .addMigrations(Migration1to2, Migration2to3, Migration3to4, Migration4to5)
+                // Fallback safety : si une migration future foire ou si l'utilisateur
+                // a une DB v0 inattendue, on rebuild from scratch plutôt que crasher.
                 .fallbackToDestructiveMigration()
                 .build()
         }
@@ -194,14 +254,18 @@ abstract class NightfallDatabase : RoomDatabase() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallDatabase` (class) — lines 25-166
-- `sleepDao` (function) — lines 41-41
-- `heartRateDao` (function) — lines 42-42
-- `stepsDao` (function) — lines 43-43
-- `exerciseDao` (function) — lines 44-44
-- `locationDao` (function) — lines 45-45
-- `migrate` (function) — lines 54-99
-- `migrate` (function) — lines 107-123
-- `get` (function) — lines 136-140
-- `build` (function) — lines 142-155
-- `resetForTest` (function) — lines 161-164
+- `NightfallDatabase` (class) — lines 29-226
+- `sleepDao` (function) — lines 47-47
+- `heartRateDao` (function) — lines 48-48
+- `stepsDao` (function) — lines 49-49
+- `exerciseDao` (function) — lines 50-50
+- `usageStatsDao` (function) — lines 51-51
+- `usageSessionDao` (function) — lines 52-52
+- `locationDao` (function) — lines 53-53
+- `migrate` (function) — lines 57-76
+- `migrate` (function) — lines 85-130
+- `migrate` (function) — lines 138-154
+- `migrate` (function) — lines 162-181
+- `get` (function) — lines 194-198
+- `build` (function) — lines 200-215
+- `resetForTest` (function) — lines 221-224
