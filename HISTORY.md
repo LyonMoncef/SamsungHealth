@@ -45,6 +45,12 @@
 
 ## Changelog
 
+### 2026-05-27 `test-baseline`
+fix(android-test): aligne NightfallThemeTest sur les tokens DataSaillance courants
+- `NightfallThemeTest.kt` référençait des constantes supprimées par la refonte design tokens (`Teal700`, `Amber600`, `Background`, `BackgroundLight`) → compilation de toute la source set de test native cassée.
+- Remappé sur les tokens actuels : `DarkPalette.Accent`/`.Cta`/`.Bg`, `LightPalette.Bg` (valeur light bg corrigée 0xFFFAFAFA → 0xFFFFFFFF).
+- Débloque la boucle TDD du Cadran v2. Baseline après fix : 201 tests, 25 échecs pré-existants (Keystore env + Timeline stale), non liés à ce chantier.
+
 ### 2026-05-27 `cadran-specs`
 docs(cadran): specs cadran-v2 + usage-sessions + labeled-places (TDD-ready)
 - Spec `cadran-v2` (parapluie UX) : sélection 2 niveaux anneau/segment remplaçant le quadrant 6h, focus mode, `LayerContextCard` contextuelle, correctif compteur central, interface `TrajetMapRenderer` déférée (zéro fuite réseau, garde-fou TA-7). Vision aligned 90/100.
