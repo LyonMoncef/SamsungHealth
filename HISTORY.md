@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Cadran v2 — specs (interaction 2 niveaux anneau/segment + cartes contextuelles) + deps data `usage-sessions` (Phase B_us sessions intra-journée) + `labeled-places` (lieux ancrés) | `docs/vault/specs/2026-05-27-{cadran-v2,usage-sessions,labeled-places}.md` | [`cadran-specs`](#2026-05-27-cadran-specs) |
 | Phase D unifiée — Vue Sleep × Usage × Location (section Bien-être numérique sous l'hypnogramme, top 5 apps + total écran pour la journée associée à la nuit) | `viewmodel/sleep/HypnogramViewModel.kt`, `ui/screens/sleep/DayUsageSection.kt`, `ui/navigation/NavGraph.kt` | [`9cb1f20`](#2026-05-23-9cb1f20) |
 | Phase A_gps + C_gps — Import Google Takeout (format 2024+ `semanticSegments` + ancien `timelineObjects`) + map OSMDroid embarquée + badge "sorti du domicile" Timeline + DB v3→v4 (`location_visits` + `activity_segments` + `location_paths`) | `data/local/entity/location/`, `data/local/location/TakeoutTimelineParser.kt`, `data/local/location/LocalLocationImportService.kt`, `ui/screens/sleep/DayMapSection.kt`, `ui/screens/sleep/TimelineScreen.kt`, `data/local/database/NightfallDatabase.kt` | [`73ccadc`](#2026-05-21-73ccadc) |
 | Phase A_us + B_us + C_us — Bien-être numérique local (collecte `UsageStatsManager` via WorkManager quotidien + écran 5e onglet avec sélecteur de période + DB v2 `usage_daily`) | `data/local/usage/`, `viewmodel/wellbeing/DigitalWellbeingViewModel.kt`, `ui/screens/wellbeing/DigitalWellbeingScreen.kt`, `NightfallApplication.kt` | [`174a545`](#2026-05-20-174a545) |
@@ -43,6 +44,14 @@
 ---
 
 ## Changelog
+
+### 2026-05-27 `cadran-specs`
+docs(cadran): specs cadran-v2 + usage-sessions + labeled-places (TDD-ready)
+- Spec `cadran-v2` (parapluie UX) : sélection 2 niveaux anneau/segment remplaçant le quadrant 6h, focus mode, `LayerContextCard` contextuelle, correctif compteur central, interface `TrajetMapRenderer` déférée (zéro fuite réseau, garde-fou TA-7). Vision aligned 90/100.
+- Spec `usage-sessions` (Phase B_us) : sessions d'usage intra-journée via `UsageStatsManager.queryEvents()` → table Room `usage_session` + DAO + service + worker étendu + migration v4→v5. Débloque l'anneau usage réel. Vision aligned 100/100.
+- Spec `labeled-places` : lieux labellisés configurables (domicile/travail/famille/vacances) + `PlaceResolver` haversine + écran config Compose + migration v5→v6. Débloque le binaire ancré/déplacement de l'anneau timeline. Vision aligned 90/100 (warn C2 export/erase patché).
+- Conflit de migration DB résolu : `usage-sessions`=v4→v5, `labeled-places`=v5→v6 (ordre de merge documenté dans les specs).
+- Ordre d'implémentation retenu : usage-sessions → labeled-places → cadran-v2.
 
 ### 2026-05-23 `9cb1f20`
 feat(unified): Phase D.3 — vue unifiée sleep × usage × location dans HypnogramScreen
