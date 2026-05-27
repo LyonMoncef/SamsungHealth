@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/local/database/NightfallDatabase.kt
-git_blob: 02e187fa2856cea72975461d8fa814848f6b520c
-last_synced: '2026-05-27T00:40:51Z'
-loc: 226
+git_blob: af7e0b93becb3cfbfd5eefe46dcf1b11579ce6dc
+last_synced: '2026-05-27T05:17:18Z'
+loc: 256
 annotations: []
 imports: []
 exports: []
@@ -27,11 +27,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import fr.datasaillance.nightfall.data.local.dao.ExerciseDao
 import fr.datasaillance.nightfall.data.local.dao.HeartRateDao
+import fr.datasaillance.nightfall.data.local.dao.LabeledPlaceDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
 import fr.datasaillance.nightfall.data.local.dao.StepsDao
@@ -43,6 +45,7 @@ import fr.datasaillance.nightfall.data.local.entity.SleepSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepStageEntity
 import fr.datasaillance.nightfall.data.local.entity.StepsHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LabeledPlaceEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
 import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
@@ -61,10 +64,12 @@ import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
         ActivitySegmentEntity::class,  // v3 — Phase A_gps activity segments
         LocationPathEntity::class,     // v4 — timelinePath waypoints GPS (trajets réalistes)
         UsageSessionEntity::class,     // v5 — Phase B_us sessions foreground intra-journée
+        LabeledPlaceEntity::class,     // v6 — Phase B_lp lieux labellisés configurables
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
+@TypeConverters(Converters::class)
 abstract class NightfallDatabase : RoomDatabase() {
 
     abstract fun sleepDao(): SleepDao
@@ -74,6 +79,7 @@ abstract class NightfallDatabase : RoomDatabase() {
     abstract fun usageStatsDao(): UsageStatsDao
     abstract fun usageSessionDao(): UsageSessionDao
     abstract fun locationDao(): LocationDao
+    abstract fun labeledPlaceDao(): LabeledPlaceDao
 
     /** Migration v1 → v2 : ajoute la table `usage_daily` (Phase A_us). */
     object Migration1to2 : Migration(1, 2) {
@@ -204,6 +210,30 @@ abstract class NightfallDatabase : RoomDatabase() {
         }
     }
 
+    /**
+     * Migration v5 → v6 : ajoute la table `labeled_place` (Phase B_lp — lieux
+     * labellisés configurables). Additive — aucun ALTER destructif sur l'existant.
+     */
+    object Migration5to6 : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `labeled_place` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `label` TEXT NOT NULL,
+                    `category` TEXT NOT NULL,
+                    `lat` REAL NOT NULL,
+                    `lng` REAL NOT NULL,
+                    `radius_meters` INTEGER NOT NULL DEFAULT 150,
+                    `created_at_ms` INTEGER NOT NULL,
+                    `updated_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_labeled_place_category` ON `labeled_place` (`category`)")
+        }
+    }
+
     companion object {
         private const val DB_NAME = "nightfall.db"
 
@@ -230,7 +260,7 @@ abstract class NightfallDatabase : RoomDatabase() {
                 DB_NAME,
             )
                 .openHelperFactory(factory)
-                .addMigrations(Migration1to2, Migration2to3, Migration3to4, Migration4to5)
+                .addMigrations(Migration1to2, Migration2to3, Migration3to4, Migration4to5, Migration5to6)
                 // Fallback safety : si une migration future foire ou si l'utilisateur
                 // a une DB v0 inattendue, on rebuild from scratch plutôt que crasher.
                 .fallbackToDestructiveMigration()
@@ -254,18 +284,20 @@ abstract class NightfallDatabase : RoomDatabase() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NightfallDatabase` (class) — lines 29-226
-- `sleepDao` (function) — lines 47-47
-- `heartRateDao` (function) — lines 48-48
-- `stepsDao` (function) — lines 49-49
-- `exerciseDao` (function) — lines 50-50
-- `usageStatsDao` (function) — lines 51-51
-- `usageSessionDao` (function) — lines 52-52
-- `locationDao` (function) — lines 53-53
-- `migrate` (function) — lines 57-76
-- `migrate` (function) — lines 85-130
-- `migrate` (function) — lines 138-154
-- `migrate` (function) — lines 162-181
-- `get` (function) — lines 194-198
-- `build` (function) — lines 200-215
-- `resetForTest` (function) — lines 221-224
+- `NightfallDatabase` (class) — lines 32-256
+- `sleepDao` (function) — lines 52-52
+- `heartRateDao` (function) — lines 53-53
+- `stepsDao` (function) — lines 54-54
+- `exerciseDao` (function) — lines 55-55
+- `usageStatsDao` (function) — lines 56-56
+- `usageSessionDao` (function) — lines 57-57
+- `locationDao` (function) — lines 58-58
+- `labeledPlaceDao` (function) — lines 59-59
+- `migrate` (function) — lines 63-82
+- `migrate` (function) — lines 91-136
+- `migrate` (function) — lines 144-160
+- `migrate` (function) — lines 168-187
+- `migrate` (function) — lines 195-211
+- `get` (function) — lines 224-228
+- `build` (function) — lines 230-245
+- `resetForTest` (function) — lines 251-254

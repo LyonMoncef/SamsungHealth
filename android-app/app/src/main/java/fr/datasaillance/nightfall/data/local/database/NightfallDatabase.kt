@@ -4,11 +4,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import fr.datasaillance.nightfall.data.local.dao.ExerciseDao
 import fr.datasaillance.nightfall.data.local.dao.HeartRateDao
+import fr.datasaillance.nightfall.data.local.dao.LabeledPlaceDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
 import fr.datasaillance.nightfall.data.local.dao.StepsDao
@@ -20,6 +22,7 @@ import fr.datasaillance.nightfall.data.local.entity.SleepSessionEntity
 import fr.datasaillance.nightfall.data.local.entity.SleepStageEntity
 import fr.datasaillance.nightfall.data.local.entity.StepsHourlyEntity
 import fr.datasaillance.nightfall.data.local.entity.location.ActivitySegmentEntity
+import fr.datasaillance.nightfall.data.local.entity.location.LabeledPlaceEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationPathEntity
 import fr.datasaillance.nightfall.data.local.entity.location.LocationVisitEntity
 import fr.datasaillance.nightfall.data.local.entity.usage.UsageDailyEntity
@@ -38,10 +41,12 @@ import fr.datasaillance.nightfall.data.local.security.NightfallKeyManager
         ActivitySegmentEntity::class,  // v3 — Phase A_gps activity segments
         LocationPathEntity::class,     // v4 — timelinePath waypoints GPS (trajets réalistes)
         UsageSessionEntity::class,     // v5 — Phase B_us sessions foreground intra-journée
+        LabeledPlaceEntity::class,     // v6 — Phase B_lp lieux labellisés configurables
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
+@TypeConverters(Converters::class)
 abstract class NightfallDatabase : RoomDatabase() {
 
     abstract fun sleepDao(): SleepDao
@@ -51,6 +56,7 @@ abstract class NightfallDatabase : RoomDatabase() {
     abstract fun usageStatsDao(): UsageStatsDao
     abstract fun usageSessionDao(): UsageSessionDao
     abstract fun locationDao(): LocationDao
+    abstract fun labeledPlaceDao(): LabeledPlaceDao
 
     /** Migration v1 → v2 : ajoute la table `usage_daily` (Phase A_us). */
     object Migration1to2 : Migration(1, 2) {
@@ -181,6 +187,30 @@ abstract class NightfallDatabase : RoomDatabase() {
         }
     }
 
+    /**
+     * Migration v5 → v6 : ajoute la table `labeled_place` (Phase B_lp — lieux
+     * labellisés configurables). Additive — aucun ALTER destructif sur l'existant.
+     */
+    object Migration5to6 : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `labeled_place` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `label` TEXT NOT NULL,
+                    `category` TEXT NOT NULL,
+                    `lat` REAL NOT NULL,
+                    `lng` REAL NOT NULL,
+                    `radius_meters` INTEGER NOT NULL DEFAULT 150,
+                    `created_at_ms` INTEGER NOT NULL,
+                    `updated_at_ms` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_labeled_place_category` ON `labeled_place` (`category`)")
+        }
+    }
+
     companion object {
         private const val DB_NAME = "nightfall.db"
 
@@ -207,7 +237,7 @@ abstract class NightfallDatabase : RoomDatabase() {
                 DB_NAME,
             )
                 .openHelperFactory(factory)
-                .addMigrations(Migration1to2, Migration2to3, Migration3to4, Migration4to5)
+                .addMigrations(Migration1to2, Migration2to3, Migration3to4, Migration4to5, Migration5to6)
                 // Fallback safety : si une migration future foire ou si l'utilisateur
                 // a une DB v0 inattendue, on rebuild from scratch plutôt que crasher.
                 .fallbackToDestructiveMigration()

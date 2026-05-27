@@ -2,9 +2,12 @@ package fr.datasaillance.nightfall.viewmodel.radial
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.datasaillance.nightfall.data.local.dao.LabeledPlaceDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
 import fr.datasaillance.nightfall.data.local.dao.SleepDao
 import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
+import fr.datasaillance.nightfall.data.local.location.PlaceResolver
+import fr.datasaillance.nightfall.data.local.location.toLabeledPlace
 import fr.datasaillance.nightfall.dataviz.radial.RadialActivity
 import fr.datasaillance.nightfall.dataviz.radial.RadialDay
 import fr.datasaillance.nightfall.dataviz.radial.RadialUsageRow
@@ -39,6 +42,7 @@ class RadialClockViewModel(
     private val sleepDao: SleepDao,
     private val locationDao: LocationDao,
     private val usageStatsDao: UsageStatsDao,
+    private val labeledPlaceDao: LabeledPlaceDao? = null,
     private val windowDays: Int = 30,
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val clock: () -> LocalDate = { LocalDate.now() },
@@ -101,6 +105,13 @@ class RadialClockViewModel(
         val allVisits = runCatching { locationDao.getVisitsInRange(fromMs, toMs) }.getOrDefault(emptyList())
         val allSegments = runCatching { locationDao.getSegmentsInRange(fromMs, toMs) }.getOrDefault(emptyList())
 
+        // --- Labeled places — résolution des visites ancrées (lieux connus) ---
+        val labeledPlaces = labeledPlaceDao
+            ?.let { runCatching { it.getAll() }.getOrDefault(emptyList()) }
+            ?.map { it.toLabeledPlace() }
+            .orEmpty()
+        val placeResolver = PlaceResolver(labeledPlaces)
+
         // --- Usage ---
         val allUsage = runCatching {
             usageStatsDao.getInRange(from.toString(), today.toString())
@@ -118,7 +129,16 @@ class RadialClockViewModel(
                 sleepStages = stagesByDay[date]?.sortedBy { it.startMs }?.toList().orEmpty(),
                 visits = allVisits
                     .filter { it.startMs < dayEnd && it.endMs > dayStart }
-                    .map { RadialVisit(it.startMs, it.endMs, it.placeName ?: it.address ?: "—") },
+                    .map { v ->
+                        val match = placeResolver.resolve(v.lat, v.lng)
+                        RadialVisit(
+                            startMs = v.startMs,
+                            endMs = v.endMs,
+                            placeName = v.placeName ?: v.address ?: "—",
+                            anchored = match != null,
+                            placeLabel = match?.label,
+                        )
+                    },
                 activities = allSegments
                     .filter { it.startMs < dayEnd && it.endMs > dayStart }
                     .map { RadialActivity(it.startMs, it.endMs, it.activityType, it.distanceMeters ?: 0) },

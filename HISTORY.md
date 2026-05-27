@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Labeled Places — lieux labellisés configurables (domicile/travail/famille/vacances) + `PlaceResolver` haversine + écran config Compose (DB v5→v6), 15 tests TDD | `data/local/entity/location/{LabeledPlaceEntity,PlaceCategory}.kt`, `data/local/dao/LabeledPlaceDao.kt`, `data/local/location/{PlaceResolver,PlaceSuggestionService,LabeledPlace}.kt`, `ui/screens/places/`, `viewmodel/places/` | [`labeled-places-impl`](#2026-05-27-labeled-places-impl) |
 | Usage Sessions (Phase B_us) — sessions d'usage intra-journée via `queryEvents` → table Room `usage_session` (DB v4→v5), 19 tests TDD | `data/local/usage/{UsageEventsSource,UsageSessionsService}.kt`, `data/local/entity/usage/UsageSessionEntity.kt`, `data/local/dao/UsageSessionDao.kt`, `data/local/database/NightfallDatabase.kt` | [`usage-sessions-impl`](#2026-05-27-usage-sessions-impl) |
 | Cadran v2 — specs (interaction 2 niveaux anneau/segment + cartes contextuelles) + deps data `usage-sessions` (Phase B_us sessions intra-journée) + `labeled-places` (lieux ancrés) | `docs/vault/specs/2026-05-27-{cadran-v2,usage-sessions,labeled-places}.md` | [`cadran-specs`](#2026-05-27-cadran-specs) |
 | Phase D unifiée — Vue Sleep × Usage × Location (section Bien-être numérique sous l'hypnogramme, top 5 apps + total écran pour la journée associée à la nuit) | `viewmodel/sleep/HypnogramViewModel.kt`, `ui/screens/sleep/DayUsageSection.kt`, `ui/navigation/NavGraph.kt` | [`9cb1f20`](#2026-05-23-9cb1f20) |
@@ -45,6 +46,15 @@
 ---
 
 ## Changelog
+
+### 2026-05-27 `labeled-places-impl`
+feat(android): lieux labellisés configurables + résolution ancré/déplacement (TDD, 15 tests GREEN)
+- `LabeledPlaceEntity` (table `labeled_place`) + `PlaceCategory` enum + `Converters` + `LabeledPlaceDao` (Flow + suspend).
+- `PlaceResolver` haversine pur (plus proche dans le rayon, tie-break par id) + `PlaceSuggestionService` (clustering naïf ≥3 visites / 200 m).
+- Migration Room v5→v6 additive + bump version DB.
+- `LabeledPlacesScreen` Compose (liste + CRUD + suggestions, tokens DataSaillance light+dark, pas de map picker — C1).
+- Câblage cadran additif/rétrocompatible : `RadialVisit` enrichi `anchored`/`placeLabel`, `RadialClockViewModel` injecte `LabeledPlaceDao?` (défaut null) + résout chaque visite via `PlaceResolver`.
+- Tests : 6 PlaceResolver + 4 suggestions + 3 DAO (in-memory) + 2 ViewModel intégration (`src/testNative`). Régression : 0 nouvel échec (235 tests, 25 pré-existants inchangés).
 
 ### 2026-05-27 `usage-sessions-impl`
 feat(android): Phase B_us — sessions d'usage intra-journée (TDD, 19 tests GREEN)

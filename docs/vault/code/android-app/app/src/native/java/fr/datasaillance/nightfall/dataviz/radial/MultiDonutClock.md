@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/dataviz/radial/MultiDonutClock.kt
-git_blob: 43806a75e7515f9bcbeea575500f72e3040185e6
-last_synced: '2026-05-26T03:20:22Z'
-loc: 546
+git_blob: fe9bf91af9965ba2ecc9f44dfee2d1e0b25684fd
+last_synced: '2026-05-27T05:17:18Z'
+loc: 554
 annotations: []
 imports: []
 exports: []
@@ -99,7 +99,15 @@ import kotlin.math.sqrt
 enum class SleepStage { AWAKE, REM, LIGHT, DEEP }
 
 data class StageInterval(val type: SleepStage, val startMs: Long, val endMs: Long)
-data class RadialVisit(val startMs: Long, val endMs: Long, val placeName: String)
+data class RadialVisit(
+    val startMs: Long,
+    val endMs: Long,
+    val placeName: String,
+    /** true si PlaceResolver a trouvé un lieu labellisé dont le rayon contient la visite. */
+    val anchored: Boolean = false,
+    /** libellé du lieu labellisé matché, null si la visite n'est pas ancrée. */
+    val placeLabel: String? = null,
+)
 data class RadialActivity(val startMs: Long, val endMs: Long, val activityType: String, val distanceMeters: Int)
 data class RadialUsageRow(val packageName: String, val totalTimeForegroundMs: Long, val lastTimeUsedMs: Long)
 
@@ -576,27 +584,27 @@ private fun Modifier.absoluteOffsetPx(
 ### Symbols
 - `SleepStage` (class) — lines 76-76
 - `StageInterval` (class) — lines 78-78
-- `RadialVisit` (class) — lines 79-79
-- `RadialActivity` (class) — lines 80-80
-- `RadialUsageRow` (class) — lines 81-81
-- `RadialDay` (class) — lines 83-89
-- `UsageVariant` (class) — lines 91-91
-- `resolve` (function) — lines 105-110
-- `placeColor` (function) — lines 113-117
-- `heatColor` (function) — lines 120-121
-- `stageColor` (function) — lines 131-137
-- `MultiDonutClock` (function) — lines 142-247
-- `drawSleepDonut` (function) — lines 252-286
-- `drawUsageHeat` (function) — lines 291-310
-- `drawUsageApps` (function) — lines 315-344
-- `drawTimelineDonut` (function) — lines 349-378
-- `drawHourTicks` (function) — lines 383-396
-- `HourLabels` (function) — lines 401-423
-- `CenterLabel` (function) — lines 428-470
-- `drawDonutWedge` (function) — lines 475-494
-- `drawEmptyBand` (function) — lines 496-502
-- `hourToRad` (function) — lines 507-508
-- `polar` (function) — lines 510-511
-- `localHour` (function) — lines 513-516
-- `hitTestQuadrant` (function) — lines 518-529
-- `absoluteOffsetPx` (function) — lines 534-546
+- `RadialVisit` (class) — lines 79-87
+- `RadialActivity` (class) — lines 88-88
+- `RadialUsageRow` (class) — lines 89-89
+- `RadialDay` (class) — lines 91-97
+- `UsageVariant` (class) — lines 99-99
+- `resolve` (function) — lines 113-118
+- `placeColor` (function) — lines 121-125
+- `heatColor` (function) — lines 128-129
+- `stageColor` (function) — lines 139-145
+- `MultiDonutClock` (function) — lines 150-255
+- `drawSleepDonut` (function) — lines 260-294
+- `drawUsageHeat` (function) — lines 299-318
+- `drawUsageApps` (function) — lines 323-352
+- `drawTimelineDonut` (function) — lines 357-386
+- `drawHourTicks` (function) — lines 391-404
+- `HourLabels` (function) — lines 409-431
+- `CenterLabel` (function) — lines 436-478
+- `drawDonutWedge` (function) — lines 483-502
+- `drawEmptyBand` (function) — lines 504-510
+- `hourToRad` (function) — lines 515-516
+- `polar` (function) — lines 518-519
+- `localHour` (function) — lines 521-524
+- `hitTestQuadrant` (function) — lines 526-537
+- `absoluteOffsetPx` (function) — lines 542-554

@@ -30,6 +30,7 @@ fun RadialRoute() {
             sleepDao = db.sleepDao(),
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
+            labeledPlaceDao = db.labeledPlaceDao(),
             windowDays = 30,
         )
     }

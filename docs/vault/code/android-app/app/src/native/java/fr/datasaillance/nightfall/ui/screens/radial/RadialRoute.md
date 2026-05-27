@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/ui/screens/radial/RadialRoute.kt
-git_blob: 6d33d38e430b80556279c5d9b91b37fdb14f529c
-last_synced: '2026-05-26T03:20:22Z'
-loc: 57
+git_blob: 8cd6d575cf05cb920adf271f5b24c0e77f743aa3
+last_synced: '2026-05-27T05:17:19Z'
+loc: 58
 annotations: []
 imports: []
 exports: []
@@ -53,6 +53,7 @@ fun RadialRoute() {
             sleepDao = db.sleepDao(),
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
+            labeledPlaceDao = db.labeledPlaceDao(),
             windowDays = 30,
         )
     }
@@ -85,4 +86,4 @@ fun RadialRoute() {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `RadialRoute` (function) — lines 24-57
+- `RadialRoute` (function) — lines 24-58

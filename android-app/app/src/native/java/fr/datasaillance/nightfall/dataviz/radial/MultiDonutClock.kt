@@ -76,7 +76,15 @@ import kotlin.math.sqrt
 enum class SleepStage { AWAKE, REM, LIGHT, DEEP }
 
 data class StageInterval(val type: SleepStage, val startMs: Long, val endMs: Long)
-data class RadialVisit(val startMs: Long, val endMs: Long, val placeName: String)
+data class RadialVisit(
+    val startMs: Long,
+    val endMs: Long,
+    val placeName: String,
+    /** true si PlaceResolver a trouvé un lieu labellisé dont le rayon contient la visite. */
+    val anchored: Boolean = false,
+    /** libellé du lieu labellisé matché, null si la visite n'est pas ancrée. */
+    val placeLabel: String? = null,
+)
 data class RadialActivity(val startMs: Long, val endMs: Long, val activityType: String, val distanceMeters: Int)
 data class RadialUsageRow(val packageName: String, val totalTimeForegroundMs: Long, val lastTimeUsedMs: Long)
 
