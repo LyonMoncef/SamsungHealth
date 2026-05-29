@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/navigation/NavDestination.kt
-git_blob: b7029815b7b51501d5510e14c8fedb6063ae4c7c
-last_synced: '2026-05-26T03:20:22Z'
-loc: 29
+git_blob: 26e31799980412209ba3248f2530d698e5492a93
+last_synced: '2026-05-29T08:09:08Z'
+loc: 30
 annotations: []
 imports: []
 exports: []
@@ -39,6 +39,7 @@ sealed class NavDestination(
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")
     object Settings : NavDestination("settings", "Paramètres")
+    object LabeledPlaces : NavDestination("labeled_places", "Lieux connus")
     object Hypnogram : NavDestination("hypnogram/{sessionId}?date={date}", "Hypnogramme") {
         // date facultative (ISO yyyy-MM-dd) — quand fournie, on fetch uniquement cette nuit
         // au lieu de télécharger tout l'historique sleep_sessions du user.
@@ -57,6 +58,6 @@ sealed class NavDestination(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `NavDestination` (class) — lines 3-29
-- `route` (function) — lines 22-23
-- `bottomNavItems` (function) — lines 27-27
+- `NavDestination` (class) — lines 3-30
+- `route` (function) — lines 23-24
+- `bottomNavItems` (function) — lines 28-28

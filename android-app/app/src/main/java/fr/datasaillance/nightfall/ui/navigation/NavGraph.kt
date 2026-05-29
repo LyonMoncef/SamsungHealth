@@ -260,7 +260,13 @@ fun NavGraph(
             composable(NavDestination.Settings.route) {
                 SettingsScreen(
                     currentUrl = backendUrl,
-                    onSaveUrl  = onSaveUrl
+                    onSaveUrl  = onSaveUrl,
+                    onOpenLabeledPlaces = { navController.navigate(NavDestination.LabeledPlaces.route) },
+                )
+            }
+            composable(NavDestination.LabeledPlaces.route) {
+                fr.datasaillance.nightfall.ui.screens.places.LabeledPlacesRoute(
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

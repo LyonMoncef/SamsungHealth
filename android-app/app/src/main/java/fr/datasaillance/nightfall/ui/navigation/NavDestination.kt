@@ -16,6 +16,7 @@ sealed class NavDestination(
     object Profile  : NavDestination("profile",  "Profil")
     object Import   : NavDestination("import",   "Importer")
     object Settings : NavDestination("settings", "Paramètres")
+    object LabeledPlaces : NavDestination("labeled_places", "Lieux connus")
     object Hypnogram : NavDestination("hypnogram/{sessionId}?date={date}", "Hypnogramme") {
         // date facultative (ISO yyyy-MM-dd) — quand fournie, on fetch uniquement cette nuit
         // au lieu de télécharger tout l'historique sleep_sessions du user.

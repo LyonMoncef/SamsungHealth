@@ -48,6 +48,14 @@
 
 ## Changelog
 
+### 2026-05-29 `nav-labeled-places`
+feat(android): câble la navigation vers `LabeledPlacesScreen` depuis Paramètres (clôt L12 spec labeled-places)
+- Nouvelle entrée `NavDestination.LabeledPlaces` (route `labeled_places`, label "Lieux connus").
+- `SettingsScreen` reçoit un callback `onOpenLabeledPlaces` (défaut `{}` — rétrocompatible) + bouton "Lieux connus (domicile, travail, …)".
+- `NavGraph` route `Settings` câble le callback vers `navController.navigate(LabeledPlaces.route)`.
+- Nouvelle `LabeledPlacesRoute` flavor-split (pattern `RadialRoute`) : la native instancie `LabeledPlacesViewModel` + DB et appelle le screen ; le stub webview affiche un message ("disponible uniquement en mode natif") — évite d'élargir la cassure webview pré-existante.
+- Suite à finding W1 du `/review` du 2026-05-29 ; 0 régression test (253/25 inchangé).
+
 ### 2026-05-29 `chore-placecolor`
 chore(android): supprime `placeColor()` dead code dans MultiDonutClock.kt
 - Fonction `internal fun placeColor(name: String)` rendue obsolète par cadran-v2 DT-6 (la coloration de l'anneau timeline passe désormais par `RadialVisit.anchored` via `timelineVisitColor()`).
