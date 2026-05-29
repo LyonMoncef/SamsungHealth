@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/native/java/fr/datasaillance/nightfall/dataviz/radial/MultiDonutClock.kt
-git_blob: baa4f971bfef642f64d41ecb58411430070cc783
-last_synced: '2026-05-27T06:16:08Z'
-loc: 825
+git_blob: c3bfb885d24de24a7607c5d46d21a2d63295b627
+last_synced: '2026-05-29T08:03:14Z'
+loc: 819
 annotations: []
 imports: []
 exports: []
@@ -162,12 +162,6 @@ internal object Activity {
         "IN_BUS" -> IN_BUS; "IN_SUBWAY" -> IN_SUBWAY; "FLYING" -> FLYING
         else -> FALLBACK
     }
-}
-
-internal fun placeColor(name: String): Color = when {
-    name.startsWith("Maison")  -> Color(0xFFD37C04)
-    name.startsWith("Travail") -> Color(0xFF0E9EB0)
-    else                       -> Color(0xFF7A9AAA)
 }
 
 // Sequential gamma-corrected color ramp (surface3 → cyan).
@@ -864,35 +858,34 @@ private fun Modifier.absoluteOffsetPx(
 - `RadialLayer` (class) — lines 116-116
 - `RadialSelection` (class) — lines 118-122
 - `resolve` (function) — lines 136-141
-- `placeColor` (function) — lines 144-148
-- `heatColor` (function) — lines 151-152
-- `stageColor` (function) — lines 162-168
-- `MultiDonutClock` (function) — lines 173-294
-- `layerAlpha` (function) — lines 207-208
-- `drawSleepDonut` (function) — lines 299-346
-- `drawUsageHeat` (function) — lines 351-387
-- `drawUsageApps` (function) — lines 392-432
-- `drawTimelineDonut` (function) — lines 437-494
-- `segAlpha` (function) — lines 454-459
-- `isSelected` (function) — lines 460-462
-- `timelineVisitColor` (function) — lines 497-498
-- `drawHourTicks` (function) — lines 503-516
-- `HourLabels` (function) — lines 521-544
-- `CenterLabel` (function) — lines 549-578
-- `drawDonutWedge` (function) — lines 583-602
-- `drawDonutWedgeStroke` (function) — lines 604-621
-- `drawEmptyBand` (function) — lines 623-629
-- `CenterMetric` (class) — lines 635-635
-- `centerMetric` (function) — lines 646-678
-- `dur` (function) — lines 650-653
-- `countSleepSessions` (function) — lines 681-691
-- `hourToRad` (function) — lines 696-697
-- `polar` (function) — lines 699-700
-- `localHour` (function) — lines 702-705
-- `RadialGeometry` (class) — lines 711-720
-- `hourAtTap` (function) — lines 726-732
-- `layerAtRadius` (function) — lines 735-745
-- `hitTestRadial` (function) — lines 755-778
-- `segmentAt` (function) — lines 781-808
-- `spans` (function) — lines 787-793
-- `absoluteOffsetPx` (function) — lines 813-825
+- `heatColor` (function) — lines 145-146
+- `stageColor` (function) — lines 156-162
+- `MultiDonutClock` (function) — lines 167-288
+- `layerAlpha` (function) — lines 201-202
+- `drawSleepDonut` (function) — lines 293-340
+- `drawUsageHeat` (function) — lines 345-381
+- `drawUsageApps` (function) — lines 386-426
+- `drawTimelineDonut` (function) — lines 431-488
+- `segAlpha` (function) — lines 448-453
+- `isSelected` (function) — lines 454-456
+- `timelineVisitColor` (function) — lines 491-492
+- `drawHourTicks` (function) — lines 497-510
+- `HourLabels` (function) — lines 515-538
+- `CenterLabel` (function) — lines 543-572
+- `drawDonutWedge` (function) — lines 577-596
+- `drawDonutWedgeStroke` (function) — lines 598-615
+- `drawEmptyBand` (function) — lines 617-623
+- `CenterMetric` (class) — lines 629-629
+- `centerMetric` (function) — lines 640-672
+- `dur` (function) — lines 644-647
+- `countSleepSessions` (function) — lines 675-685
+- `hourToRad` (function) — lines 690-691
+- `polar` (function) — lines 693-694
+- `localHour` (function) — lines 696-699
+- `RadialGeometry` (class) — lines 705-714
+- `hourAtTap` (function) — lines 720-726
+- `layerAtRadius` (function) — lines 729-739
+- `hitTestRadial` (function) — lines 749-772
+- `segmentAt` (function) — lines 775-802
+- `spans` (function) — lines 781-787
+- `absoluteOffsetPx` (function) — lines 807-819

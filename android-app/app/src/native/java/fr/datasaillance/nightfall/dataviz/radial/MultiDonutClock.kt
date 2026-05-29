@@ -141,12 +141,6 @@ internal object Activity {
     }
 }
 
-internal fun placeColor(name: String): Color = when {
-    name.startsWith("Maison")  -> Color(0xFFD37C04)
-    name.startsWith("Travail") -> Color(0xFF0E9EB0)
-    else                       -> Color(0xFF7A9AAA)
-}
-
 // Sequential gamma-corrected color ramp (surface3 → cyan).
 internal fun heatColor(t: Float): Color =
     lerp(Color(0xFF2A363B), Color(0xFF3BE5E7), t.coerceIn(0f, 1f).pow(0.55f))

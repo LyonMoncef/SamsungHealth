@@ -48,6 +48,12 @@
 
 ## Changelog
 
+### 2026-05-29 `chore-placecolor`
+chore(android): supprime `placeColor()` dead code dans MultiDonutClock.kt
+- Fonction `internal fun placeColor(name: String)` rendue obsolète par cadran-v2 DT-6 (la coloration de l'anneau timeline passe désormais par `RadialVisit.anchored` via `timelineVisitColor()`).
+- 0 call-site dans le repo confirmé par grep. Suppression nette ; compile native vert.
+- Suite à finding W4 du `/review` du 2026-05-29.
+
 ### 2026-05-27 `cadran-v2-impl`
 feat(android): Cadran v2 — sélection anneau/segment + intégration usage/lieux + light mode (TDD, 18 tests GREEN)
 - Sélection 2 niveaux : `RadialLayer`{SLEEP,USAGE,TIMELINE} + `RadialSelection` remplacent le quadrant 6h ; `hitTestRadial` pur (anneau via rayon, segment via heure), focus mode/dim + liseré teal du segment actif.
