@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Écran Health Connect — permissions lecture seule (sommeil, pas, historique), écran de justification exigé par Health Connect, état + autorisation + résumé de lecture (sessions, plus ancienne, historique complet/limité), cache partagé en mémoire, 6 tests TDD | `ui/screens/healthconnect/`, `viewmodel/healthconnect/`, `HealthConnectRationaleActivity.kt`, `AndroidManifest.xml` | [`92dffd4`](#2026-09-24-92dffd4) |
 | Couche données Health Connect — conversion vers le contrat v1, pagination sûre, dédup par identifiant, état d'accès (historique complet vs limité 30 j jamais silencieux), 15 tests TDD | `app/src/main/java/fr/datasaillance/nightfall/data/healthconnect/` | [`9ad602c`](#2026-09-24-9ad602c) |
 | Module `core/` (Kotlin pur) — contrat de données v1 (`SleepRecord`, `StepsInterval`, stades et méthodes Health Connect 1:1) + export CSV déterministe et manifeste, 9 tests TDD | `core/src/main/kotlin/fr/datasaillance/nightfall/core/{model,export}/`, `settings.gradle.kts` | [`08f7704`](#2026-09-23-08f7704) |
 | Cadran v2 — interaction sélection anneau/segment (remplace quadrant 6h) + focus mode + `LayerContextCard` contextuelle + intégration usage réel/timeline ancré + light mode + `TrajetMapRenderer` déférée, 18 tests TDD | `dataviz/radial/{MultiDonutClock,RadialClockScreen,TrajetMapRenderer}.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/screens/radial/RadialRoute.kt` | [`cadran-v2-impl`](#2026-05-27-cadran-v2-impl) |
@@ -49,6 +50,13 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `92dffd4`
+feat(healthconnect): permissions, ecran de justification et ecran Health Connect (etat, autorisation, resume de lecture) (Phase 1.2b)
+- Manifeste : `READ_SLEEP`, `READ_STEPS`, `READ_HEALTH_DATA_HISTORY` (lecture seule) ; `<queries>` vers `com.google.android.apps.healthdata` ; `HealthConnectRationaleActivity` (`ACTION_SHOW_PERMISSIONS_RATIONALE`) + alias Android 14+ (`VIEW_PERMISSION_USAGE` / `HEALTH_PERMISSIONS`).
+- `HealthConnectViewModel` : vérifie l'état, lit tout quand c'est prêt, dépose la lecture dans `HealthDataCache` (mémoire uniquement) et résume (nombre de sessions, plus ancienne, pas, historique complet ou limité). Aucune lecture sans permissions ; erreur de lecture → état d'erreur ; revérification au retour des permissions.
+- `HealthConnectScreen` (accès depuis Profil) : bouton d'autorisation, avertissement explicite si l'historique est limité à 30 jours, relecture à la demande. Sert à la vérification terrain TA-13 (parité avec darkhour).
+- TDD : 6 tests du ViewModel rouges puis verts. Suite complète : 171 tests, 13 échecs connus inchangés.
 
 ### 2026-09-24 `9ad602c`
 feat(healthconnect): couche donnees Health Connect (conversion vers le contrat, pagination, dedup par id, etat d'acces) (Phase 1.2a)
