@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Écrans branchés sur Health Connect — Sommeil, Timeline, Hypnogramme, Cadran lisent le contrat via un pont temporaire (`HealthConnectSleepRepository`) ; import CSV Samsung supprimé (import Takeout conservé), 6 tests TDD | `data/sleep/HealthConnectSleepRepository.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/navigation/NavGraph.kt`, `ui/screens/import_/` | [`e4423e2`](#2026-09-24-e4423e2) |
 | Écran Health Connect — permissions lecture seule (sommeil, pas, historique), écran de justification exigé par Health Connect, état + autorisation + résumé de lecture (sessions, plus ancienne, historique complet/limité), cache partagé en mémoire, 6 tests TDD | `ui/screens/healthconnect/`, `viewmodel/healthconnect/`, `HealthConnectRationaleActivity.kt`, `AndroidManifest.xml` | [`92dffd4`](#2026-09-24-92dffd4) |
 | Couche données Health Connect — conversion vers le contrat v1, pagination sûre, dédup par identifiant, état d'accès (historique complet vs limité 30 j jamais silencieux), 15 tests TDD | `app/src/main/java/fr/datasaillance/nightfall/data/healthconnect/` | [`9ad602c`](#2026-09-24-9ad602c) |
 | Module `core/` (Kotlin pur) — contrat de données v1 (`SleepRecord`, `StepsInterval`, stades et méthodes Health Connect 1:1) + export CSV déterministe et manifeste, 9 tests TDD | `core/src/main/kotlin/fr/datasaillance/nightfall/core/{model,export}/`, `settings.gradle.kts` | [`08f7704`](#2026-09-23-08f7704) |
@@ -50,6 +51,15 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `e4423e2`
+feat(healthconnect): ecrans existants branches sur Health Connect et retrait de l'import CSV Samsung (Phase 1.2c)
+- `HealthConnectSleepRepository` : pont TEMPORAIRE contrat → formes héritées (`SleepSessionResponse`), même format de dates (ISO UTC) et même fenêtre de filtrage que l'ancien dépôt Room ; lit le cache partagé, sinon Health Connect (qui remplit le cache), sinon liste vide tant que Health Connect n'est pas prêt. Stades traduits dans l'ancien vocabulaire : LIGHT/DEEP/REM tels quels, AWAKE/AWAKE_IN_BED/OUT_OF_BED → AWAKE, SLEEPING/UNKNOWN gardent leur nom brut. À supprimer avec la refonte (Phase 4).
+- Sommeil, Timeline, Hypnogramme branchés sur ce dépôt ; Cadran (`RadialClockViewModel`) reçoit une fonction « sessions du contrat dans la fenêtre » au lieu du `SleepDao`.
+- `loadIfReady` prend une fabrique de source : le client Health Connect n'est créé qu'une fois l'état vérifié (sa création échoue si Health Connect est absent).
+- Supprimés : import CSV Samsung (`LocalImportService`, `SamsungCsvParser`, `StageMaps`, `ImportRepository(Impl)`, `ImportDataType`, `ImportResult`, états et écrans CSV), `LocalSleepRepository`, chaînes orphelines (dont un second exemplaire de l'avis RGPD erroné). Import Google Takeout conservé ; ligne Profil renommée « Google Takeout (lieux) ». Tables Room sommeil laissées en place (pas de migration destructive).
+- Tests : 6 tests TDD du pont ; `ImportViewModelTest` réécrit autour de Takeout ; `NavGraphTest` passe entièrement (l'écran de démarrage ne touche plus la base chiffrée, et deux attentes obsolètes sont réalignées : onglet « Cadran », ligne « Sources de données » atteinte par défilement).
+- Suite complète : 156 tests app + 9 core, 8 échecs, tous Timeline et antérieurs au virage (13 → 8).
 
 ### 2026-09-24 `92dffd4`
 feat(healthconnect): permissions, ecran de justification et ecran Health Connect (etat, autorisation, resume de lecture) (Phase 1.2b)
