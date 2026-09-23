@@ -48,6 +48,30 @@
 
 ## Changelog
 
+### 2026-09-23 `4b20e33`
+refactor(android): purge du code lie au serveur (auth, Retrofit, flavor webview, ping backend) et fusion de la flavor native dans main
+- Phase 1.0 du virage on-device (ADR-4) : suppression de tout le code Android qui dialoguait avec le serveur disparu.
+- Supprimés : auth (Login/Register/ForgotPassword/AuthCallback, `AuthViewModel`, `TokenDataStore`), Retrofit/OkHttp (`NightfallApi`, `RetrofitClient`, `AuthInterceptor`, `CountingRequestBody`, `NetworkModule`), `BackendUrlStore`, `SettingsDataStore`, package `webview/`, stub `ui/screens/login`.
+- Flavor `webview` supprimée ; `src/native` fusionné dans `src/main` et `src/testNative` dans `src/test` (git mv, historique conservé). Tâches Gradle : `assembleDebug` / `testDebugUnitTest`.
+- Import : suppression du ping backend (`pingBackend`/`checkConnection`, états Connecting/ConnectionFailed/Connected) qui rendait l'import CSV inaccessible depuis la mort du serveur ; le bouton Samsung ouvre directement le sélecteur d'archive. Carte RGPD retirée (elle affirmait à tort un envoi vers un serveur). Import CSV conservé jusqu'à son remplacement par Health Connect (1.2) ; import Google Takeout inchangé.
+- Paramètres : champ URL backend retiré ; Profil : bouton déconnexion retiré. ViewModels sommeil : mapping `retrofit2.HttpException` retiré.
+- Manifest : retrait de `networkSecurityConfig` (cleartext 10.0.2.2), deep links `nightfall://auth` et `nightfall://import`, `<queries>` Custom Tabs. `INTERNET` conservé (tuiles OSMDroid).
+- build.gradle : retrait retrofit, okhttp, logging-interceptor, converter, mockwebserver, androidx.browser, `DEFAULT_BACKEND_URL`.
+- Tests : 253 → 170 (tests auth/webview/token/http supprimés). 13 échecs restants, tous pré-existants (8 Timeline, 5 NavGraph Keystore Robolectric). Compilation et tests désormais exécutables sur S1 (JDK 21 + SDK Android installés hors repo).
+
+### 2026-09-23 `1a1c850`
+fix(android): applique compose-bom aux configs test/androidTest (resout ui-test-junit4 sans version)
+- Le compose-bom n'était appliqué qu'à `implementation` : `ui-test-junit4` sans version en test/androidTest ne se résolvait pas. Bug latent révélé par un clone frais (le cache Gradle de l'ancienne copie le masquait).
+
+### 2026-09-23 `a8bca39`
+refactor(pivot): retire le backend (server/alembic/static/docker/CI) + promeut le projet Android Gradle a la racine
+- Suppression de `server/`, `alembic/`, `static/`, Docker, `requirements.*`, `tests/`, `scripts/`, `Makefile`, `.env*.example`, workflows GitHub.
+- Projet Gradle promu de `android-app/` à la racine (`app/`, `gradle/`, `settings.gradle.kts`) ; chemins `.gitignore` / `.gitleaks.toml` mis à jour ; bandeau de virage dans `CLAUDE.md`. Build validé dans Android Studio.
+
+### 2026-09-23 `2af7dcc`
+chore(pivot): ADR-4 virage on-device + roadmap virage + retrait hooks cartographer
+- ADR-4 dans `NOTES.md` (ADR-1/2/3 caducs), `ROADMAP.md` réécrit (Phases 0-5), hooks `pre-commit`/`post-commit` retirés (`pre-push` conservé).
+
 ### 2026-09-23 `checkpoint-pre-pivot-2026-09-23`
 chore(checkpoint): safety tag avant virage on-device (nettoyage branches + futur filter-repo)
 - Reason: suppression massive de branches (local + origin) puis réécriture d'historique (filter-repo secrets) à venir — opérations destructrices/irréversibles
