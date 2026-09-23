@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Module `core/` (Kotlin pur) — contrat de données v1 (`SleepRecord`, `StepsInterval`, stades et méthodes Health Connect 1:1) + export CSV déterministe et manifeste, 9 tests TDD | `core/src/main/kotlin/fr/datasaillance/nightfall/core/{model,export}/`, `settings.gradle.kts` | [`08f7704`](#2026-09-23-08f7704) |
 | Cadran v2 — interaction sélection anneau/segment (remplace quadrant 6h) + focus mode + `LayerContextCard` contextuelle + intégration usage réel/timeline ancré + light mode + `TrajetMapRenderer` déférée, 18 tests TDD | `dataviz/radial/{MultiDonutClock,RadialClockScreen,TrajetMapRenderer}.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/screens/radial/RadialRoute.kt` | [`cadran-v2-impl`](#2026-05-27-cadran-v2-impl) |
 | Labeled Places — lieux labellisés configurables (domicile/travail/famille/vacances) + `PlaceResolver` haversine + écran config Compose (DB v5→v6), 15 tests TDD | `data/local/entity/location/{LabeledPlaceEntity,PlaceCategory}.kt`, `data/local/dao/LabeledPlaceDao.kt`, `data/local/location/{PlaceResolver,PlaceSuggestionService,LabeledPlace}.kt`, `ui/screens/places/`, `viewmodel/places/` | [`labeled-places-impl`](#2026-05-27-labeled-places-impl) |
 | Usage Sessions (Phase B_us) — sessions d'usage intra-journée via `queryEvents` → table Room `usage_session` (DB v4→v5), 19 tests TDD | `data/local/usage/{UsageEventsSource,UsageSessionsService}.kt`, `data/local/entity/usage/UsageSessionEntity.kt`, `data/local/dao/UsageSessionDao.kt`, `data/local/database/NightfallDatabase.kt` | [`usage-sessions-impl`](#2026-05-27-usage-sessions-impl) |
@@ -47,6 +48,13 @@
 ---
 
 ## Changelog
+
+### 2026-09-23 `08f7704`
+feat(core): module core en Kotlin pur avec le contrat de donnees v1 et l'export CSV (Phase 1.1)
+- Nouveau module Gradle `:core` (plugin kotlin-jvm 2.1.0, cible JVM 17, aucune dépendance Android ni tierce) ; `app` en dépend.
+- Contrat v1 (spec 2026-09-23-phase1-data-foundation, DT-2) : `SleepRecord`, `SleepStage`, `StepsInterval`, `StageType` (8 stades Health Connect 1:1), `RecordingMethod` (4 méthodes 1:1), `HistoryAccess`. Faits bruts uniquement.
+- `CsvExport` : écriture et relecture de `sleep_sessions.csv`, `sleep_stages.csv`, `steps.csv` (ISO-8601 UTC, offsets, guillemets RFC 4180, tri déterministe) ; `ExportManifest` → `manifest.json` écrit à la main.
+- TDD : 9 tests (TA-1 à TA-6) écrits d'abord, rouges sur `NotImplementedError`, puis verts. Formats vérifiés contre des textes attendus écrits depuis la spec.
 
 ### 2026-09-23 `4b20e33`
 refactor(android): purge du code lie au serveur (auth, Retrofit, flavor webview, ping backend) et fusion de la flavor native dans main
