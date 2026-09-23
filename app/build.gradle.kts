@@ -59,6 +59,9 @@ android {
 }
 
 dependencies {
+    // Module d'analyse et contrat de données (Kotlin pur)
+    implementation(project(":core"))
+
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")

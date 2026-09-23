@@ -34,7 +34,7 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 - [x] 1.0 Purge du code lié au serveur (auth, Retrofit, flavor webview, ping backend)
 - [ ] Health Connect : déclarer `READ_HEALTH_DATA_HISTORY`, flux de permissions
 - [ ] Lecture sommeil + pagination de **l'historique complet** (chunks), dédup multi-source
-- [ ] **Contrat de données canonique gelé** (`SleepRecord` + « activity epoch ») — partagé notebook ↔ Kotlin
+- [x] 1.1 **Contrat de données v1 gelé** dans le module `core/` (`SleepRecord`, `StepsInterval` ; les epochs d'activité deviennent un calcul) + export CSV
 - [ ] Valider en conditions réelles la profondeur d'historique effectivement poussée par Samsung dans HC
 - [ ] Export d'un dataset (CSV/Parquet) au contrat gelé pour le harnais
 
