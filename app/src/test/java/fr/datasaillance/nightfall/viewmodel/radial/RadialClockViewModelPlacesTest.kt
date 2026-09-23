@@ -29,8 +29,6 @@ import java.time.ZoneId
 /**
  * TA-9 — le RadialClockViewModel enrichit RadialVisit via PlaceResolver :
  * une visite dans le rayon d'un lieu labellisé est `anchored`, l'autre non.
- *
- * Vit dans src/testNative car RadialVisit est défini dans le flavor `native`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)

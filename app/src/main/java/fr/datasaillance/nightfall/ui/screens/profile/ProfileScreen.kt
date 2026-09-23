@@ -29,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +46,6 @@ import fr.datasaillance.nightfall.ui.theme.DataSaillance
 fun ProfileScreen(
     onImport: () -> Unit = {},
     onSettings: () -> Unit = {},
-    onLogout: () -> Unit = {},
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -149,7 +147,7 @@ fun ProfileScreen(
                     SettingsRow(
                         icon = Icons.Outlined.Settings,
                         label = "Paramètres",
-                        subtitle = "URL serveur, debug",
+                        subtitle = "Lieux connus",
                         onClick = onSettings,
                     )
                     HorizontalDivider(
@@ -161,18 +159,6 @@ fun ProfileScreen(
                         label = "Effacer mes données",
                         subtitle = "RGPD Art.17",
                         danger = true,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = "Se déconnecter",
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Medium,
                     )
                 }
             }

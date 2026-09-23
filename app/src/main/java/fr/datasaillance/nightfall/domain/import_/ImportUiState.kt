@@ -2,9 +2,6 @@ package fr.datasaillance.nightfall.domain.import_
 
 sealed class ImportUiState {
     object Idle : ImportUiState()
-    object Connecting : ImportUiState()
-    data class ConnectionFailed(val message: String) : ImportUiState()
-    object Connected : ImportUiState()
     object Selecting : ImportUiState()
     data class Uploading(
         val currentType: ImportDataType,

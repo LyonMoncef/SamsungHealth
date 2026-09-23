@@ -9,8 +9,6 @@ import java.io.IOException
 data class CsvEntry(val uri: Uri, val size: Long)
 
 interface ImportRepository {
-    suspend fun pingBackend(): Boolean
-
     suspend fun extractCsvEntries(
         contentResolver: ContentResolver,
         treeUri: Uri,

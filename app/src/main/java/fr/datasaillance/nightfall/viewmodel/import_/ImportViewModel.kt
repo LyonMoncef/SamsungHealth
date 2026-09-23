@@ -23,18 +23,6 @@ class ImportViewModel(
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    fun checkConnection() {
-        _uiState.value = ImportUiState.Connecting
-        viewModelScope.launch {
-            val ok = repository.pingBackend()
-            _uiState.value = if (ok) {
-                ImportUiState.Connected
-            } else {
-                ImportUiState.ConnectionFailed("Backend inaccessible — vérifiez l'URL dans les paramètres")
-            }
-        }
-    }
-
     fun startUpload(contentResolver: ContentResolver, treeUri: Uri) {
         viewModelScope.launch {
             val csvEntries = repository.extractCsvEntries(contentResolver, treeUri)
