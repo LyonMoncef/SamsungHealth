@@ -49,6 +49,13 @@
 
 ## Changelog
 
+### 2026-09-23 `fbfeabe`
+fix(test): snapshots Paparazzi avec dispatcher Main de test et retrait du test chronometre SleepDao (suite de tests deterministe)
+- Cause des échecs aléatoires : les snapshots Paparazzi (Sommeil, Hypnogramme, Timeline) construisaient de vrais ViewModels sans dispatcher de test ; ils dépendaient d'un `Dispatchers.Main` initialisé par un autre test de la même JVM. Si `TimelineViewModelTest` (JVM pur, sans main looper) passait en premier, l'échec d'initialisation restait en cache et 9 à 10 tests tombaient.
+- Correctif : chaque classe de snapshots installe `StandardTestDispatcher(TestCoroutineScheduler())` en `@Before` et le retire en `@After`.
+- Suppression de `SleepDaoTest.bulk_insert_60k_stages_under_2_seconds` (assertion chronométrée dépendante de la charge, sur une table vouée à disparaître en 1.2).
+- Vérification : 3 lancements complets consécutifs, plus aucune pollution du dispatcher ; 169 tests, 13 échecs stables et connus (8 Timeline, 5 NavGraph Keystore Robolectric).
+
 ### 2026-09-23 `08f7704`
 feat(core): module core en Kotlin pur avec le contrat de donnees v1 et l'export CSV (Phase 1.1)
 - Nouveau module Gradle `:core` (plugin kotlin-jvm 2.1.0, cible JVM 17, aucune dépendance Android ni tierce) ; `app` en dépend.

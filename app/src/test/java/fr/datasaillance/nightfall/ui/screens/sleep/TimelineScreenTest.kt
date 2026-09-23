@@ -36,6 +36,7 @@ import org.robolectric.RobolectricTestRunner
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.ui.theme.NightfallTheme
+import kotlinx.coroutines.test.TestCoroutineScheduler
 
 // ---------------------------------------------------------------------------
 // Test fixtures — 3 sessions sur 3 nuits consécutives pour tester le tri et le drift
@@ -102,6 +103,21 @@ class TimelineScreenSnapshotTest {
         deviceConfig = DeviceConfig.PIXEL_5,
         theme = "android:Theme.Material.Light.NoActionBar"
     )
+
+    // Les ViewModels lancent leurs coroutines sur Dispatchers.Main. Sans dispatcher de test,
+    // ces snapshots dépendaient d'un Main initialisé par un autre test de la même JVM :
+    // selon l'ordre d'exécution, ils échouaient ("Main dispatcher had failed to initialize").
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Before
+    fun installTestMainDispatcher() {
+        Dispatchers.setMain(StandardTestDispatcher(TestCoroutineScheduler()))
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @After
+    fun restoreMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private fun buildViewModel(
         repository: SleepRepository = mock<SleepRepository>()
