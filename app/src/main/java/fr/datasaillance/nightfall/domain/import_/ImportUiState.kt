@@ -1,19 +1,8 @@
 package fr.datasaillance.nightfall.domain.import_
 
+/** États de l'écran d'import. Depuis la Phase 1.2, seul l'import Google Takeout (lieux) subsiste. */
 sealed class ImportUiState {
     object Idle : ImportUiState()
-    object Selecting : ImportUiState()
-    data class Uploading(
-        val currentType: ImportDataType,
-        val progress: Float,
-        val completedTypes: List<ImportDataType>,
-        val skippedTypes: List<ImportDataType>,
-    ) : ImportUiState()
-    data class Success(
-        val results: List<ImportResult>,
-        val missingTypes: List<ImportDataType> = emptyList(),
-    ) : ImportUiState()
-    data class Error(val message: String, val retryable: Boolean) : ImportUiState()
 
     // --- Google Timeline (local-only) ---
     object LocationImporting : ImportUiState()

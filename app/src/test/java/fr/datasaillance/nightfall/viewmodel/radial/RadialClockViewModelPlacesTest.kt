@@ -93,7 +93,7 @@ class RadialClockViewModelPlacesTest {
         )
 
         val vm = RadialClockViewModel(
-            sleepDao = db.sleepDao(),
+            sleepRecordsInRange = { _, _ -> emptyList() },
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
             labeledPlaceDao = db.labeledPlaceDao(),
@@ -133,7 +133,7 @@ class RadialClockViewModelPlacesTest {
         )
 
         val vm = RadialClockViewModel(
-            sleepDao = db.sleepDao(),
+            sleepRecordsInRange = { _, _ -> emptyList() },
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
             labeledPlaceDao = db.labeledPlaceDao(),

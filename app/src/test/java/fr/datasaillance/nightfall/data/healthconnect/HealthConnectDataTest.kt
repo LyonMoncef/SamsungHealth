@@ -255,9 +255,9 @@ class HealthConnectDataTest {
 
     @Test
     fun `TA-12 aucune lecture n'est tentee tant que Health Connect n'est pas pret`() = runTest {
-        assertNull(loadIfReady(HealthConnectState.PermissionsMissing, ForbiddenSource))
-        assertNull(loadIfReady(HealthConnectState.NotInstalled, ForbiddenSource))
-        assertNull(loadIfReady(HealthConnectState.UpdateRequired, ForbiddenSource))
+        assertNull(loadIfReady(HealthConnectState.PermissionsMissing) { ForbiddenSource })
+        assertNull(loadIfReady(HealthConnectState.NotInstalled) { ForbiddenSource })
+        assertNull(loadIfReady(HealthConnectState.UpdateRequired) { error("la source ne doit même pas être créée") })
     }
 
     @Test

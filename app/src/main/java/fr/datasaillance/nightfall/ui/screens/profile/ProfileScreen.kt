@@ -122,7 +122,7 @@ fun ProfileScreen(
                     SettingsRow(
                         icon = Icons.Outlined.CloudSync,
                         label = "Sources de données",
-                        subtitle = "Samsung · Health Connect",
+                        subtitle = "Google Takeout (lieux)",
                         onClick = onImport,
                     )
                     HorizontalDivider(

@@ -29,12 +29,15 @@ suspend fun loadHealthData(source: HealthRecordsSource, historyAccess: HistoryAc
     )
 }
 
-/** Ne lit rien tant que Health Connect n'est pas prêt (spec TA-12) : renvoie null dans ce cas. */
-suspend fun loadIfReady(state: HealthConnectState, source: HealthRecordsSource): HealthData? {
+/**
+ * Ne lit rien tant que Health Connect n'est pas prêt (spec TA-12) : renvoie null dans ce cas.
+ * La source n'est créée qu'une fois l'état vérifié (créer le client Health Connect échoue s'il est absent).
+ */
+suspend fun loadIfReady(state: HealthConnectState, newSource: () -> HealthRecordsSource): HealthData? {
     if (state !is HealthConnectState.Ready) {
         return null
     }
-    return loadHealthData(source, state.historyAccess)
+    return loadHealthData(newSource(), state.historyAccess)
 }
 
 /**
