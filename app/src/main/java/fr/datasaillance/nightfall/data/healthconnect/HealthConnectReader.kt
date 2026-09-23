@@ -41,6 +41,13 @@ class HealthConnectReader(
     }
 }
 
+/**
+ * Lit tout Health Connect sur ce téléphone si c'est possible (installé, permissions accordées), sinon null.
+ * Ne consulte ni ne remplit le cache : c'est à l'appelant de décider.
+ */
+suspend fun loadFromDevice(context: Context): HealthData? =
+    loadIfReady(currentHealthConnectState(context)) { HealthConnectReader(HealthConnectClient.getOrCreate(context)) }
+
 /** Interroge le téléphone (Health Connect installé ? permissions ? fonctionnalité historique ?) puis décide de l'état. */
 suspend fun currentHealthConnectState(context: Context): HealthConnectState {
     val sdkStatus = HealthConnectClient.getSdkStatus(context)
