@@ -52,3 +52,7 @@ docs/vault/_index/coverage-map.json
 coverage.json
 .coverage*
 .coveragerc-cartographer
+
+# Artefacts de build & imports desktop — jamais dans le repo (archivés hors-ligne sur S2:/data3/Projets/SamsungHealth)
+*.apk
+desktop-import/
