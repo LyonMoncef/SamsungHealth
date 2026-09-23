@@ -48,6 +48,7 @@ fun ProfileScreen(
     onImport: () -> Unit = {},
     onSettings: () -> Unit = {},
     onHealthConnect: () -> Unit = {},
+    onExport: () -> Unit = {},
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -132,7 +133,8 @@ fun ProfileScreen(
                     SettingsRow(
                         icon = Icons.Outlined.Download,
                         label = "Exporter mes données",
-                        subtitle = "JSON · CSV · FHIR",
+                        subtitle = "Archive ZIP · CSV bruts",
+                        onClick = onExport,
                     )
                     HorizontalDivider(
                         color = DataSaillance.extras.divider,

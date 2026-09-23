@@ -39,6 +39,10 @@ import fr.datasaillance.nightfall.data.healthconnect.currentHealthConnectState
 import fr.datasaillance.nightfall.data.healthconnect.sharedHealthDataCache
 import fr.datasaillance.nightfall.ui.screens.healthconnect.HealthConnectScreen
 import fr.datasaillance.nightfall.viewmodel.healthconnect.HealthConnectViewModel
+import fr.datasaillance.nightfall.BuildConfig
+import fr.datasaillance.nightfall.data.healthconnect.loadFromDevice
+import fr.datasaillance.nightfall.ui.screens.export.ExportScreen
+import fr.datasaillance.nightfall.viewmodel.export.ExportViewModel
 
 @Composable
 fun NavGraph(
@@ -157,6 +161,7 @@ fun NavGraph(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
                     onHealthConnect = { navController.navigate(NavDestination.HealthConnect.route) },
+                    onExport = { navController.navigate(NavDestination.Export.route) },
                 )
             }
             composable(NavDestination.Import.route) {
@@ -190,6 +195,20 @@ fun NavGraph(
                     )
                 }
                 HealthConnectScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(NavDestination.Export.route) {
+                val appContext = context.applicationContext
+                val viewModel = remember(appContext) {
+                    ExportViewModel(
+                        // Un export relit toujours Health Connect (et rafraîchit au passage le cache de session).
+                        loadData = { loadFromDevice(appContext)?.also { sharedHealthDataCache.update(it) } },
+                        appVersion = BuildConfig.VERSION_NAME,
+                    )
+                }
+                ExportScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
                 )

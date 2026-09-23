@@ -1,14 +1,11 @@
 package fr.datasaillance.nightfall.data.sleep
 
 import android.content.Context
-import androidx.health.connect.client.HealthConnectClient
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.StageType
 import fr.datasaillance.nightfall.data.healthconnect.HealthData
-import fr.datasaillance.nightfall.data.healthconnect.HealthConnectReader
 import fr.datasaillance.nightfall.data.healthconnect.HealthDataCache
-import fr.datasaillance.nightfall.data.healthconnect.currentHealthConnectState
-import fr.datasaillance.nightfall.data.healthconnect.loadIfReady
+import fr.datasaillance.nightfall.data.healthconnect.loadFromDevice
 import fr.datasaillance.nightfall.data.healthconnect.sharedHealthDataCache
 import java.time.Instant
 import java.time.LocalDate
@@ -94,11 +91,7 @@ class HealthConnectSleepRepository(
 /** Le dépôt branché sur le vrai Health Connect du téléphone et sur le cache partagé de l'app. */
 fun healthConnectSleepRepository(context: Context): HealthConnectSleepRepository {
     val appContext = context.applicationContext
-    return HealthConnectSleepRepository(sharedHealthDataCache) {
-        loadIfReady(currentHealthConnectState(appContext)) {
-            HealthConnectReader(HealthConnectClient.getOrCreate(appContext))
-        }
-    }
+    return HealthConnectSleepRepository(sharedHealthDataCache) { loadFromDevice(appContext) }
 }
 
 private val ISO_FMT: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
