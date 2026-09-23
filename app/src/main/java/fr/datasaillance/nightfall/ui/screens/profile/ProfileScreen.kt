@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Download
@@ -46,6 +47,7 @@ import fr.datasaillance.nightfall.ui.theme.DataSaillance
 fun ProfileScreen(
     onImport: () -> Unit = {},
     onSettings: () -> Unit = {},
+    onHealthConnect: () -> Unit = {},
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -107,6 +109,16 @@ fun ProfileScreen(
 
                 // Settings list — cards with divider between rows, sans padding container.
                 DsCard(pad = 0.dp) {
+                    SettingsRow(
+                        icon = Icons.Outlined.MonitorHeart,
+                        label = "Health Connect",
+                        subtitle = "Accès au sommeil et aux pas",
+                        onClick = onHealthConnect,
+                    )
+                    HorizontalDivider(
+                        color = DataSaillance.extras.divider,
+                        thickness = 1.dp,
+                    )
                     SettingsRow(
                         icon = Icons.Outlined.CloudSync,
                         label = "Sources de données",

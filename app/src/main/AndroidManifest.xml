@@ -16,6 +16,18 @@
         tools:ignore="ProtectedPermissions" />
 
 
+    <!-- Phase 1.2 — Health Connect, lecture seule : sommeil, pas, et historique au-delà de 30 jours.
+         Sans READ_HEALTH_DATA_HISTORY, Health Connect tronque silencieusement à 30 jours
+         (cause du plafond de l'ancienne app). -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <!-- Jusqu'à Android 13, Health Connect est une app séparée : il faut pouvoir la voir. -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
+
     <application
         android:name=".NightfallApplication"
         android:allowBackup="true"
@@ -31,6 +43,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Explication de l'usage des données, exigée par Health Connect (Android 13 et moins). -->
+        <activity
+            android:name=".HealthConnectRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Même écran, point d'entrée exigé à partir d'Android 14. -->
+        <activity-alias
+            android:name=".HealthConnectPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".HealthConnectRationaleActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
     </application>
 
 </manifest>

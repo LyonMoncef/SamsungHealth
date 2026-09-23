@@ -35,6 +35,12 @@ import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel
+import androidx.health.connect.client.HealthConnectClient
+import fr.datasaillance.nightfall.data.healthconnect.HealthConnectReader
+import fr.datasaillance.nightfall.data.healthconnect.currentHealthConnectState
+import fr.datasaillance.nightfall.data.healthconnect.sharedHealthDataCache
+import fr.datasaillance.nightfall.ui.screens.healthconnect.HealthConnectScreen
+import fr.datasaillance.nightfall.viewmodel.healthconnect.HealthConnectViewModel
 
 @Composable
 fun NavGraph(
@@ -159,6 +165,7 @@ fun NavGraph(
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
+                    onHealthConnect = { navController.navigate(NavDestination.HealthConnect.route) },
                 )
             }
             composable(NavDestination.Import.route) {
@@ -189,6 +196,20 @@ fun NavGraph(
             composable(NavDestination.Settings.route) {
                 SettingsScreen(
                     onOpenLabeledPlaces = { navController.navigate(NavDestination.LabeledPlaces.route) },
+                )
+            }
+            composable(NavDestination.HealthConnect.route) {
+                val appContext = context.applicationContext
+                val viewModel = remember(appContext) {
+                    HealthConnectViewModel(
+                        checkState = { currentHealthConnectState(appContext) },
+                        newSource = { HealthConnectReader(HealthConnectClient.getOrCreate(appContext)) },
+                        cache = sharedHealthDataCache,
+                    )
+                }
+                HealthConnectScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(NavDestination.LabeledPlaces.route) {
