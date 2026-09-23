@@ -10,8 +10,6 @@ package fr.datasaillance.nightfall.ui.screens.sleep
 //   fr.datasaillance.nightfall.data.sleep.SleepRepository
 //   fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 
-import app.cash.paparazzi.DeviceConfig
-import app.cash.paparazzi.Paparazzi
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.hasTestTag
@@ -91,132 +89,10 @@ private fun injectTimelineState(
         .value = state
 }
 
-// ---------------------------------------------------------------------------
-// Class 1 — Paparazzi snapshot tests (no @RunWith — incompatible avec Robolectric)
-// spec: TA-TL-06, TA-TL-07 + états Loading/Error
-// ---------------------------------------------------------------------------
-
-class TimelineScreenSnapshotTest {
-
-    @get:Rule
-    val paparazzi = Paparazzi(
-        deviceConfig = DeviceConfig.PIXEL_5,
-        theme = "android:Theme.Material.Light.NoActionBar"
-    )
-
-    // Les ViewModels lancent leurs coroutines sur Dispatchers.Main. Sans dispatcher de test,
-    // ces snapshots dépendaient d'un Main initialisé par un autre test de la même JVM :
-    // selon l'ordre d'exécution, ils échouaient ("Main dispatcher had failed to initialize").
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Before
-    fun installTestMainDispatcher() {
-        Dispatchers.setMain(StandardTestDispatcher(TestCoroutineScheduler()))
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @After
-    fun restoreMainDispatcher() {
-        Dispatchers.resetMain()
-    }
-
-    private fun buildViewModel(
-        repository: SleepRepository = mock<SleepRepository>()
-    ): fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel =
-        fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel(
-            repository = repository
-        )
-
-    // spec: TA-TL-06 — snapshot dark mode, état Success, ≥2 sessions avec drift visible
-    // spec: "fond #191E22, barres teal visibles sur le canvas, labels de date lisibles"
-    // RED by construction: TimelineScreen et TimelineViewModel n'existent pas encore
-    @Test
-    fun timelineScreen_success_dark() {
-        val viewModel = buildViewModel()
-        injectTimelineState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.TimelineUiState.Success(sessionsSorted)
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                // spec: TA-TL-06 — TimelineScreen en dark mode, état Success avec 3 sessions
-                fr.datasaillance.nightfall.ui.screens.sleep.TimelineScreen(
-                    viewModel = viewModel
-                )
-            }
-        }
-        // spec: TA-TL-06 — golden dark: fond #191E22, barres teal (0xFF0E9EB0), labels date lisibles
-    }
-
-    // spec: TA-TL-07 — snapshot light mode, même état Success
-    // spec: "fond #FAFAFA, barres teal inchangées, labels sombres lisibles"
-    // RED by construction: TimelineScreen et TimelineViewModel n'existent pas encore
-    @Test
-    fun timelineScreen_success_light() {
-        val viewModel = buildViewModel()
-        injectTimelineState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.TimelineUiState.Success(sessionsSorted)
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = false) {
-                // spec: TA-TL-07 — TimelineScreen en light mode, même état Success
-                fr.datasaillance.nightfall.ui.screens.sleep.TimelineScreen(
-                    viewModel = viewModel
-                )
-            }
-        }
-        // spec: TA-TL-07 — golden light: fond #FAFAFA, barres teal, labels sombres (onSurface = #1A1A1A)
-    }
-
-    // spec: état Loading — spinner visible, canvas absent
-    // RED by construction: TimelineUiState.Loading n'existe pas encore
-    @Test
-    fun timelineScreen_loading_dark() {
-        val viewModel = buildViewModel()
-        injectTimelineState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.TimelineUiState.Loading
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                // spec: état Loading → CircularProgressIndicator avec testTag "tl_loading"
-                fr.datasaillance.nightfall.ui.screens.sleep.TimelineScreen(
-                    viewModel = viewModel
-                )
-            }
-        }
-        // spec: snapshot dark Loading: indicateur de chargement centré, pas de canvas
-    }
-
-    // spec: état Error — message d'erreur + bouton retry visibles
-    // RED by construction: TimelineUiState.Error n'existe pas encore
-    @Test
-    fun timelineScreen_error_dark() {
-        val viewModel = buildViewModel()
-        injectTimelineState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.TimelineUiState.Error("Vérifiez votre connexion réseau")
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                // spec: état Error → message d'erreur + bouton "Réessayer" avec testTags tl_error/tl_retry
-                fr.datasaillance.nightfall.ui.screens.sleep.TimelineScreen(
-                    viewModel = viewModel
-                )
-            }
-        }
-        // spec: snapshot dark Error: "Vérifiez votre connexion réseau" visible, bouton retry présent
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Class 2 — Robolectric behavioral tests
 // spec: TA-TL-01, TA-TL-02, TA-TL-03, TA-TL-04, TA-TL-05
-// Classe séparée de Paparazzi : lifecycles de Rule incompatibles
 // ---------------------------------------------------------------------------
 
 // spec: TA-TL-01 — état Success → tl_canvas assertExists

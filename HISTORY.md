@@ -49,6 +49,13 @@
 
 ## Changelog
 
+### 2026-09-24 `72672e6`
+chore(build): AGP 8.13.2, Gradle 8.14.3 et compileSdk 36 (requis par Health Connect 1.1.0), retrait de Paparazzi incompatible
+- `androidx.health.connect:connect-client:1.1.0` exige AGP ≥ 8.9.1 et une compilation contre l'API 36 : AGP 8.7.3 → 8.13.2 (dernière 8.x, pas de saut vers AGP 9), wrapper Gradle 8.11.1 → 8.14.3 (régénéré par `gradlew wrapper`, ajout de `gradlew.bat`), `compileSdk` 35 → 36. `targetSdk` inchangé (35) : aucun changement de comportement à l'exécution. Kotlin, KSP, Compose inchangés.
+- Paparazzi 1.3.4 et 1.3.5 plantent avec cette chaîne (`Renderer.configureBuildProperties`), y compris en forçant la plateforme 35. Retiré (plugin + dépendance) plutôt que de passer sur une 2.0 alpha.
+- Tests retirés : 19 snapshots (`BottomNavBarTest`, 2 snapshots de `NightfallThemeTest`, classes `*ScreenSnapshotTest` Sommeil/Hypnogramme/Timeline). Ils ne comparaient aucune image de référence et portaient sur des écrans refaits en Phase 4. Les 4 tests de couleurs de `NightfallThemeTest` sont conservés.
+- Vérification : APK construit ; 150 tests, 13 échecs, tous connus (5 NavGraph Keystore Robolectric, 8 Timeline).
+
 ### 2026-09-23 `fbfeabe`
 fix(test): snapshots Paparazzi avec dispatcher Main de test et retrait du test chronometre SleepDao (suite de tests deterministe)
 - Cause des échecs aléatoires : les snapshots Paparazzi (Sommeil, Hypnogramme, Timeline) construisaient de vrais ViewModels sans dispatcher de test ; ils dépendaient d'un `Dispatchers.Main` initialisé par un autre test de la même JVM. Si `TimelineViewModelTest` (JVM pur, sans main looper) passait en premier, l'échec d'initialisation restait en cache et 9 à 10 tests tombaient.

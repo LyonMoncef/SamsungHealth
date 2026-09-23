@@ -4,7 +4,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
-    id("app.cash.paparazzi")
 }
 
 configurations.all {
@@ -17,7 +16,7 @@ configurations.all {
 
 android {
     namespace = "fr.datasaillance.nightfall"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "fr.datasaillance.nightfall"
@@ -104,7 +103,6 @@ dependencies {
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")
-    testImplementation("app.cash.paparazzi:paparazzi:1.3.4")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
     testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.navigation:navigation-testing:2.8.5")

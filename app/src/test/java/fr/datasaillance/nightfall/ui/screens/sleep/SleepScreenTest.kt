@@ -11,8 +11,6 @@ package fr.datasaillance.nightfall.ui.screens.sleep
 //   fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 //   fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen  (stub will be replaced)
 
-import app.cash.paparazzi.DeviceConfig
-import app.cash.paparazzi.Paparazzi
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.hasTestTag
@@ -101,141 +99,10 @@ private fun injectSleepState(
         .value = state
 }
 
-// ---------------------------------------------------------------------------
-// Class 1 — Paparazzi snapshot tests (no @RunWith — incompatible with Robolectric)
-// spec: TA-S-09, TA-S-10, TA-S-11, TA-S-12
-// ---------------------------------------------------------------------------
-
-class SleepScreenSnapshotTest {
-
-    @get:Rule
-    val paparazzi = Paparazzi(
-        deviceConfig = DeviceConfig.PIXEL_5,
-        theme = "android:Theme.Material.Light.NoActionBar"
-    )
-
-    // Les ViewModels lancent leurs coroutines sur Dispatchers.Main. Sans dispatcher de test,
-    // ces snapshots dépendaient d'un Main initialisé par un autre test de la même JVM :
-    // selon l'ordre d'exécution, ils échouaient ("Main dispatcher had failed to initialize").
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Before
-    fun installTestMainDispatcher() {
-        Dispatchers.setMain(StandardTestDispatcher(TestCoroutineScheduler()))
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @After
-    fun restoreMainDispatcher() {
-        Dispatchers.resetMain()
-    }
-
-    private fun buildViewModel(
-        repository: fr.datasaillance.nightfall.data.sleep.SleepRepository =
-            mock<fr.datasaillance.nightfall.data.sleep.SleepRepository>()
-    ): fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel =
-        fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel(repository)
-
-    // spec: TA-S-09 — SleepScreen dark mode, ViewModel en état Success avec 3 sessions
-    // spec: "Parité light / dark mode" — fond #191E22, surface #232E32, teal #0E9EB0
-    // RED by construction: SleepScreen and SleepViewModel do not exist yet
-    @Test
-    fun sleepScreen_success_dark() {
-        val viewModel = buildViewModel()
-        injectSleepState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.SleepUiState.Success(
-                listOf(session1, session2, session3)
-            )
-        )
-
-        paparazzi.snapshot {
-            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
-                // spec: TA-S-09 — SleepScreen receives SleepViewModel and onSessionClick callback
-                fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen(
-                    viewModel = viewModel,
-                    onSessionClick = {}
-                )
-            }
-        }
-        // spec: TA-S-09 — snapshot dark: fond #191E22, 3 night cards visibles
-    }
-
-    // spec: TA-S-10 — SleepScreen light mode, même état Success
-    // spec: "Parité light / dark mode" — fond clair, même teal #0E9EB0 et amber #D37C04
-    // RED by construction: SleepScreen and SleepViewModel do not exist yet
-    @Test
-    fun sleepScreen_success_light() {
-        val viewModel = buildViewModel()
-        injectSleepState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.SleepUiState.Success(
-                listOf(session1, session2, session3)
-            )
-        )
-
-        paparazzi.snapshot {
-            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = false) {
-                // spec: TA-S-10 — light mode snapshot: fond clair, night cards rendues
-                fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen(
-                    viewModel = viewModel,
-                    onSessionClick = {}
-                )
-            }
-        }
-        // spec: TA-S-10 — snapshot light: fond #FAFAFA ou équivalent, 3 cards visibles
-    }
-
-    // spec: TA-S-11 — SleepScreen dark mode, ViewModel en état Loading
-    // RED by construction: SleepUiState.Loading does not exist yet
-    @Test
-    fun sleepScreen_loading_dark() {
-        val viewModel = buildViewModel()
-        injectSleepState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.SleepUiState.Loading
-        )
-
-        paparazzi.snapshot {
-            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
-                // spec: TA-S-11 — Loading state: CircularProgressIndicator ou skeleton visible
-                fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen(
-                    viewModel = viewModel,
-                    onSessionClick = {}
-                )
-            }
-        }
-        // spec: TA-S-11 — snapshot dark Loading: indicateur de chargement présent, liste absente
-    }
-
-    // spec: TA-S-12 — SleepScreen dark mode, ViewModel en état Error
-    // RED by construction: SleepUiState.Error does not exist yet
-    @Test
-    fun sleepScreen_error_dark() {
-        val viewModel = buildViewModel()
-        injectSleepState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.SleepUiState.Error(
-                "Vérifiez votre connexion réseau"
-            )
-        )
-
-        paparazzi.snapshot {
-            fr.datasaillance.nightfall.ui.theme.NightfallTheme(darkTheme = true) {
-                // spec: TA-S-12 — Error state: message d'erreur + bouton retry visibles
-                fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen(
-                    viewModel = viewModel,
-                    onSessionClick = {}
-                )
-            }
-        }
-        // spec: TA-S-12 — snapshot dark Error: "Vérifiez votre connexion réseau" visible, bouton retry présent
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Class 2 — Robolectric behavioral/interaction tests
 // spec: TA-S-01, TA-S-02, TA-S-07, TA-S-07b, TA-S-08
-// Separate class from Paparazzi: incompatible Rule lifecycles
 // ---------------------------------------------------------------------------
 
 // spec: TA-S-01 — Loading: sleep_loading visible, sleep_list absent
