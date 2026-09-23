@@ -4,9 +4,6 @@ sealed class NavDestination(
     val route: String,
     val label: String
 ) {
-    object Login          : NavDestination("login",           "Connexion")
-    object Register       : NavDestination("register",        "Créer un compte")
-    object ForgotPassword : NavDestination("forgot_password", "Mot de passe oublié")
     object Sleep    : NavDestination("sleep",    "Sommeil")
     object Timeline : NavDestination("timeline", "Timeline")
     // 'activity' route conservée pour rétro-compat tests, mais le label affiché

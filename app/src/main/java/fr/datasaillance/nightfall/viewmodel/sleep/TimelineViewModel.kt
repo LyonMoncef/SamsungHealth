@@ -177,11 +177,6 @@ class TimelineViewModel(
 
     private fun mapError(throwable: Throwable?): String = when (throwable) {
         is IOException -> "Vérifiez votre connexion réseau"
-        is retrofit2.HttpException -> when (throwable.code()) {
-            401 -> "Session expirée, reconnectez-vous"
-            403 -> "Accès refusé"
-            else -> "Erreur serveur (${throwable.code()})"
-        }
         else -> "Une erreur inattendue est survenue"
     }
 }

@@ -2,7 +2,6 @@ package fr.datasaillance.nightfall.data.import_
 
 import android.content.ContentResolver
 import android.net.Uri
-import fr.datasaillance.nightfall.data.http.NightfallApi
 import fr.datasaillance.nightfall.data.local.import_.LocalImportService
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
@@ -15,22 +14,11 @@ private const val MAX_ZIP_ENTRIES = 100
 
 /**
  * Phase B local-first : les imports écrivent directement en Room locale via
- * `LocalImportService`. Plus aucun upload réseau santé. L'API n'est conservée
- * que pour le ping de connectivité (vérification VPS up).
+ * `LocalImportService`. Plus aucun upload réseau santé.
  */
 class ImportRepositoryImpl(
-    private val api: NightfallApi,
     private val localImportService: LocalImportService,
 ) : ImportRepository {
-
-    override suspend fun pingBackend(): Boolean {
-        return try {
-            val response = api.health()
-            response.isSuccessful
-        } catch (e: Exception) {
-            false
-        }
-    }
 
     private val zipEntryCache = mutableMapOf<ImportDataType, ByteArray>()
 

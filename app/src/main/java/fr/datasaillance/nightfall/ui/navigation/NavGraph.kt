@@ -1,7 +1,5 @@
 package fr.datasaillance.nightfall.ui.navigation
 
-import android.content.ContentResolver
-import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -17,62 +15,33 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import fr.datasaillance.nightfall.data.auth.TokenDataStore
-import fr.datasaillance.nightfall.data.http.GoogleStartRequest
-import fr.datasaillance.nightfall.data.http.GoogleStartResponse
-import fr.datasaillance.nightfall.data.http.LoginRequest
-import fr.datasaillance.nightfall.data.http.LoginResponse
-import fr.datasaillance.nightfall.data.http.NightfallApi
-import fr.datasaillance.nightfall.data.http.PasswordResetRequest
-import fr.datasaillance.nightfall.data.http.RegisterRequest
-import fr.datasaillance.nightfall.data.http.RegisterResponse
-import fr.datasaillance.nightfall.data.http.StatusResponse
-import fr.datasaillance.nightfall.data.import_.CsvEntry
 import fr.datasaillance.nightfall.data.import_.ImportRepository
 import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
 import fr.datasaillance.nightfall.data.sleep.LocalSleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
-import fr.datasaillance.nightfall.domain.import_.ImportDataType
-import fr.datasaillance.nightfall.domain.import_.ImportResult
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
 import fr.datasaillance.nightfall.ui.screens.radial.RadialRoute
 import fr.datasaillance.nightfall.ui.screens.wellbeing.DigitalWellbeingScreen
 import fr.datasaillance.nightfall.viewmodel.wellbeing.DigitalWellbeingViewModel
 import fr.datasaillance.nightfall.data.local.usage.UsageStatsPermissionHelper
-import fr.datasaillance.nightfall.ui.screens.auth.ForgotPasswordScreen
-import fr.datasaillance.nightfall.ui.screens.auth.LoginScreen
-import fr.datasaillance.nightfall.ui.screens.auth.RegisterScreen
 import fr.datasaillance.nightfall.ui.screens.import_.ImportScreen
 import fr.datasaillance.nightfall.ui.screens.profile.ProfileScreen
 import fr.datasaillance.nightfall.ui.screens.settings.SettingsScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.SleepScreen
 import fr.datasaillance.nightfall.ui.screens.sleep.TimelineScreen
-import fr.datasaillance.nightfall.viewmodel.auth.AuthViewModel
 import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel
-import retrofit2.Response
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    hasToken: Boolean,
-    backendUrl: String = "",
-    onSaveUrl: (String) -> Unit = {},
-    api: NightfallApi? = null,
-    tokenDataStore: TokenDataStore? = null,
-    authViewModel: AuthViewModel? = null,
 ) {
-    val startDestination = if (hasToken) NavDestination.Sleep.route else NavDestination.Login.route
+    val startDestination = NavDestination.Sleep.route
     val context = LocalContext.current
-    val authViewModel = authViewModel ?: remember(api, tokenDataStore) {
-        val resolvedApi = api ?: NoOpNightfallApi()
-        val resolvedStore = tokenDataStore ?: TokenDataStore(context)
-        AuthViewModel(resolvedApi, resolvedStore)
-    }
 
     // Adds ComposeNavigator/DialogNavigator to the navigator provider when absent.
     // TestNavHostController only registers TestNavigator by default; without this,
@@ -105,34 +74,6 @@ fun NavGraph(
             startDestination = startDestination,
             modifier         = Modifier.padding(innerPadding)
         ) {
-            composable(NavDestination.Login.route) {
-                LoginScreen(
-                    viewModel            = authViewModel,
-                    onLoginSuccess       = {
-                        navController.navigate(NavDestination.Sleep.route) {
-                            popUpTo(NavDestination.Login.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateRegister   = { navController.navigate(NavDestination.Register.route) },
-                    onNavigateForgotPassword = { navController.navigate(NavDestination.ForgotPassword.route) },
-                )
-            }
-            composable(NavDestination.Register.route) {
-                RegisterScreen(
-                    viewModel        = authViewModel,
-                    onRegisterSuccess = {
-                        navController.navigate(NavDestination.Login.route) {
-                            popUpTo(NavDestination.Register.route) { inclusive = true }
-                        }
-                    },
-                )
-            }
-            composable(NavDestination.ForgotPassword.route) {
-                ForgotPasswordScreen(
-                    viewModel = authViewModel,
-                    onBack    = { navController.popBackStack() },
-                )
-            }
             composable(NavDestination.Sleep.route) {
                 val sleepRepository: SleepRepository = remember(context) {
                     val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
@@ -196,9 +137,7 @@ fun NavGraph(
                     },
                 )
             }
-            // Route 'activity' rendered as the new MultiDonutClock radial view
-            // (phase 4a) — l'ancien ActivityScreen placeholder reste compilé pour
-            // les flavors qui n'ont pas Compose Canvas natif.
+            // Route 'activity' rendered as the new MultiDonutClock radial view (phase 4a).
             composable(NavDestination.Activity.route) { RadialRoute() }
             composable(NavDestination.Wellbeing.route) {
                 val db = remember(context) {
@@ -220,12 +159,6 @@ fun NavGraph(
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
-                    onLogout   = {
-                        authViewModel.logout()
-                        navController.navigate(NavDestination.Login.route) {
-                            popUpTo(NavDestination.Sleep.route) { inclusive = true }
-                        }
-                    }
                 )
             }
             composable(NavDestination.Import.route) {
@@ -233,18 +166,14 @@ fun NavGraph(
                 val db = remember(context) {
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val repository: ImportRepository = remember(api, db) {
-                    if (api != null) {
-                        val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
-                            sleepDao = db.sleepDao(),
-                            heartRateDao = db.heartRateDao(),
-                            stepsDao = db.stepsDao(),
-                            exerciseDao = db.exerciseDao(),
-                        )
-                        ImportRepositoryImpl(api, localService)
-                    } else {
-                        NoOpImportRepository()
-                    }
+                val repository: ImportRepository = remember(db) {
+                    val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
+                        sleepDao = db.sleepDao(),
+                        heartRateDao = db.heartRateDao(),
+                        stepsDao = db.stepsDao(),
+                        exerciseDao = db.exerciseDao(),
+                    )
+                    ImportRepositoryImpl(localService)
                 }
                 val locationService = remember(db) {
                     fr.datasaillance.nightfall.data.local.location.LocalLocationImportService(db.locationDao())
@@ -259,8 +188,6 @@ fun NavGraph(
             }
             composable(NavDestination.Settings.route) {
                 SettingsScreen(
-                    currentUrl = backendUrl,
-                    onSaveUrl  = onSaveUrl,
                     onOpenLabeledPlaces = { navController.navigate(NavDestination.LabeledPlaces.route) },
                 )
             }
@@ -280,30 +207,7 @@ private class NoOpSleepRepository : SleepRepository {
     ): Result<List<SleepSessionResponse>> = Result.success(emptyList())
 }
 
-private class NoOpImportRepository : ImportRepository {
-    override suspend fun pingBackend(): Boolean = false
 
-    override suspend fun extractCsvEntries(
-        contentResolver: ContentResolver,
-        treeUri: Uri,
-    ): Map<ImportDataType, CsvEntry> = emptyMap()
-
-    override suspend fun uploadCsv(
-        contentResolver: ContentResolver,
-        uri: Uri,
-        type: ImportDataType,
-        totalBytes: Long,
-        onProgress: (Float) -> Unit,
-    ): ImportResult = throw UnsupportedOperationException("No-op repository")
-}
-
-private class NoOpNightfallApi : NightfallApi {
-    override suspend fun health(): Response<Unit> = throw UnsupportedOperationException("No-op api")
-    override suspend fun login(body: LoginRequest): LoginResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun register(body: RegisterRequest, registrationToken: String?): RegisterResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun requestPasswordReset(body: PasswordResetRequest): StatusResponse = throw UnsupportedOperationException("No-op api")
-    override suspend fun googleStart(body: GoogleStartRequest): GoogleStartResponse = throw UnsupportedOperationException("No-op api")
-}
 
 /**
  * Adds [ComposeNavigator] and [DialogNavigator] to the [NavHostController]'s navigator provider

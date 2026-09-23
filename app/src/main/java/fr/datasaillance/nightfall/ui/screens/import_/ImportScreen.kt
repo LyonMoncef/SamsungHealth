@@ -2,11 +2,9 @@ package fr.datasaillance.nightfall.ui.screens.import_
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,13 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.datasaillance.nightfall.R
@@ -83,7 +77,7 @@ fun ImportScreen(
                     .padding(16.dp),
             ) {
                 IdleContent(
-                    onCheckConnection = { viewModel.checkConnection() },
+                    onSelectSamsungArchive = { launcher.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) },
                     onSelectTimelineJson = {
                         locationLauncher.launch(
                             arrayOf("application/json", "application/zip", "*/*")
@@ -91,29 +85,6 @@ fun ImportScreen(
                     },
                 )
             }
-            is ImportUiState.Connecting -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-            ) {
-                ConnectingContent()
-            }
-            is ImportUiState.ConnectionFailed -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-            ) {
-                ConnectionFailedContent(
-                    message = state.message,
-                    onRetry = { viewModel.checkConnection() },
-                )
-            }
-            is ImportUiState.Connected -> ConnectedContent(
-                onSelectFolder = { launcher.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) },
-                padding = padding,
-            )
             is ImportUiState.Selecting -> Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -204,7 +175,7 @@ fun ImportScreen(
 
 @Composable
 private fun IdleContent(
-    onCheckConnection: () -> Unit,
+    onSelectSamsungArchive: () -> Unit,
     onSelectTimelineJson: () -> Unit,
 ) {
     Column(
@@ -218,10 +189,10 @@ private fun IdleContent(
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = onCheckConnection,
+            onClick = onSelectSamsungArchive,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Samsung Health (via serveur)")
+            Text("Samsung Health (archive .zip)")
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
@@ -297,92 +268,9 @@ private fun LocationSuccessContent(
     }
 }
 
-@Composable
-private fun ConnectingContent() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        CircularProgressIndicator()
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Connexion au serveur…")
-    }
-}
 
-@Composable
-private fun ConnectionFailedContent(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = message,
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Réessayer")
-        }
-    }
-}
 
-@Composable
-private fun ConnectedContent(
-    onSelectFolder: () -> Unit,
-    padding: PaddingValues,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            "Connexion établie",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        RgpdNoticeCard()
-        Button(
-            onClick = onSelectFolder,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Sélectionner l'archive Samsung Health (.zip)")
-        }
-    }
-}
 
-@Composable
-private fun RgpdNoticeCard() {
-    val primary = MaterialTheme.colorScheme.primary
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.small,
-            )
-            .drawBehind {
-                drawRect(color = primary, size = size.copy(width = 4.dp.toPx()))
-            }
-            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 12.dp),
-    ) {
-        Text(
-            text = buildAnnotatedString {
-                append("Ces données sont envoyées uniquement vers ")
-                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = primary)) {
-                    append("votre serveur")
-                }
-                append(". Elles ne transitent par aucun serveur tiers. Aucune copie n'est conservée sur cet appareil après l'import.")
-            },
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-}
 
 @Composable
 private fun SelectingContent() {

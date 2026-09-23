@@ -25,7 +25,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "4.0.0"
-        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"https://sh-dev.datasaillance.fr\"")
     }
 
     buildTypes {
@@ -50,16 +49,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-
-    flavorDimensions += "rendering"
-    productFlavors {
-        create("webview") {
-            dimension = "rendering"
-        }
-        create("native") {
-            dimension = "rendering"
-        }
     }
 
     testOptions {
@@ -93,18 +82,11 @@ dependencies {
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
 
-    // Retrofit + kotlinx-serialization
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // kotlinx-serialization (parser Google Takeout)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
 
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
-
-    // Browser (Custom Tabs for OAuth)
-    implementation("androidx.browser:browser:1.8.0")
 
     // Core
     implementation("androidx.core:core-ktx:1.15.0")
@@ -121,7 +103,6 @@ dependencies {
     testImplementation("org.hamcrest:hamcrest:2.2")
     testImplementation("app.cash.paparazzi:paparazzi:1.3.4")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.navigation:navigation-testing:2.8.5")
     testImplementation(platform("androidx.compose:compose-bom:2024.12.01"))

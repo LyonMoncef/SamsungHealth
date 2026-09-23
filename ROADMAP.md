@@ -24,12 +24,14 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 - [x] Tag `checkpoint-pre-pivot-2026-09-23`
 - [x] Scan secrets historique (gitleaks, 350 commits + refs PR) → **0 fuite**, pas de filter-repo ni rotation
 - [x] Retrait des hooks cartographer (`pre-commit`/`post-commit`) — vault obsolète
-- [ ] Retirer de l'arbre de travail : `server/`, `alembic/`, `static/`, `docker*`, `.github/workflows/deploy-*` (historique conservé)
-- [ ] **Décision structure** : `core/` + `app/` à la racine (façon darkhour) vs rester sous `android-app/`
-- [ ] Poser un venv/toolchain minimal (le notebook et l'ancien tooling Python)
+- [x] Retirer de l'arbre de travail : `server/`, `alembic/`, `static/`, `docker*`, `.github/workflows/deploy-*` (historique conservé)
+- [x] **Décision structure** : projet Gradle promu à la racine (`app/` + futur `core/`), build validé
+- [x] Toolchain Android sur S1 (JDK 21 + SDK, compilation et tests unitaires en local)
+- [ ] Venv Python minimal pour le notebook (Phase 2)
 
 ## Phase 1 — Fondations données on-device
 
+- [x] 1.0 Purge du code lié au serveur (auth, Retrofit, flavor webview, ping backend)
 - [ ] Health Connect : déclarer `READ_HEALTH_DATA_HISTORY`, flux de permissions
 - [ ] Lecture sommeil + pagination de **l'historique complet** (chunks), dédup multi-source
 - [ ] **Contrat de données canonique gelé** (`SleepRecord` + « activity epoch ») — partagé notebook ↔ Kotlin

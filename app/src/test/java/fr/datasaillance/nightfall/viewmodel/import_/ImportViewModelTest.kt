@@ -61,58 +61,8 @@ class ImportViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // spec: TA-01 — checkConnection() when pingBackend() returns true → state is Connected
-    @Test
-    fun checkConnection_pingSuccess_emitsConnected() = runTest {
-        whenever(repository.pingBackend()).thenReturn(true)
 
-        viewModel.checkConnection()
-        advanceUntilIdle()
 
-        // spec: TA-01 — ImportUiState must be Connected after a successful ping
-        val state = viewModel.uiState.value
-        assert(state is fr.datasaillance.nightfall.domain.import_.ImportUiState.Connected) {
-            "uiState must be ImportUiState.Connected when pingBackend() returns true — spec: TA-01, got: $state"
-        }
-    }
-
-    // spec: TA-02 — checkConnection() when pingBackend() returns false → state is ConnectionFailed with exact message
-    @Test
-    fun checkConnection_pingFailure_emitsConnectionFailed() = runTest {
-        whenever(repository.pingBackend()).thenReturn(false)
-
-        viewModel.checkConnection()
-        advanceUntilIdle()
-
-        // spec: TA-02 — ImportUiState must be ConnectionFailed with the spec-mandated message
-        val state = viewModel.uiState.value
-        assert(state is fr.datasaillance.nightfall.domain.import_.ImportUiState.ConnectionFailed) {
-            "uiState must be ImportUiState.ConnectionFailed when pingBackend() returns false — spec: TA-02, got: $state"
-        }
-        val message = (state as fr.datasaillance.nightfall.domain.import_.ImportUiState.ConnectionFailed).message
-        assert(message == "Backend inaccessible — vérifiez l'URL dans les paramètres") {
-            "ConnectionFailed message must match spec exactly — spec: TA-02, got: '$message'"
-        }
-    }
-
-    // spec: TA-01/TA-02 — checkConnection() sets Connecting synchronously before coroutine suspends
-    // Pattern: _uiState.value = Connecting is set BEFORE viewModelScope.launch suspends at pingBackend()
-    @Test
-    fun checkConnection_setsConnectingBeforeCoroutineSuspends() = runTest {
-        // Make pingBackend() a proper suspend that will park on testDispatcher
-        whenever(repository.pingBackend()).thenReturn(true)
-
-        // spec: TA-01 — Connecting must be set synchronously before the coroutine reaches pingBackend()
-        viewModel.checkConnection()
-
-        // Before advanceUntilIdle() — coroutine is suspended at repository.pingBackend()
-        val stateWhileInFlight = viewModel.uiState.value
-        assert(stateWhileInFlight is fr.datasaillance.nightfall.domain.import_.ImportUiState.Connecting) {
-            "uiState must be ImportUiState.Connecting immediately after checkConnection() — spec: TA-01, got: $stateWhileInFlight"
-        }
-
-        advanceUntilIdle()
-    }
 
     // spec: TA-05 — startUpload() with SLEEP and HEART_RATE entries in the map
     //   → state transitions through Uploading(SLEEP) → Uploading(HEART_RATE) → Success
@@ -334,13 +284,13 @@ class ImportViewModelTest {
     // spec: Architecture "reset()" — calling reset() returns state to Idle
     @Test
     fun reset_returnsToIdleState() = runTest {
-        // Move to a non-Idle state first
-        whenever(repository.pingBackend()).thenReturn(true)
-        viewModel.checkConnection()
+        // Move to a non-Idle state first (archive vide → Error)
+        whenever(repository.extractCsvEntries(any(), any())).thenReturn(emptyMap())
+        viewModel.startUpload(mockContentResolver, mockTreeUri)
         advanceUntilIdle()
 
-        assert(viewModel.uiState.value is fr.datasaillance.nightfall.domain.import_.ImportUiState.Connected) {
-            "Precondition: state must be Connected before reset"
+        assert(viewModel.uiState.value is fr.datasaillance.nightfall.domain.import_.ImportUiState.Error) {
+            "Precondition: state must be Error before reset"
         }
 
         // spec: reset() — calling reset() must return state to Idle

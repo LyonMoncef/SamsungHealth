@@ -78,9 +78,7 @@ class HypnogramViewModel(
                     repository.getSessions()
                 }
                 if (result.isFailure) {
-                    val code = (result.exceptionOrNull() as? retrofit2.HttpException)?.code()
-                    if (code != null) Timber.w("scope=hypno_vm http_code=$code")
-                    else Timber.w("scope=hypno_vm error=IOException")
+                    Timber.w("scope=hypno_vm error=${result.exceptionOrNull()?.let { it::class.simpleName }}")
                     _uiState.value = HypnogramUiState.Error(mapError(result.exceptionOrNull()))
                     return@launch
                 }
@@ -157,11 +155,6 @@ class HypnogramViewModel(
 
     private fun mapError(throwable: Throwable?): String = when (throwable) {
         is IOException -> "Vérifiez votre connexion réseau"
-        is retrofit2.HttpException -> when (throwable.code()) {
-            401 -> "Session expirée, reconnectez-vous"
-            403 -> "Accès refusé"
-            else -> "Erreur serveur (${throwable.code()})"
-        }
         else -> "Une erreur inattendue est survenue"
     }
 }
