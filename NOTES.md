@@ -5,6 +5,28 @@
 
 ---
 
+## ADR-4 : Virage architecture — app Android on-device pure (abandon backend)
+
+**Date :** 2026-09-23
+
+**Contexte :** Après ~4 mois d'arrêt, double constat : (a) les données affichées ne reflétaient pas la réalité circadienne attendue — aucun vrai moteur d'analyse, juste de l'affichage de données brutes ; (b) l'historique de sommeil était plafonné à 30 jours → export CSV manuel de milliers de fichiers, chronophage. Diagnostic : le plafond 30 j venait d'une **permission `READ_HEALTH_DATA_HISTORY` jamais demandée** dans l'ancien `HealthConnectManager` (bug applicatif), **pas** d'une limite de Health Connect. Le repo de référence [darkhour-android](https://github.com/Aozora7/darkhour-android) (MIT) démontre qu'une app sommeil/circadien fonctionne entièrement on-device, sans serveur, avec un vrai moteur d'analyse.
+
+**Décision :** Abandon de l'architecture client-serveur (FastAPI + Postgres + auth + RGPD applicatif + Docker + VPS + CI de déploiement). Nightfall devient une **app Android on-device pure** : module `core/` Kotlin pur (analyse) + `app/` (Compose UI + couche data), données via **Health Connect**.
+
+**Justification :**
+- **C1/C2 satisfaites par construction** : les données santé ne quittent jamais l'appareil → plus aucune surface serveur à sécuriser (auth/RGPD/chiffrement représentaient ~70 % de l'effort pour un usage mono-user perso).
+- **Le moteur manquant est de la science publiée** (périodogramme Lomb-Scargle / Sokolove-Bushell, filtre de Kalman + lisseur RTS, NPCRA IS/IV/RA/M10/L5) → réimplémentable depuis les sources, pas à inventer.
+- **darkhour comme oracle de validation** exécutable (son `core/` est JVM-pur) — parité vérifiable sans copier son code.
+
+**Conséquences :**
+- Retrait à venir de `server/`, `alembic/`, `static/`, `docker*`, workflows de déploiement (historique git conservé).
+- **ADR-1, ADR-2, ADR-3 deviennent caducs** (port 8001, workflow pentester serveur, VPS vs PaaS — tout le contexte serveur disparaît).
+- Forge : bascule GitHub → Gitea post-virage ; hooks cartographer (`pre-commit`/`post-commit`) retirés (vault obsolète).
+- Scan secrets fait le 2026-09-23 (gitleaks, 350 commits + refs PR) : **0 fuite**, donc pas de réécriture d'historique.
+- Feuille de route détaillée : voir `ROADMAP.md`.
+
+---
+
 ## ADR-3 : VPS perso vs PaaS + checklist hardening
 
 **Contexte :** Phase 6 déploie sur infrastruture, avec décision architecture : VPS loué vs PaaS cloud (Render, Fly.io, Railway).

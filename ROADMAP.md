@@ -1,102 +1,74 @@
-# Roadmap
+# Roadmap — Virage on-device (2026-09-23)
 
-> **ATTENTION — pré-V2 archivé.** Ce document décrit l'architecture originale (SQLite, single-user, Phases 1-3).
-> La refonte V2 est pilotée par `docs/vault/specs/2026-04-23-plan-v2-refactor-master.md`.
-> Phases V2 : P0 infra/Postgres ✅ · P1 auth ✅ · P2 data layer ✅ · P3 RGPD ✅ · P6 CI/CD ✅ · P4 Android ⏳ · P5 Compose Canvas ⏳
->
-> **Historique pré-V2 (archivé) :**
+> **Ce document remplace la roadmap pré-virage** (Phases 1-6 client-serveur, désormais
+> caduques). L'ancienne roadmap et tout le travail réalisé restent dans l'historique git
+> et `HISTORY.md`. Décision d'architecture : voir `NOTES.md` ADR-4.
 
-## Phase 1 — Backend + Database + Visualization
+## Cap
 
-### 1.1 Project scaffolding
-- [x] Git repo + GitHub remote
-- [x] Documentation files (README, NOTES, HISTORY, ROADMAP)
-- [x] Python project structure + dependencies
-- [x] SQLite database schema (sleep_sessions table, extensible for future data)
+Nightfall devient une **app Android on-device pure** (modèle [darkhour-android](https://github.com/Aozora7/darkhour-android), MIT — inspiration, pas copie). Plus de backend. Données via **Health Connect**. Analyse circadienne dans un module `core/` Kotlin pur. Objectif produit inchangé : rendre visible le rythme (Non-24) que les chiffres bruts masquaient.
 
-### 1.2 Backend API
-- [x] FastAPI app with endpoints:
-  - `POST /api/sleep` — ingest sleep sessions
-  - `GET /api/sleep?from=&to=` — query sleep data by date range
-  - `GET /` — serve web UI
-- [x] Data validation (Pydantic models)
-
-### 1.3 Sleep calendar visualization
-- [x] HTML/CSS grid: rows = days, columns = 24 hours
-- [x] Color cells for hours asleep, handle midnight crossover
-- [x] Date range navigation (month selector)
-- [x] Hover tooltips with exact sleep/wake times
-
-### 1.4 Data import CLI
-- [x] Script to import Samsung Health CSV exports into the database
-- [x] Script to generate test/sample data for development
+**Principes directeurs :**
+- **On-device absolu** — les données santé ne quittent jamais l'appareil (C1/C2 gratuits, plus de serveur à sécuriser).
+- **Algos = science publiée réimplémentée**, jamais copiée. darkhour = *oracle de validation* exécutable (`core/` JVM-pur), pas une source à plagier.
+- **Ne plus développer à l'aveugle** — chaque algo est prototypé et validé en notebook Python (Darkhour + libs de référence comme oracles) avant port Kotlin. Voir Phase 2.
+- **Lisibilité > efficacité** dans tout code produit (l'utilisateur doit pouvoir relire/s'approprier).
 
 ---
 
-## Phase 2 — Android App (Health Connect) + Sleep Stages
+## Phase 0 — Nettoyage & bascule (EN COURS)
 
-### 2.1 Sleep stages backend
-- [x] `sleep_stages` table with FK to sessions
-- [x] Stage models (SleepStageIn/Out) + optional stages on session models
-- [x] `POST /api/sleep` inserts stages, dedup via UNIQUE constraint
-- [x] `GET /api/sleep?include_stages=true` returns stages per session
+- [x] Archiver données santé + APK hors repo → `S2:/data3/Projets/SamsungHealth` (md5 vérifié)
+- [x] `.gitignore` durci (`*.apk`, `desktop-import/`)
+- [x] Nettoyage branches : `main` + `dev` seulement (local + origin) ; travail préservé (PR mergées + tags `archive/*`)
+- [x] Tag `checkpoint-pre-pivot-2026-09-23`
+- [x] Scan secrets historique (gitleaks, 350 commits + refs PR) → **0 fuite**, pas de filter-repo ni rotation
+- [x] Retrait des hooks cartographer (`pre-commit`/`post-commit`) — vault obsolète
+- [ ] Retirer de l'arbre de travail : `server/`, `alembic/`, `static/`, `docker*`, `.github/workflows/deploy-*` (historique conservé)
+- [ ] **Décision structure** : `core/` + `app/` à la racine (façon darkhour) vs rester sous `android-app/`
+- [ ] Poser un venv/toolchain minimal (le notebook et l'ancien tooling Python)
 
-### 2.2 Stage-aware visualization
-- [x] Color-coded calendar cells by dominant stage (light/deep/REM/awake)
-- [x] Tooltip shows stage breakdown per hour
+## Phase 1 — Fondations données on-device
 
-### 2.3 Android project setup
-- [x] Android Studio project (Kotlin, Jetpack Compose)
-- [x] Health Connect integration (replaced deprecated Samsung Health SDK)
-- [x] Gradle build with Health Connect client, Retrofit, DataStore
+- [ ] Health Connect : déclarer `READ_HEALTH_DATA_HISTORY`, flux de permissions
+- [ ] Lecture sommeil + pagination de **l'historique complet** (chunks), dédup multi-source
+- [ ] **Contrat de données canonique gelé** (`SleepRecord` + « activity epoch ») — partagé notebook ↔ Kotlin
+- [ ] Valider en conditions réelles la profondeur d'historique effectivement poussée par Samsung dans HC
+- [ ] Export d'un dataset (CSV/Parquet) au contrat gelé pour le harnais
 
-### 2.4 Sleep data sync
-- [x] Read sleep sessions + stages from Health Connect
-- [x] Map Health Connect stage constants to backend format
-- [x] Push to backend API via Retrofit
-- [x] Incremental sync (since last sync timestamp)
-- [x] Full historical fetch on first sync
+## Phase 2 — Harnais de validation (notebook)
 
-### 2.5 App UI
-- [x] Sync screen: sync button, progress, status, last sync time
-- [x] Settings screen: backend URL configuration
-- [x] Permission flow for Health Connect READ_SLEEP
+- [ ] Notebook Python : **algos dans les cellules**, plomberie dans `helpers.py`
+- [ ] Oracles : darkhour JVM (`core/` pur) sur données identiques + libs réf (`nparACT`/`pyActigraphy`, `astropy.LombScargle`, `filterpy`)
+- [ ] Deux modes : données synthétiques à vérité connue (justesse) + parité darkhour (données réelles)
+- [ ] Le notebook **émet des golden fixtures** → tests du `core/` Kotlin (garantit port == notebook validé)
+- [ ] Plotly = validation logique data→géométrie (≠ design UI)
+- [ ] Emplacement : `research/` ou `notebooks/` versionné, fixtures dans `core/src/test/resources/`
 
-### 2.6 Sample data
-- [x] Generator produces realistic sleep cycles with stages
+## Phase 3 — Moteur d'analyse (`core/` Kotlin)
 
----
+Du plus simple au plus dur, chaque brique validée en Phase 2 avant port :
+- [ ] **NPCRA** (IS/IV/RA/M10/L5) sur pas Health Connect — *différenciateur vs darkhour* (qui ne fait que le sommeil)
+- [ ] **Périodogramme** (Lomb-Scargle / Sokolove-Bushell) — détection de période
+- [ ] **τ + Kalman/RTS** — estimation de la période circadienne et sa dérive (darkhour = oracle)
 
-## Phase 3 — Expansion
+## Phase 4 — UI & identité Nightfall
 
-### 3.1 Additional data types
-- [x] Steps API + hourly granularity storage
-- [x] Heart rate API + hourly min/max/avg
-- [x] Exercise sessions API
+- [ ] Actogramme double-plot + vues sommeil / circadien (best practices darkhour, **identité visuelle Nightfall/DataSaillance**, pas de copie)
+- [ ] Couche produit propre : croisement **sommeil × usage écran × lieux** (l'idée originale de Nightfall, absente de darkhour) — on-device (`UsageStatsManager`, GPS)
 
-### 3.2 Enhanced visualizations
-- [x] Tabbed dashboard (Sleep, Steps, Heart Rate, Exercise, Trends)
-- [x] Steps bar chart (green bars, daily totals)
-- [x] Heart rate range bars (min-max with avg marker)
-- [x] Exercise card list grouped by date
-- [x] Trends stat cards (avg sleep, daily steps, resting HR, exercise count)
+## Phase 5 — Publication & forge
 
-### 3.3 Android sync expansion
-- [x] Read steps, heart rate, exercise from Health Connect
-- [x] Hourly aggregation on device before POST
-- [x] Combined sync status (Sleep/Steps/HR/Exercise)
-
-### 3.4 Sample data
-- [x] Generator produces all 4 data types with realistic patterns
+- [ ] Bascule forge **GitHub → Gitea**
+- [ ] **Clone à historique vierge** pour publication à V1 (le repo historique reste privé, figé en archive)
+- [ ] Profil de style de code extrait du corpus de projets Python de l'utilisateur → mémoire
 
 ---
 
-## Status
+## Questions ouvertes
 
-| Phase | Status | Target |
-|-------|--------|--------|
-| Phase 1 | **Done** | — |
-| Phase 2 | **Done** | — |
-| Phase 3 | **Done** | — |
+- Structure `core/`+`app/` racine vs `android-app/` — à trancher en Phase 0.
+- NPCRA sur pas HC = proxy d'activité plus grossier que l'actigraphie classique (à assumer dans l'interprétation).
+- Croisement circadien × GPS : piste de recherche récente (accéléromètre/GPS smartphone) à explorer en Phase 4.
 
-_Last updated: 2026-02-16_
+_Dernière mise à jour : 2026-09-23_
