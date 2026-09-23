@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SamsungHealthSync"
 include(":app")
+include(":core")
