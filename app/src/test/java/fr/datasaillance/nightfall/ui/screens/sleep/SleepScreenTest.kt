@@ -35,6 +35,7 @@ import org.junit.runner.RunWith
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.robolectric.RobolectricTestRunner
+import kotlinx.coroutines.test.TestCoroutineScheduler
 
 // ---------------------------------------------------------------------------
 // Test fixtures — shared across all three test classes
@@ -112,6 +113,21 @@ class SleepScreenSnapshotTest {
         deviceConfig = DeviceConfig.PIXEL_5,
         theme = "android:Theme.Material.Light.NoActionBar"
     )
+
+    // Les ViewModels lancent leurs coroutines sur Dispatchers.Main. Sans dispatcher de test,
+    // ces snapshots dépendaient d'un Main initialisé par un autre test de la même JVM :
+    // selon l'ordre d'exécution, ils échouaient ("Main dispatcher had failed to initialize").
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Before
+    fun installTestMainDispatcher() {
+        Dispatchers.setMain(StandardTestDispatcher(TestCoroutineScheduler()))
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @After
+    fun restoreMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private fun buildViewModel(
         repository: fr.datasaillance.nightfall.data.sleep.SleepRepository =

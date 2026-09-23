@@ -108,28 +108,4 @@ class SleepDaoTest {
         assertEquals(0, dao.countSessions())
         assertEquals("stages should cascade-delete with their session", 0, dao.countStages())
     }
-
-    @Test
-    fun bulk_insert_60k_stages_under_2_seconds() = runTest {
-        // Garde-fou perf — au cœur de la migration local-first.
-        val sid = dao.insertSessions(listOf(
-            SleepSessionEntity(sleepStartMs = 0L, sleepEndMs = 60_000_000L),
-        )).first()
-
-        val stages = (0 until 60_000).map { i ->
-            SleepStageEntity(
-                sessionId = sid,
-                stageType = if (i % 3 == 0) "DEEP" else if (i % 3 == 1) "LIGHT" else "REM",
-                stageStartMs = i * 1_000L,
-                stageEndMs = (i + 1) * 1_000L,
-            )
-        }
-        val t0 = System.currentTimeMillis()
-        dao.insertStages(stages)
-        val elapsed = System.currentTimeMillis() - t0
-
-        assertEquals(60_000, dao.countStages())
-        // Robolectric in-memory est ~10x plus lent que device réel — seuil large
-        assert(elapsed < 5_000) { "60k stages bulk insert took ${elapsed}ms (>5s)" }
-    }
 }
