@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Export ZIP des données brutes — `ExportArchive` (core, 3 CSV + manifeste, octets reproductibles) + écran « Exporter mes données » avec avertissement « non chiffré », relecture Health Connect à chaque export, 7 tests TDD | `core/.../export/ExportArchive.kt`, `ui/screens/export/`, `viewmodel/export/` | [`0a0d98b`](#2026-09-24-0a0d98b) |
 | Écrans branchés sur Health Connect — Sommeil, Timeline, Hypnogramme, Cadran lisent le contrat via un pont temporaire (`HealthConnectSleepRepository`) ; import CSV Samsung supprimé (import Takeout conservé), 6 tests TDD | `data/sleep/HealthConnectSleepRepository.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/navigation/NavGraph.kt`, `ui/screens/import_/` | [`e4423e2`](#2026-09-24-e4423e2) |
 | Écran Health Connect — permissions lecture seule (sommeil, pas, historique), écran de justification exigé par Health Connect, état + autorisation + résumé de lecture (sessions, plus ancienne, historique complet/limité), cache partagé en mémoire, 6 tests TDD | `ui/screens/healthconnect/`, `viewmodel/healthconnect/`, `HealthConnectRationaleActivity.kt`, `AndroidManifest.xml` | [`92dffd4`](#2026-09-24-92dffd4) |
 | Couche données Health Connect — conversion vers le contrat v1, pagination sûre, dédup par identifiant, état d'accès (historique complet vs limité 30 j jamais silencieux), 15 tests TDD | `app/src/main/java/fr/datasaillance/nightfall/data/healthconnect/` | [`9ad602c`](#2026-09-24-9ad602c) |
@@ -51,6 +52,14 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `0a0d98b`
+feat(export): export ZIP des donnees brutes Health Connect (3 CSV + manifeste) depuis Profil (Phase 1.3)
+- `core` : `ExportArchive.write` écrit `sleep_sessions.csv`, `sleep_stages.csv`, `steps.csv`, `manifest.json` dans un ZIP ; date des entrées = date d'export (mêmes données → mêmes octets) ; le flux reste à fermer par l'appelant.
+- `ExportViewModel` : relit toujours Health Connect (une sauvegarde reflète l'état réel), écrit l'archive hors du fil principal dans le fichier choisi, états Exporting / NotReady / Done / Error ; aucune donnée de santé dans les logs.
+- `ExportScreen` (ligne « Exporter mes données » du Profil, jusqu'ici sans action) : avertissement « non chiffré » avant tout export, choix de l'emplacement (`CreateDocument`, nom `nightfall-export-AAAA-MM-JJ.zip`), résumé, rappel si l'historique était limité à 30 jours.
+- `loadFromDevice(context)` : lecture Health Connect partagée entre l'export et le dépôt des écrans.
+- TDD : 3 tests `core` (contenu, aller-retour TA-14, octets reproductibles) + 4 tests ViewModel, rouges puis verts. Suite : 12 tests core, 160 tests app, 8 échecs Timeline antérieurs.
 
 ### 2026-09-24 `e4423e2`
 feat(healthconnect): ecrans existants branches sur Health Connect et retrait de l'import CSV Samsung (Phase 1.2c)

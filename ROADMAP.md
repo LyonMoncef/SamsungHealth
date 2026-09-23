@@ -36,7 +36,8 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 - [x] 1.2 Lecture sommeil + pas de **l'historique complet** (pagination), dédup par identifiant ; écrans existants branchés, import CSV supprimé. *La dédup multi-source devient un calcul (Phase 2/3).*
 - [x] 1.1 **Contrat de données v1 gelé** dans le module `core/` (`SleepRecord`, `StepsInterval` ; les epochs d'activité deviennent un calcul) + export CSV
 - [ ] **TA-13** : sur le téléphone, parité avec darkhour (≈ 1146 sessions depuis le 2024-07-08) via Profil → Health Connect
-- [ ] 1.3 Export ZIP (3 CSV + manifeste) depuis Profil, pour le harnais
+- [x] 1.3 Export ZIP (3 CSV + manifeste) depuis Profil, pour le harnais
+- [ ] **TA-14** : sur le téléphone, l'archive s'ouvre et les 3 CSV se chargent tels quels dans pandas
 
 ## Phase 2 — Harnais de validation (notebook)
 
