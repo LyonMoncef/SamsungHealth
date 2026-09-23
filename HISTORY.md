@@ -41,6 +41,13 @@
 
 ## Changelog
 
+### 2026-09-23 `checkpoint-pre-pivot-2026-09-23`
+chore(checkpoint): safety tag avant virage on-device (nettoyage branches + futur filter-repo)
+- Reason: suppression massive de branches (local + origin) puis réécriture d'historique (filter-repo secrets) à venir — opérations destructrices/irréversibles
+- Scope: ~53 branches locales + ~58 branches origin ; historique git complet ; tag posé sur `ac7b6bd` (tip `feat/design-radial-clock`)
+- Archivage préalable `desktop-import/` (APK 59 Mo + données santé Art.9) + `tools/` vers `S2:/data3/Projets/SamsungHealth` (intégrité md5 vérifiée par fichier)
+- [CHECKPOINT]
+
 ### 2026-05-09 `0e79abe`
 feat: Timeline V2 — 1 ligne/nuit, phases colorées, bottom sheet
 - groupByNight() : agrégation 1 ligne = 1 date calendaire (clé sleep_start.toLocalDate())
