@@ -3,6 +3,14 @@
 <!-- Read by every Claude Code session and all agents (global + local). Keep accurate. -->
 <!-- Priority: this file > global ~/.claude/CLAUDE.md -->
 
+> ⚠️ **VIRAGE EN COURS (2026-09-23) — ce document est en grande partie CADUC.**
+> Nightfall abandonne l'architecture client-serveur (FastAPI/Postgres/auth/RGPD/Docker/VPS)
+> et devient une **app Android on-device pure** (données via Health Connect, analyse dans un
+> module `core/` Kotlin). Structure : projet Gradle à la **racine** (`app/`, `gradle/`, + futur `core/`).
+> **Sources de vérité pour la nouvelle direction : `NOTES.md` ADR-4 + `ROADMAP.md`.**
+> Tout ce qui parle ci-dessous de backend/`server/`/FastAPI/déploiement VPS ne s'applique plus.
+> Réécriture complète de ce fichier à faire (Phase 0). Forge cible : Gitea.
+
 ---
 
 ## Project overview

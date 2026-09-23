@@ -22,12 +22,13 @@ build/
 # Database
 *.db
 
-# Android
-android-app/build/
-android-app/.gradle/
-android-app/local.properties
-android-app/app/build/
-android-app/app/release/
+# Android (projet Gradle à la racine depuis le virage on-device)
+.gradle/
+local.properties
+.kotlin/
+app/build/
+app/release/
+*.iml
 
 # OS
 .DS_Store
