@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Couche données Health Connect — conversion vers le contrat v1, pagination sûre, dédup par identifiant, état d'accès (historique complet vs limité 30 j jamais silencieux), 15 tests TDD | `app/src/main/java/fr/datasaillance/nightfall/data/healthconnect/` | [`9ad602c`](#2026-09-24-9ad602c) |
 | Module `core/` (Kotlin pur) — contrat de données v1 (`SleepRecord`, `StepsInterval`, stades et méthodes Health Connect 1:1) + export CSV déterministe et manifeste, 9 tests TDD | `core/src/main/kotlin/fr/datasaillance/nightfall/core/{model,export}/`, `settings.gradle.kts` | [`08f7704`](#2026-09-23-08f7704) |
 | Cadran v2 — interaction sélection anneau/segment (remplace quadrant 6h) + focus mode + `LayerContextCard` contextuelle + intégration usage réel/timeline ancré + light mode + `TrajetMapRenderer` déférée, 18 tests TDD | `dataviz/radial/{MultiDonutClock,RadialClockScreen,TrajetMapRenderer}.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/screens/radial/RadialRoute.kt` | [`cadran-v2-impl`](#2026-05-27-cadran-v2-impl) |
 | Labeled Places — lieux labellisés configurables (domicile/travail/famille/vacances) + `PlaceResolver` haversine + écran config Compose (DB v5→v6), 15 tests TDD | `data/local/entity/location/{LabeledPlaceEntity,PlaceCategory}.kt`, `data/local/dao/LabeledPlaceDao.kt`, `data/local/location/{PlaceResolver,PlaceSuggestionService,LabeledPlace}.kt`, `ui/screens/places/`, `viewmodel/places/` | [`labeled-places-impl`](#2026-05-27-labeled-places-impl) |
@@ -48,6 +49,17 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `9ad602c`
+feat(healthconnect): couche donnees Health Connect (conversion vers le contrat, pagination, dedup par id, etat d'acces) (Phase 1.2a)
+- Dépendance `androidx.health.connect:connect-client:1.1.0`.
+- `HealthConnectMapper` : `SleepSessionRecord` / `StepsRecord` → `SleepRecord` / `StepsInterval`, stades et méthodes d'enregistrement 1:1 (code inconnu → UNKNOWN).
+- `readAllPages` : lecture de toutes les pages jusqu'au token vide ; un token déjà vu lève une erreur au lieu de boucler.
+- `loadHealthData` / `loadIfReady` : lit sommeil et pas via une `HealthRecordsSource` qui renvoie des objets du contrat, dédup par identifiant (version la plus récente), tri déterministe ; ne lit rien tant que Health Connect n'est pas prêt.
+- `decideHealthConnectState` : NotInstalled / UpdateRequired / PermissionsMissing / Ready(FULL ou LIMITED_30_DAYS) ; historique complet seulement si la fonctionnalité existe et que la permission est accordée.
+- `HealthConnectReader` + `currentHealthConnectState` : branchement réel sur Health Connect (plage unique 1970 → maintenant, pages de 1000), non testable en JVM, validé sur téléphone en 1.2b.
+- Spec corrigée : le constructeur de `Metadata` est `internal` (et non public comme écrit initialement) ; tests de conversion via les fabriques `Metadata.…WithId`.
+- TDD : 15 tests (TA-7 à TA-12) rouges puis verts. Suite complète : 165 tests, 13 échecs connus inchangés.
 
 ### 2026-09-24 `54fab9f`
 chore(git): impose CRLF pour les scripts .bat et LF pour gradlew
