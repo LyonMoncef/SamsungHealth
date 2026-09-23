@@ -48,6 +48,13 @@
 
 ## Changelog
 
+### 2026-09-23 `fbfeabe`
+fix(test): snapshots Paparazzi avec dispatcher Main de test et retrait du test chronometre SleepDao (suite de tests deterministe)
+- Cause des échecs aléatoires : les snapshots Paparazzi (Sommeil, Hypnogramme, Timeline) construisaient de vrais ViewModels sans dispatcher de test ; ils dépendaient d'un `Dispatchers.Main` initialisé par un autre test de la même JVM. Si `TimelineViewModelTest` (JVM pur, sans main looper) passait en premier, l'échec d'initialisation restait en cache et 9 à 10 tests tombaient.
+- Correctif : chaque classe de snapshots installe `StandardTestDispatcher(TestCoroutineScheduler())` en `@Before` et le retire en `@After`.
+- Suppression de `SleepDaoTest.bulk_insert_60k_stages_under_2_seconds` (assertion chronométrée dépendante de la charge, sur une table vouée à disparaître en 1.2).
+- Vérification : 3 lancements complets consécutifs, plus aucune pollution du dispatcher ; 169 tests, 13 échecs stables et connus (8 Timeline, 5 NavGraph Keystore Robolectric).
+
 ### 2026-09-23 `4b20e33`
 refactor(android): purge du code lie au serveur (auth, Retrofit, flavor webview, ping backend) et fusion de la flavor native dans main
 - Phase 1.0 du virage on-device (ADR-4) : suppression de tout le code Android qui dialoguait avec le serveur disparu.
