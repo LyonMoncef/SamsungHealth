@@ -49,6 +49,10 @@
 
 ## Changelog
 
+### 2026-09-24 `54fab9f`
+chore(git): impose CRLF pour les scripts .bat et LF pour gradlew
+- `.gitattributes` : `*.bat text eol=crlf`, `gradlew text eol=lf`. `gradlew.bat` (ajouté avec la montée Gradle 8.14.3) avait été stocké en LF, ce qui peut casser son exécution par cmd.exe sur un clone Windows.
+
 ### 2026-09-24 `72672e6`
 chore(build): AGP 8.13.2, Gradle 8.14.3 et compileSdk 36 (requis par Health Connect 1.1.0), retrait de Paparazzi incompatible
 - `androidx.health.connect:connect-client:1.1.0` exige AGP ≥ 8.9.1 et une compilation contre l'API 36 : AGP 8.7.3 → 8.13.2 (dernière 8.x, pas de saut vers AGP 9), wrapper Gradle 8.11.1 → 8.14.3 (régénéré par `gradlew wrapper`, ajout de `gradlew.bat`), `compileSdk` 35 → 36. `targetSdk` inchangé (35) : aucun changement de comportement à l'exécution. Kotlin, KSP, Compose inchangés.
