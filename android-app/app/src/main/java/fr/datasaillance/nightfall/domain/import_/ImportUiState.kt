@@ -17,4 +17,15 @@ sealed class ImportUiState {
         val missingTypes: List<ImportDataType> = emptyList(),
     ) : ImportUiState()
     data class Error(val message: String, val retryable: Boolean) : ImportUiState()
+
+    // --- Google Timeline (local-only) ---
+    object LocationImporting : ImportUiState()
+    data class LocationSuccess(
+        val visitsInserted: Int,
+        val visitsSkipped: Int,
+        val segmentsInserted: Int,
+        val segmentsSkipped: Int,
+        val filesProcessed: Int,
+    ) : ImportUiState()
+    data class LocationError(val message: String) : ImportUiState()
 }

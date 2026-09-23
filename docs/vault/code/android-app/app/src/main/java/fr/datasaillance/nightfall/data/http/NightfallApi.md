@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/http/NightfallApi.kt
-git_blob: 8c032be84c7326e2c320a7c2fc48795349691ae2
-last_synced: '2026-05-09T08:38:11Z'
-loc: 60
+git_blob: 57474487dd33e85cf2020a2eb1b58a1347202f8c
+last_synced: '2026-05-09T16:40:48Z'
+loc: 34
 annotations: []
 imports: []
 exports: []
@@ -23,16 +23,18 @@ tags:
 ```kotlin
 package fr.datasaillance.nightfall.data.http
 
-import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
-import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
-import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.Part
-import retrofit2.http.Query
+
+// Phase D : les endpoints `/api/sleep/import*`, `/api/heartrate/import`,
+// `/api/steps/import`, `/api/exercise/import` et `GET /api/sleep` ne sont plus
+// utilisés — l'app lit/écrit en local via Room (LocalSleepRepository +
+// LocalImportService). Les endpoints serveur sont conservés pour rétrocompat
+// éventuelle (cf. spec local-first §Phase D) mais l'API client ne les expose
+// plus pour éviter tout retour en arrière silencieux.
 
 @kotlinx.serialization.Serializable
 data class ImportApiResponse(val inserted: Int, val skipped: Int)
@@ -52,34 +54,6 @@ interface NightfallApi {
 
     @POST("auth/google/start")
     suspend fun googleStart(@Body body: GoogleStartRequest): GoogleStartResponse
-
-    @GET("api/sleep")
-    suspend fun getSleepSessions(
-        @Header("Authorization") token: String,
-        @Query("from") from: String? = null,
-        @Query("to") to: String? = null,
-        @Query("include_stages") includeStages: Boolean = true
-    ): List<SleepSessionResponse>
-
-    @Multipart
-    @POST("api/sleep/import")
-    suspend fun importSleep(@Part file: MultipartBody.Part): ImportApiResponse
-
-    @Multipart
-    @POST("api/heartrate/import")
-    suspend fun importHeartRate(@Part file: MultipartBody.Part): ImportApiResponse
-
-    @Multipart
-    @POST("api/steps/import")
-    suspend fun importSteps(@Part file: MultipartBody.Part): ImportApiResponse
-
-    @Multipart
-    @POST("api/exercise/import")
-    suspend fun importExercise(@Part file: MultipartBody.Part): ImportApiResponse
-
-    @Multipart
-    @POST("api/sleep/import-stages")
-    suspend fun importSleepStages(@Part file: MultipartBody.Part): ImportApiResponse
 }
 ```
 
@@ -88,16 +62,10 @@ interface NightfallApi {
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportApiResponse` (class) — lines 14-15
-- `NightfallApi` (class) — lines 17-60
-- `health` (function) — lines 18-19
-- `login` (function) — lines 21-22
-- `register` (function) — lines 24-25
-- `requestPasswordReset` (function) — lines 27-28
-- `googleStart` (function) — lines 30-31
-- `getSleepSessions` (function) — lines 33-39
-- `importSleep` (function) — lines 41-43
-- `importHeartRate` (function) — lines 45-47
-- `importSteps` (function) — lines 49-51
-- `importExercise` (function) — lines 53-55
-- `importSleepStages` (function) — lines 57-59
+- `ImportApiResponse` (class) — lines 16-17
+- `NightfallApi` (class) — lines 19-34
+- `health` (function) — lines 20-21
+- `login` (function) — lines 23-24
+- `register` (function) — lines 26-27
+- `requestPasswordReset` (function) — lines 29-30
+- `googleStart` (function) — lines 32-33

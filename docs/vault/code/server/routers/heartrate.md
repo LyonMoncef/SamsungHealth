@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/heartrate.py
-git_blob: 1f0789355bc5d0d96e41ef303b8b0a514cb815af
-last_synced: '2026-05-07T16:11:01Z'
-loc: 105
+git_blob: 2ff7e2b5f5a2739b44393d8857e001fddf478a90
+last_synced: '2026-05-09T16:40:48Z'
+loc: 107
 annotations: []
 imports:
 - fastapi
@@ -18,6 +18,7 @@ imports:
 - server.security.auth
 - server.security.rate_limit
 - server.services.csv_import
+- server.services.deprecation
 exports: []
 tags:
 - code
@@ -45,6 +46,7 @@ from server.models import HeartRateBulkIn, HeartRateHourlyOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 from server.services.csv_import import MAX_CSV_BYTES, parse_heartrate_rows, parse_samsung_csv
+from server.services.deprecation import mark_deprecated
 
 _log = get_logger(__name__)
 
@@ -85,7 +87,7 @@ def create_heartrate(
     return {"inserted": inserted, "skipped": skipped}
 
 
-@router.post("/import", status_code=200)
+@router.post("/import", status_code=200, deprecated=True)
 @limiter.limit(_api_post_cap, key_func=_user_id_key)
 def import_heartrate(
     request: Request,
@@ -94,6 +96,7 @@ def import_heartrate(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    mark_deprecated(response, endpoint="heartrate", user_id=str(current_user.id))
     raw = file.file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
@@ -161,3 +164,4 @@ def get_heartrate(
 - `server.security.auth`
 - `server.security.rate_limit`
 - `server.services.csv_import`
+- `server.services.deprecation`

@@ -2,14 +2,15 @@
 type: code-source
 language: python
 file_path: server/services/csv_import.py
-git_blob: e989f8e2cccd3d12137ded5b22290bd3178cd068
-last_synced: '2026-05-09T08:38:11Z'
-loc: 304
+git_blob: 38e22436b341956d15fa4daaf86f03ed76c74236
+last_synced: '2026-05-09T13:21:34Z'
+loc: 338
 annotations: []
 imports:
 - csv
 - io
 - sys
+- bisect
 - collections
 - datetime
 - uuid
@@ -44,6 +45,7 @@ from __future__ import annotations
 import csv
 import io
 import sys
+from bisect import bisect_right
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from uuid import UUID
@@ -142,15 +144,53 @@ def parse_sleep_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[int,
     return inserted, skipped
 
 
+_STAGE_INSERT_BATCH = 1000
+
+
 def parse_sleep_stage_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[int, int]:
     inserted = 0
     skipped = 0
     skip_reasons: Counter = Counter()
 
+    sessions = db.execute(
+        select(SleepSession.id, SleepSession.sleep_start, SleepSession.sleep_end)
+        .where(SleepSession.user_id == user_id)
+        .order_by(SleepSession.sleep_start)
+    ).all()
+    starts = [s.sleep_start for s in sessions]
+
+    def find_session_id(stage_start: datetime, stage_end: datetime):
+        # bisect_right(starts, stage_start) - 1 = index of last session with sleep_start <= stage_start
+        idx = bisect_right(starts, stage_start) - 1
+        if idx < 0:
+            return None
+        s = sessions[idx]
+        if s.sleep_end >= stage_end:
+            return s.id
+        return None
+
+    pending: list[dict] = []
+
+    def flush() -> tuple[int, int]:
+        nonlocal pending
+        attempted = len(pending)
+        if attempted == 0:
+            return 0, 0
+        stmt = (
+            pg_insert(SleepStage)
+            .values(pending)
+            .on_conflict_do_nothing(index_elements=["user_id", "stage_start", "stage_end"])
+            .returning(SleepStage.id)
+        )
+        ids = db.execute(stmt).all()
+        pending = []
+        ins = len(ids)
+        return ins, attempted - ins
+
     for row in rows:
         try:
             start = _parse_ts(row["start_time"])
-            end   = _parse_ts(row["end_time"])
+            end = _parse_ts(row["end_time"])
             stage_code = int(row["stage"])
         except (KeyError, ValueError, TypeError):
             skip_reasons["missing_or_invalid_field"] += 1
@@ -163,37 +203,32 @@ def parse_sleep_stage_rows(rows: list[dict], user_id: UUID, db: Session) -> tupl
             skipped += 1
             continue
 
-        session = db.execute(
-            select(SleepSession)
-            .where(
-                SleepSession.user_id == user_id,
-                SleepSession.sleep_start <= start,
-                SleepSession.sleep_end >= end,
-            )
-            .limit(1)
-        ).scalar_one_or_none()
-
-        if session is None:
+        session_id = find_session_id(start, end)
+        if session_id is None:
             skip_reasons["no_matching_session"] += 1
             skipped += 1
             continue
 
-        stmt = (
-            pg_insert(SleepStage)
-            .values(
-                user_id=user_id,
-                session_id=session.id,
-                stage_type=stage_type,
-                stage_start=start,
-                stage_end=end,
-            )
-            .on_conflict_do_nothing(index_elements=["user_id", "stage_start", "stage_end"])
-            .returning(SleepStage.id)
-        )
-        if db.execute(stmt).first() is not None:
-            inserted += 1
-        else:
-            skipped += 1
+        pending.append({
+            "user_id": user_id,
+            "session_id": session_id,
+            "stage_type": stage_type,
+            "stage_start": start,
+            "stage_end": end,
+        })
+
+        if len(pending) >= _STAGE_INSERT_BATCH:
+            ins, conflicts = flush()
+            inserted += ins
+            skipped += conflicts
+            if conflicts:
+                skip_reasons["conflict"] += conflicts
+
+    ins, conflicts = flush()
+    inserted += ins
+    skipped += conflicts
+    if conflicts:
+        skip_reasons["conflict"] += conflicts
 
     db.commit()
     if skip_reasons:
@@ -350,18 +385,19 @@ def parse_exercise_rows(rows: list[dict], user_id: UUID, db: Session) -> tuple[i
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `parse_samsung_csv` (function) — lines 39-57
-- `_parse_ts` (function) — lines 60-66
-- `parse_sleep_rows` (function) — lines 69-101
-- `parse_sleep_stage_rows` (function) — lines 104-160
-- `parse_heartrate_rows` (function) — lines 163-211
-- `parse_steps_rows` (function) — lines 214-258
-- `parse_exercise_rows` (function) — lines 261-304
+- `parse_samsung_csv` (function) — lines 40-58
+- `_parse_ts` (function) — lines 61-67
+- `parse_sleep_rows` (function) — lines 70-102
+- `parse_sleep_stage_rows` (function) — lines 108-194
+- `parse_heartrate_rows` (function) — lines 197-245
+- `parse_steps_rows` (function) — lines 248-292
+- `parse_exercise_rows` (function) — lines 295-338
 
 ### Imports
 - `csv`
 - `io`
 - `sys`
+- `bisect`
 - `collections`
 - `datetime`
 - `uuid`

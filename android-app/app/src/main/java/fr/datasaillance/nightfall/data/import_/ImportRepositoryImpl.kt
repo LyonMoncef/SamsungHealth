@@ -2,14 +2,10 @@ package fr.datasaillance.nightfall.data.import_
 
 import android.content.ContentResolver
 import android.net.Uri
-import fr.datasaillance.nightfall.data.http.CountingRequestBody
-import fr.datasaillance.nightfall.data.http.ImportApiResponse
 import fr.datasaillance.nightfall.data.http.NightfallApi
+import fr.datasaillance.nightfall.data.local.import_.LocalImportService
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.zip.ZipInputStream
@@ -17,8 +13,14 @@ import java.util.zip.ZipInputStream
 private const val MAX_UNCOMPRESSED_BYTES = 200_000_000L
 private const val MAX_ZIP_ENTRIES = 100
 
+/**
+ * Phase B local-first : les imports écrivent directement en Room locale via
+ * `LocalImportService`. Plus aucun upload réseau santé. L'API n'est conservée
+ * que pour le ping de connectivité (vérification VPS up).
+ */
 class ImportRepositoryImpl(
     private val api: NightfallApi,
+    private val localImportService: LocalImportService,
 ) : ImportRepository {
 
     override suspend fun pingBackend(): Boolean {
@@ -103,23 +105,17 @@ class ImportRepositoryImpl(
                 contentResolver.openInputStream(uri)?.readBytes()
                     ?: throw IOException("Cannot read file for $type")
             }
-
-        val mediaType = "text/csv".toMediaType()
-        val requestBody = bytes.toRequestBody(mediaType)
-        val countingBody = CountingRequestBody(
-            delegate = requestBody,
-            totalBytes = totalBytes,
-            onProgress = onProgress,
-        )
-        val part = MultipartBody.Part.createFormData("file", "${type.samsungFilenamePrefix}.csv", countingBody)
-
-        val response: ImportApiResponse = when (type) {
-            ImportDataType.SLEEP -> api.importSleep(part)
-            ImportDataType.HEART_RATE -> api.importHeartRate(part)
-            ImportDataType.STEPS -> api.importSteps(part)
-            ImportDataType.EXERCISE -> api.importExercise(part)
-            ImportDataType.SLEEP_STAGE -> api.importSleepStages(part)
+        // Pas de progression réseau ici (parsing local quasi-instantané) — on émet 0
+        // au début et 1 à la fin pour garder le contrat de l'UI.
+        onProgress(0f)
+        val r = when (type) {
+            ImportDataType.SLEEP -> localImportService.importSleep(bytes)
+            ImportDataType.SLEEP_STAGE -> localImportService.importSleepStages(bytes)
+            ImportDataType.HEART_RATE -> localImportService.importHeartRate(bytes)
+            ImportDataType.STEPS -> localImportService.importSteps(bytes)
+            ImportDataType.EXERCISE -> localImportService.importExercise(bytes)
         }
-        return ImportResult(type = type, inserted = response.inserted, skipped = response.skipped)
+        onProgress(1f)
+        return ImportResult(type = type, inserted = r.inserted, skipped = r.skipped)
     }
 }

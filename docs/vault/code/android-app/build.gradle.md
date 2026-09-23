@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/build.gradle.kts
-git_blob: f46b5f2aa59861733b3aa34cc9042d1016b03efc
-last_synced: '2026-05-07T00:48:24Z'
-loc: 7
+git_blob: 8d9407fb36fd17675fd554f39ff1e565ae5e613c
+last_synced: '2026-05-09T15:08:38Z'
+loc: 8
 annotations: []
 imports: []
 exports: []
@@ -26,6 +26,7 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0" apply false
+    id("com.google.devtools.ksp") version "2.1.0-1.0.29" apply false
     id("app.cash.paparazzi") version "1.3.4" apply false
 }
 ```

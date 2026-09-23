@@ -20,7 +20,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(
     currentUrl: String = "",
-    onSaveUrl: (String) -> Unit = {}
+    onSaveUrl: (String) -> Unit = {},
+    onOpenLabeledPlaces: () -> Unit = {},
 ) {
     var urlInput by remember { mutableStateOf(currentUrl) }
 
@@ -44,6 +45,12 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Enregistrer")
+        }
+        Button(
+            onClick = onOpenLabeledPlaces,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Lieux connus (domicile, travail, …)")
         }
     }
 }

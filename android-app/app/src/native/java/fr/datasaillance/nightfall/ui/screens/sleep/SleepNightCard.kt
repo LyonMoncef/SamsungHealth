@@ -1,5 +1,6 @@
 package fr.datasaillance.nightfall.ui.screens.sleep
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -19,10 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
+import fr.datasaillance.nightfall.ui.theme.DataSaillance
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -30,10 +33,6 @@ import java.util.Locale
 
 private val FMT_NIGHT = DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH)
 private val FMT_TIME = DateTimeFormatter.ofPattern("HH:mm")
-
-private val ColorTeal = Color(0xFF0E9EB0)
-private val ColorAmber = Color(0xFFD37C04)
-private val ColorRed = Color(0xFFB00020)
 
 @Composable
 fun SleepNightCard(
@@ -52,10 +51,11 @@ fun SleepNightCard(
     val hours = duration?.toHours() ?: 0L
     val minutes = duration?.toMinutesPart() ?: 0
 
+    // Indicateur de qualité — palette DS sleep stages (extras), pas de raw hex.
     val indicatorColor = when {
-        hours >= 7 -> ColorTeal
-        hours >= 5 -> ColorAmber
-        else -> ColorRed
+        hours >= 7 -> DataSaillance.extras.stageDeep
+        hours >= 5 -> MaterialTheme.colorScheme.secondary  // amber CTA
+        else -> MaterialTheme.colorScheme.error
     }
 
     val nightLabel = start?.format(FMT_NIGHT)?.replaceFirstChar { it.uppercase() } ?: ""
@@ -77,52 +77,62 @@ fun SleepNightCard(
         } else null
     }
 
+    // Design rule : cards = surface + 1dp hairline border, no elevation glow.
     Card(
         modifier = modifier
             .fillMaxWidth()
             .testTag("sleep_card_${session.id}")
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             Box(
                 modifier = Modifier
-                    .width(6.dp)
+                    .width(4.dp)
                     .fillMaxHeight()
                     .background(indicatorColor)
             )
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                // Eyebrow : date — uppercased, tracked
                 Text(
-                    text = nightLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = durationText,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = nightLabel.uppercase(Locale.FRENCH),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.5.sp,
+                    color = DataSaillance.extras.textMuted,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                // Hero duration — tabular numerals, tight tracking
+                Text(
+                    text = durationText,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.4).sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
                 Row {
                     Text(
                         text = "Coucher $bedTime",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = DataSaillance.extras.textMuted,
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Réveil $wakeTime",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = DataSaillance.extras.textMuted,
                     )
                     if (deepScore != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Profond $deepScore%",
+                            text = "Profond $deepScore %",
                             style = MaterialTheme.typography.bodySmall,
-                            color = ColorTeal
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }

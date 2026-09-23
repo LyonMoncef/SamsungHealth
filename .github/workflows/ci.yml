@@ -44,7 +44,11 @@ jobs:
       - name: pip-audit (SCA — CVE check Python deps)
         run: |
           pip install pip-audit
-          pip-audit --requirement requirements.lock --strict
+          # PYSEC-2025-183 : CVE pyjwt sans fix upstream — 2.12.1 reste la
+          # dernière version disponible, on patchera dès qu'une 2.12.2+ sort.
+          # Cf NOTES.md "Known Issues" pour le suivi.
+          pip-audit --requirement requirements.lock --strict \
+            --ignore-vuln PYSEC-2025-183
       - name: gitleaks (secrets scan)
         uses: gitleaks/gitleaks-action@v2
         env:

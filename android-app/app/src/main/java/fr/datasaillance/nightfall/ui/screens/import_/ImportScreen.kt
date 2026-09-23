@@ -57,6 +57,12 @@ fun ImportScreen(
         uri?.let { viewModel.startUpload(context.contentResolver, it) }
     }
 
+    val locationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.startLocationImport(context.contentResolver, it) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -76,7 +82,14 @@ fun ImportScreen(
                     .padding(padding)
                     .padding(16.dp),
             ) {
-                IdleContent(onCheckConnection = { viewModel.checkConnection() })
+                IdleContent(
+                    onCheckConnection = { viewModel.checkConnection() },
+                    onSelectTimelineJson = {
+                        locationLauncher.launch(
+                            arrayOf("application/json", "application/zip", "*/*")
+                        )
+                    },
+                )
             }
             is ImportUiState.Connecting -> Box(
                 modifier = Modifier
@@ -150,24 +163,136 @@ fun ImportScreen(
                     onBack = onNavigateBack,
                 )
             }
+            is ImportUiState.LocationImporting -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+            ) {
+                LocationImportingContent()
+            }
+            is ImportUiState.LocationSuccess -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+            ) {
+                LocationSuccessContent(
+                    state = state,
+                    onDone = {
+                        viewModel.reset()
+                        onNavigateBack()
+                    },
+                )
+            }
+            is ImportUiState.LocationError -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+            ) {
+                ErrorContent(
+                    message = state.message,
+                    retryable = true,
+                    onRetry = { viewModel.reset() },
+                    onBack = onNavigateBack,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun IdleContent(onCheckConnection: () -> Unit) {
+private fun IdleContent(
+    onCheckConnection: () -> Unit,
+    onSelectTimelineJson: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Importer des données Samsung Health",
+            text = "Importer des données",
             style = MaterialTheme.typography.headlineSmall,
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onCheckConnection) {
-            Text("Vérifier la connexion")
+        Button(
+            onClick = onCheckConnection,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Samsung Health (via serveur)")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onSelectTimelineJson,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Google Timeline (local)")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "L'import Google Timeline ne sort jamais de l'appareil.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun LocationImportingContent() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Import Google Timeline en cours…")
+    }
+}
+
+@Composable
+private fun LocationSuccessContent(
+    state: ImportUiState.LocationSuccess,
+    onDone: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Import Google Timeline terminé",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Visites")
+            Text("${state.visitsInserted} nouvelles · ${state.visitsSkipped} déjà présentes")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Trajets")
+            Text("${state.segmentsInserted} nouveaux · ${state.segmentsSkipped} déjà présents")
+        }
+        if (state.filesProcessed > 1) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "${state.filesProcessed} fichiers traités",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(onClick = onDone) {
+            Text("Terminer")
         }
     }
 }

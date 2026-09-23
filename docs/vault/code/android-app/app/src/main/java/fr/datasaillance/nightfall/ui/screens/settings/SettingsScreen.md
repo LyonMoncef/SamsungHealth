@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/ui/screens/settings/SettingsScreen.kt
-git_blob: 9465166a0ee8d3828b285ca3b0c964127b31d101
-last_synced: '2026-05-07T00:48:24Z'
-loc: 49
+git_blob: d7d007036dd85a8e11294e7bac53f1d39b2d5760
+last_synced: '2026-05-29T08:09:08Z'
+loc: 56
 annotations: []
 imports: []
 exports: []
@@ -43,7 +43,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(
     currentUrl: String = "",
-    onSaveUrl: (String) -> Unit = {}
+    onSaveUrl: (String) -> Unit = {},
+    onOpenLabeledPlaces: () -> Unit = {},
 ) {
     var urlInput by remember { mutableStateOf(currentUrl) }
 
@@ -68,6 +69,12 @@ fun SettingsScreen(
         ) {
             Text("Enregistrer")
         }
+        Button(
+            onClick = onOpenLabeledPlaces,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Lieux connus (domicile, travail, …)")
+        }
     }
 }
 ```
@@ -77,4 +84,4 @@ fun SettingsScreen(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `SettingsScreen` (function) — lines 20-49
+- `SettingsScreen` (function) — lines 20-56

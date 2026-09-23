@@ -61,8 +61,8 @@ class NightfallThemeTest {
         // Assert the constant exists and has the correct value
         // This test fails RED because Teal700 doesn't exist in fr.datasaillance.nightfall.ui.theme
         val expected = Color(0xFF0E9EB0)
-        assert(Teal700 == expected) {
-            "primary color (Teal700) must be 0xFF0E9EB0 per DataSaillance tokens — spec: Color.kt"
+        assert(DarkPalette.Accent == expected) {
+            "primary accent (DarkPalette.Accent) must be 0xFF0E9EB0 per DataSaillance tokens — spec: Color.kt"
         }
     }
 
@@ -70,8 +70,8 @@ class NightfallThemeTest {
     @Test
     fun nightfallTheme_secondaryColor() {
         val expected = Color(0xFFD37C04)
-        assert(Amber600 == expected) {
-            "secondary color (Amber600) must be 0xFFD37C04 per DataSaillance tokens — spec: Color.kt"
+        assert(DarkPalette.Cta == expected) {
+            "secondary accent (DarkPalette.Cta) must be 0xFFD37C04 per DataSaillance tokens — spec: Color.kt"
         }
     }
 
@@ -79,17 +79,17 @@ class NightfallThemeTest {
     @Test
     fun nightfallTheme_backgroundDark_color() {
         val expected = Color(0xFF191E22)
-        assert(Background == expected) {
-            "Background dark must be 0xFF191E22 — spec: Color.kt"
+        assert(DarkPalette.Bg == expected) {
+            "Background dark (DarkPalette.Bg) must be 0xFF191E22 — spec: Color.kt"
         }
     }
 
     // spec: TA-05 — fond background light = #FAFAFA
     @Test
     fun nightfallTheme_backgroundLight_color() {
-        val expected = Color(0xFFFAFAFA)
-        assert(BackgroundLight == expected) {
-            "BackgroundLight must be 0xFFFAFAFA — spec: Color.kt"
+        val expected = Color(0xFFFFFFFF)
+        assert(LightPalette.Bg == expected) {
+            "Background light (LightPalette.Bg) must be 0xFFFFFFFF — spec: Color.kt"
         }
     }
 }

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/di/NetworkModule.kt
-git_blob: 00e2736b028ae943b310362287575b3d6d72aaab
-last_synced: '2026-05-07T02:02:39Z'
-loc: 46
+git_blob: 78e3b1026e9a08b611209b41e27b6e02f03231b7
+last_synced: '2026-05-09T13:23:16Z'
+loc: 48
 annotations: []
 imports: []
 exports: []
@@ -54,7 +54,9 @@ object NetworkModule {
                     cookieStore[url.host] ?: emptyList()
             })
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            // 5 min pour absorber les imports lourds (sleep_stage = ~60k rows possible).
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(5, TimeUnit.MINUTES)
             .build()
 
     fun provideRetrofit(okHttpClient: OkHttpClient, backendUrlStore: BackendUrlStore): Retrofit =
@@ -75,8 +77,8 @@ object NetworkModule {
 
 ### Symbols
 - `provideAuthInterceptor` (function) — lines 19-20
-- `provideOkHttpClient` (function) — lines 22-35
+- `provideOkHttpClient` (function) — lines 22-37
 - `saveFromResponse` (function) — lines 27-29
 - `loadForRequest` (function) — lines 30-31
-- `provideRetrofit` (function) — lines 37-42
-- `provideNightfallApi` (function) — lines 44-45
+- `provideRetrofit` (function) — lines 39-44
+- `provideNightfallApi` (function) — lines 46-47

@@ -2,9 +2,9 @@
 type: code-source
 language: kotlin
 file_path: android-app/app/src/main/java/fr/datasaillance/nightfall/data/import_/ImportRepositoryImpl.kt
-git_blob: f78e97d430f86e164fcb8f4462e58c178d5b1eaf
-last_synced: '2026-05-09T08:45:05Z'
-loc: 125
+git_blob: 4b22f61bf73e66d91178597b95525147d3c0fc0d
+last_synced: '2026-05-09T15:32:55Z'
+loc: 121
 annotations: []
 imports: []
 exports: []
@@ -25,14 +25,10 @@ package fr.datasaillance.nightfall.data.import_
 
 import android.content.ContentResolver
 import android.net.Uri
-import fr.datasaillance.nightfall.data.http.CountingRequestBody
-import fr.datasaillance.nightfall.data.http.ImportApiResponse
 import fr.datasaillance.nightfall.data.http.NightfallApi
+import fr.datasaillance.nightfall.data.local.import_.LocalImportService
 import fr.datasaillance.nightfall.domain.import_.ImportDataType
 import fr.datasaillance.nightfall.domain.import_.ImportResult
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.zip.ZipInputStream
@@ -40,8 +36,14 @@ import java.util.zip.ZipInputStream
 private const val MAX_UNCOMPRESSED_BYTES = 200_000_000L
 private const val MAX_ZIP_ENTRIES = 100
 
+/**
+ * Phase B local-first : les imports écrivent directement en Room locale via
+ * `LocalImportService`. Plus aucun upload réseau santé. L'API n'est conservée
+ * que pour le ping de connectivité (vérification VPS up).
+ */
 class ImportRepositoryImpl(
     private val api: NightfallApi,
+    private val localImportService: LocalImportService,
 ) : ImportRepository {
 
     override suspend fun pingBackend(): Boolean {
@@ -126,24 +128,18 @@ class ImportRepositoryImpl(
                 contentResolver.openInputStream(uri)?.readBytes()
                     ?: throw IOException("Cannot read file for $type")
             }
-
-        val mediaType = "text/csv".toMediaType()
-        val requestBody = bytes.toRequestBody(mediaType)
-        val countingBody = CountingRequestBody(
-            delegate = requestBody,
-            totalBytes = totalBytes,
-            onProgress = onProgress,
-        )
-        val part = MultipartBody.Part.createFormData("file", "${type.samsungFilenamePrefix}.csv", countingBody)
-
-        val response: ImportApiResponse = when (type) {
-            ImportDataType.SLEEP -> api.importSleep(part)
-            ImportDataType.HEART_RATE -> api.importHeartRate(part)
-            ImportDataType.STEPS -> api.importSteps(part)
-            ImportDataType.EXERCISE -> api.importExercise(part)
-            ImportDataType.SLEEP_STAGE -> api.importSleepStages(part)
+        // Pas de progression réseau ici (parsing local quasi-instantané) — on émet 0
+        // au début et 1 à la fin pour garder le contrat de l'UI.
+        onProgress(0f)
+        val r = when (type) {
+            ImportDataType.SLEEP -> localImportService.importSleep(bytes)
+            ImportDataType.SLEEP_STAGE -> localImportService.importSleepStages(bytes)
+            ImportDataType.HEART_RATE -> localImportService.importHeartRate(bytes)
+            ImportDataType.STEPS -> localImportService.importSteps(bytes)
+            ImportDataType.EXERCISE -> localImportService.importExercise(bytes)
         }
-        return ImportResult(type = type, inserted = response.inserted, skipped = response.skipped)
+        onProgress(1f)
+        return ImportResult(type = type, inserted = r.inserted, skipped = r.skipped)
     }
 }
 ```
@@ -153,8 +149,8 @@ class ImportRepositoryImpl(
 ## Appendix — symbols & navigation *(auto)*
 
 ### Symbols
-- `ImportRepositoryImpl` (class) — lines 20-125
-- `pingBackend` (function) — lines 24-31
-- `extractCsvEntries` (function) — lines 35-45
-- `extractFromZip` (function) — lines 47-92
-- `uploadCsv` (function) — lines 94-124
+- `ImportRepositoryImpl` (class) — lines 21-121
+- `pingBackend` (function) — lines 26-33
+- `extractCsvEntries` (function) — lines 37-47
+- `extractFromZip` (function) — lines 49-94
+- `uploadCsv` (function) — lines 96-120

@@ -2,9 +2,9 @@
 type: code-source
 language: python
 file_path: server/routers/sleep.py
-git_blob: 7765583e149d3519e98155decfc72fe427ccac61
-last_synced: '2026-05-09T08:38:11Z'
-loc: 177
+git_blob: d267f6339b36fa0e9d1fde9e234410f5ab48bff6
+last_synced: '2026-05-09T16:40:48Z'
+loc: 180
 annotations: []
 imports:
 - datetime
@@ -18,6 +18,7 @@ imports:
 - server.security.auth
 - server.security.rate_limit
 - server.services.csv_import
+- server.services.deprecation
 exports:
 - _parse_day
 - _to_iso
@@ -49,13 +50,14 @@ from server.models import SleepBulkIn, SleepSessionOut, SleepStageOut
 from server.security.auth import get_current_user
 from server.security.rate_limit import _api_post_cap, _user_id_key, limiter
 from server.services.csv_import import MAX_CSV_BYTES, parse_samsung_csv, parse_sleep_rows, parse_sleep_stage_rows
+from server.services.deprecation import mark_deprecated
 
 _log = get_logger(__name__)
 
 router = APIRouter(prefix="/api/sleep", tags=["sleep"])
 
 
-@router.post("/import-stages", status_code=200)
+@router.post("/import-stages", status_code=200, deprecated=True)
 @limiter.limit(_api_post_cap, key_func=_user_id_key)
 def import_sleep_stages(
     request: Request,
@@ -64,6 +66,7 @@ def import_sleep_stages(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    mark_deprecated(response, endpoint="sleep_stage", user_id=str(current_user.id))
     raw = file.file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
@@ -83,7 +86,7 @@ def import_sleep_stages(
     return {"inserted": inserted, "skipped": skipped}
 
 
-@router.post("/import", status_code=200)
+@router.post("/import", status_code=200, deprecated=True)
 @limiter.limit(_api_post_cap, key_func=_user_id_key)
 def import_sleep(
     request: Request,
@@ -92,6 +95,7 @@ def import_sleep(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    mark_deprecated(response, endpoint="sleep", user_id=str(current_user.id))
     raw = file.file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
@@ -225,9 +229,9 @@ def get_sleep_sessions(
 - [[../../specs/2026-04-26-v2.3.3.1-rate-limit-lockout]] — symbols: `router`
 
 ### Symbols
-- `_parse_day` (function) — lines 76-77
-- `_to_iso` (function) — lines 125-130
-- `_serialize` (function) — lines 133-151
+- `_parse_day` (function) — lines 79-80
+- `_to_iso` (function) — lines 128-133
+- `_serialize` (function) — lines 136-154
 
 ### Imports
 - `datetime`
@@ -241,6 +245,7 @@ def get_sleep_sessions(
 - `server.security.auth`
 - `server.security.rate_limit`
 - `server.services.csv_import`
+- `server.services.deprecation`
 
 ### Exports
 - `_parse_day`
