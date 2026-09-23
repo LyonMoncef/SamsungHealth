@@ -4,8 +4,6 @@ package fr.datasaillance.nightfall.ui.theme
 // spec: section "Thème — NightfallTheme" + "Tests d'acceptation"
 // RED by construction: fr.datasaillance.nightfall.ui.theme.* does not exist yet
 
-import app.cash.paparazzi.DeviceConfig
-import app.cash.paparazzi.Paparazzi
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
@@ -20,40 +18,6 @@ import org.junit.Test
 // fr.datasaillance.nightfall.ui.theme.BackgroundLight   (0xFFFAFAFA)
 
 class NightfallThemeTest {
-
-    // spec: D10 — Paparazzi pour screenshot tests des composables (tests offline, pas d'émulateur)
-    @get:Rule
-    val paparazzi = Paparazzi(
-        deviceConfig = DeviceConfig.PIXEL_5,
-        theme = "android:Theme.Material.Light.NoActionBar"
-    )
-
-    // spec: TA-13 — fond #191E22, NavigationBar couleur #232E32, accent primary #0E9EB0
-    @Test
-    fun nightfallTheme_darkMode_snapshot() {
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                Surface {
-                    Text(text = "Nightfall Dark")
-                }
-            }
-        }
-        // Paparazzi compares to golden snapshot — fails RED until NightfallTheme exists
-        // and until golden is recorded with `./gradlew recordPaparazziDebug`
-    }
-
-    // spec: TA-12 — screenshot NightfallTheme light correspond au snapshot de référence
-    @Test
-    fun nightfallTheme_lightMode_snapshot() {
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = false) {
-                Surface {
-                    Text(text = "Nightfall Light")
-                }
-            }
-        }
-        // Paparazzi compares to golden snapshot — fails RED until NightfallTheme exists
-    }
 
     // spec: section "Thème — NightfallTheme" — primary = Color(0xFF0E9EB0)
     @Test

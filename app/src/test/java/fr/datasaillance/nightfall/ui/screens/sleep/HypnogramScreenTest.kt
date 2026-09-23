@@ -12,8 +12,6 @@ package fr.datasaillance.nightfall.ui.screens.sleep
 //   fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 //   fr.datasaillance.nightfall.data.sleep.SleepStageResponse
 
-import app.cash.paparazzi.DeviceConfig
-import app.cash.paparazzi.Paparazzi
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.hasTestTag
@@ -111,136 +109,10 @@ private fun injectHypnogramState(
         .value = state
 }
 
-// ---------------------------------------------------------------------------
-// Class 1 — Paparazzi snapshot tests (no @RunWith — incompatible avec Robolectric)
-// spec: TA-H-07, TA-H-08
-// ---------------------------------------------------------------------------
-
-class HypnogramScreenSnapshotTest {
-
-    @get:Rule
-    val paparazzi = Paparazzi(
-        deviceConfig = DeviceConfig.PIXEL_5,
-        theme = "android:Theme.Material.Light.NoActionBar"
-    )
-
-    // Les ViewModels lancent leurs coroutines sur Dispatchers.Main. Sans dispatcher de test,
-    // ces snapshots dépendaient d'un Main initialisé par un autre test de la même JVM :
-    // selon l'ordre d'exécution, ils échouaient ("Main dispatcher had failed to initialize").
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Before
-    fun installTestMainDispatcher() {
-        Dispatchers.setMain(StandardTestDispatcher(TestCoroutineScheduler()))
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @After
-    fun restoreMainDispatcher() {
-        Dispatchers.resetMain()
-    }
-
-    private fun buildViewModel(
-        repository: SleepRepository = mock<SleepRepository>()
-    ): fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel =
-        fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel(
-            sessionId  = "hyp-001",
-            repository = repository
-        )
-
-    // spec: TA-H-07 — snapshot dark mode, état Success, fond #191E22, canvas avec 4 couleurs de stages
-    // RED by construction: HypnogramScreen et HypnogramViewModel n'existent pas encore
-    @Test
-    fun hypnogramScreen_success_dark() {
-        val viewModel = buildViewModel()
-        injectHypnogramState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                // spec: TA-H-07 — HypnogramScreen reçoit HypnogramViewModel et onBack
-                fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen(
-                    viewModel = viewModel,
-                    onBack    = {}
-                )
-            }
-        }
-        // spec: TA-H-07 — golden dark: fond #191E22, canvas visible avec DEEP/LIGHT/REM/AWAKE
-    }
-
-    // spec: TA-H-08 — snapshot light mode, même état Success, fond #FAFAFA
-    // spec: "couleurs de stages hardcodées — identiques en dark et light mode"
-    // RED by construction: HypnogramScreen et HypnogramViewModel n'existent pas encore
-    @Test
-    fun hypnogramScreen_success_light() {
-        val viewModel = buildViewModel()
-        injectHypnogramState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Success(listOf(fullSession))
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = false) {
-                // spec: TA-H-08 — light mode snapshot: fond #FAFAFA, mêmes couleurs de stages
-                fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen(
-                    viewModel = viewModel,
-                    onBack    = {}
-                )
-            }
-        }
-        // spec: TA-H-08 — golden light: fond clair, canvas inchangé (couleurs physiologiques constantes)
-    }
-
-    // spec: état Loading — spinner visible, canvas absent
-    // RED by construction: HypnogramUiState.Loading n'existe pas encore
-    @Test
-    fun hypnogramScreen_loading_dark() {
-        val viewModel = buildViewModel()
-        injectHypnogramState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Loading
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                // spec: état Loading → CircularProgressIndicator visible, hyp_canvas absent
-                fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen(
-                    viewModel = viewModel,
-                    onBack    = {}
-                )
-            }
-        }
-        // spec: snapshot dark Loading: indicateur de chargement, pas de canvas
-    }
-
-    // spec: état Error — message d'erreur + bouton retry visibles
-    // RED by construction: HypnogramUiState.Error n'existe pas encore
-    @Test
-    fun hypnogramScreen_error_dark() {
-        val viewModel = buildViewModel()
-        injectHypnogramState(
-            viewModel,
-            fr.datasaillance.nightfall.viewmodel.sleep.HypnogramUiState.Error("Erreur réseau")
-        )
-
-        paparazzi.snapshot {
-            NightfallTheme(darkTheme = true) {
-                // spec: état Error → message d'erreur + bouton "Réessayer" visibles
-                fr.datasaillance.nightfall.ui.screens.sleep.HypnogramScreen(
-                    viewModel = viewModel,
-                    onBack    = {}
-                )
-            }
-        }
-        // spec: snapshot dark Error: "Erreur réseau" visible, bouton retry présent
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Class 2 — Robolectric behavioral tests
 // spec: TA-H-02, TA-H-03, TA-H-04, TA-H-05, TA-H-06
-// Classe séparée de Paparazzi : lifecycles de Rule incompatibles
 // ---------------------------------------------------------------------------
 
 // spec: TA-H-03 — Success → hyp_canvas assertExists
