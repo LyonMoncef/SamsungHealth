@@ -71,6 +71,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
+    // Health Connect — source des données sommeil et pas (Phase 1.2, lecture seule)
+    implementation("androidx.health.connect:connect-client:1.1.0")
+
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.5")
 

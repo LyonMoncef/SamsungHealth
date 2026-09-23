@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import fr.datasaillance.nightfall.data.local.database.NightfallDatabase
 import fr.datasaillance.nightfall.dataviz.radial.RadialClockScreen
 import fr.datasaillance.nightfall.viewmodel.radial.RadialClockViewModel
+import fr.datasaillance.nightfall.data.sleep.healthConnectSleepRepository
 
 /**
  * Route Compose qui assemble `RadialClockViewModel` + `RadialClockScreen`.
@@ -25,9 +26,10 @@ import fr.datasaillance.nightfall.viewmodel.radial.RadialClockViewModel
 fun RadialRoute() {
     val context = LocalContext.current
     val db = remember(context) { NightfallDatabase.get(context.applicationContext) }
+    val sleepRepository = remember(context) { healthConnectSleepRepository(context) }
     val viewModel = remember(db) {
         RadialClockViewModel(
-            sleepDao = db.sleepDao(),
+            sleepRecordsInRange = { fromMs, toMs -> sleepRepository.recordsStartingBetween(fromMs, toMs) },
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
             labeledPlaceDao = db.labeledPlaceDao(),

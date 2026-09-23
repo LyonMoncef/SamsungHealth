@@ -32,11 +32,11 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 ## Phase 1 — Fondations données on-device
 
 - [x] 1.0 Purge du code lié au serveur (auth, Retrofit, flavor webview, ping backend)
-- [ ] Health Connect : déclarer `READ_HEALTH_DATA_HISTORY`, flux de permissions
-- [ ] Lecture sommeil + pagination de **l'historique complet** (chunks), dédup multi-source
+- [x] 1.2 Health Connect : `READ_HEALTH_DATA_HISTORY`, flux de permissions, écran de justification, écran Health Connect
+- [x] 1.2 Lecture sommeil + pas de **l'historique complet** (pagination), dédup par identifiant ; écrans existants branchés, import CSV supprimé. *La dédup multi-source devient un calcul (Phase 2/3).*
 - [x] 1.1 **Contrat de données v1 gelé** dans le module `core/` (`SleepRecord`, `StepsInterval` ; les epochs d'activité deviennent un calcul) + export CSV
-- [ ] Valider en conditions réelles la profondeur d'historique effectivement poussée par Samsung dans HC
-- [ ] Export d'un dataset (CSV/Parquet) au contrat gelé pour le harnais
+- [ ] **TA-13** : sur le téléphone, parité avec darkhour (≈ 1146 sessions depuis le 2024-07-08) via Profil → Health Connect
+- [ ] 1.3 Export ZIP (3 CSV + manifeste) depuis Profil, pour le harnais
 
 ## Phase 2 — Harnais de validation (notebook)
 

@@ -15,9 +15,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import fr.datasaillance.nightfall.data.import_.ImportRepository
-import fr.datasaillance.nightfall.data.import_.ImportRepositoryImpl
-import fr.datasaillance.nightfall.data.sleep.LocalSleepRepository
+import fr.datasaillance.nightfall.data.sleep.healthConnectSleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepRepository
 import fr.datasaillance.nightfall.data.sleep.SleepSessionResponse
 import fr.datasaillance.nightfall.ui.screens.activity.ActivityScreen
@@ -35,6 +33,12 @@ import fr.datasaillance.nightfall.viewmodel.import_.ImportViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.HypnogramViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.SleepViewModel
 import fr.datasaillance.nightfall.viewmodel.sleep.TimelineViewModel
+import androidx.health.connect.client.HealthConnectClient
+import fr.datasaillance.nightfall.data.healthconnect.HealthConnectReader
+import fr.datasaillance.nightfall.data.healthconnect.currentHealthConnectState
+import fr.datasaillance.nightfall.data.healthconnect.sharedHealthDataCache
+import fr.datasaillance.nightfall.ui.screens.healthconnect.HealthConnectScreen
+import fr.datasaillance.nightfall.viewmodel.healthconnect.HealthConnectViewModel
 
 @Composable
 fun NavGraph(
@@ -75,10 +79,7 @@ fun NavGraph(
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(NavDestination.Sleep.route) {
-                val sleepRepository: SleepRepository = remember(context) {
-                    val db = fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
-                    LocalSleepRepository(db.sleepDao())
-                }
+                val sleepRepository: SleepRepository = remember(context) { healthConnectSleepRepository(context) }
                 val sleepViewModel = remember(sleepRepository) { SleepViewModel(sleepRepository) }
                 SleepScreen(
                     viewModel = sleepViewModel,
@@ -103,9 +104,7 @@ fun NavGraph(
                 val hypnogramDb = remember(context) {
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val hypnogramRepository: SleepRepository = remember(hypnogramDb) {
-                    LocalSleepRepository(hypnogramDb.sleepDao())
-                }
+                val hypnogramRepository: SleepRepository = remember(context) { healthConnectSleepRepository(context) }
                 val hypnogramViewModel = remember(sessionId, dateArg, hypnogramRepository, hypnogramDb) {
                     HypnogramViewModel(
                         sessionId = sessionId,
@@ -124,9 +123,7 @@ fun NavGraph(
                 val db = remember(context) {
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val timelineRepository: SleepRepository = remember(db) {
-                    LocalSleepRepository(db.sleepDao())
-                }
+                val timelineRepository: SleepRepository = remember(context) { healthConnectSleepRepository(context) }
                 val timelineViewModel = remember(timelineRepository, db) {
                     TimelineViewModel(timelineRepository, db.locationDao())
                 }
@@ -159,6 +156,7 @@ fun NavGraph(
                 ProfileScreen(
                     onImport   = { navController.navigate(NavDestination.Import.route) },
                     onSettings = { navController.navigate(NavDestination.Settings.route) },
+                    onHealthConnect = { navController.navigate(NavDestination.HealthConnect.route) },
                 )
             }
             composable(NavDestination.Import.route) {
@@ -166,20 +164,11 @@ fun NavGraph(
                 val db = remember(context) {
                     fr.datasaillance.nightfall.data.local.database.NightfallDatabase.get(context.applicationContext)
                 }
-                val repository: ImportRepository = remember(db) {
-                    val localService = fr.datasaillance.nightfall.data.local.import_.LocalImportService(
-                        sleepDao = db.sleepDao(),
-                        heartRateDao = db.heartRateDao(),
-                        stepsDao = db.stepsDao(),
-                        exerciseDao = db.exerciseDao(),
-                    )
-                    ImportRepositoryImpl(localService)
-                }
                 val locationService = remember(db) {
                     fr.datasaillance.nightfall.data.local.location.LocalLocationImportService(db.locationDao())
                 }
-                val viewModel = remember(repository, locationService) {
-                    ImportViewModel(repository, locationService)
+                val viewModel = remember(locationService) {
+                    ImportViewModel(locationService)
                 }
                 ImportScreen(
                     viewModel = viewModel,
@@ -189,6 +178,20 @@ fun NavGraph(
             composable(NavDestination.Settings.route) {
                 SettingsScreen(
                     onOpenLabeledPlaces = { navController.navigate(NavDestination.LabeledPlaces.route) },
+                )
+            }
+            composable(NavDestination.HealthConnect.route) {
+                val appContext = context.applicationContext
+                val viewModel = remember(appContext) {
+                    HealthConnectViewModel(
+                        checkState = { currentHealthConnectState(appContext) },
+                        newSource = { HealthConnectReader(HealthConnectClient.getOrCreate(appContext)) },
+                        cache = sharedHealthDataCache,
+                    )
+                }
+                HealthConnectScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(NavDestination.LabeledPlaces.route) {

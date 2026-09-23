@@ -73,7 +73,7 @@ class RadialClockViewModelUsageSessionsTest {
         )
 
         val vm = RadialClockViewModel(
-            sleepDao = db.sleepDao(),
+            sleepRecordsInRange = { _, _ -> emptyList() },
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
             labeledPlaceDao = db.labeledPlaceDao(),
@@ -95,7 +95,7 @@ class RadialClockViewModelUsageSessionsTest {
     @Test
     fun buildDaysMap_no_usage_session_dao_yields_empty_degraded() = runTest {
         val vm = RadialClockViewModel(
-            sleepDao = db.sleepDao(),
+            sleepRecordsInRange = { _, _ -> emptyList() },
             locationDao = db.locationDao(),
             usageStatsDao = db.usageStatsDao(),
             labeledPlaceDao = db.labeledPlaceDao(),

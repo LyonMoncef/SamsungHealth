@@ -8,6 +8,7 @@ import androidx.navigation.testing.TestNavHostController
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Rule
 import org.junit.Test
@@ -74,7 +75,7 @@ class NavGraphTest {
         }
 
         // spec: navigation graph section — tab "Activité" (route: "activity")
-        composeTestRule.onNodeWithText("Activité").performClick()
+        composeTestRule.onNodeWithText("Cadran").performClick()
 
         assert(navController.currentDestination?.route == NavDestination.Activity.route) {
             "Expected navigation to activity after clicking Activité tab — spec: navigation graph"
@@ -113,11 +114,11 @@ class NavGraphTest {
         // Navigate to ProfileScreen first
         composeTestRule.onNodeWithText("Profil").performClick()
 
-        // spec: TA-08 — bouton "Importer données" dans ProfileScreen
-        composeTestRule.onNodeWithText("Importer données").performClick()
+        // spec: TA-08 — ligne "Sources de données" (import Takeout) du Profil, qui défile
+        composeTestRule.onNodeWithText("Sources de données").performScrollTo().performClick()
 
         assert(navController.currentDestination?.route == NavDestination.Import.route) {
-            "Expected navigation to import from ProfileScreen — spec: TA-08"
+            "Expected navigation to import from ProfileScreen — spec: TA-08, got: ${navController.currentDestination?.route}"
         }
     }
 

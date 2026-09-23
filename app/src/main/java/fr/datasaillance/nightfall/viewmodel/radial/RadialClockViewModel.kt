@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.data.local.dao.LabeledPlaceDao
 import fr.datasaillance.nightfall.data.local.dao.LocationDao
-import fr.datasaillance.nightfall.data.local.dao.SleepDao
 import fr.datasaillance.nightfall.data.local.dao.UsageSessionDao
 import fr.datasaillance.nightfall.data.local.dao.UsageStatsDao
 import fr.datasaillance.nightfall.data.local.location.PlaceResolver
@@ -23,6 +22,8 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.ZoneId
+import fr.datasaillance.nightfall.core.model.SleepRecord
+import fr.datasaillance.nightfall.data.sleep.legacyStageName
 
 /**
  * Agrège sleep + visits + activities + usage par jour pour le `MultiDonutClock`.
@@ -41,7 +42,8 @@ data class RadialUiState(
 )
 
 class RadialClockViewModel(
-    private val sleepDao: SleepDao,
+    /** Sessions de sommeil (contrat v1) dont le début tombe dans [fromMs, toMs) — fournies par Health Connect. */
+    private val sleepRecordsInRange: suspend (fromMs: Long, toMs: Long) -> List<SleepRecord>,
     private val locationDao: LocationDao,
     private val usageStatsDao: UsageStatsDao,
     private val labeledPlaceDao: LabeledPlaceDao? = null,
@@ -86,22 +88,18 @@ class RadialClockViewModel(
         val fromMs = from.atStartOfDay(zone).toInstant().toEpochMilli()
         val toMs = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
 
-        // --- Sleep stages — group par session puis aplati ---
-        val sessions = runCatching { sleepDao.getSessionsInRange(fromMs, toMs) }.getOrDefault(emptyList())
-        val allStages = if (sessions.isEmpty()) emptyList()
-            else runCatching { sleepDao.getStagesForSessions(sessions.map { it.id }) }.getOrDefault(emptyList())
-
-        // Map stage entity → StageInterval DTO viz, group par date (du sleep_start de la session)
-        val sessionIdToDate: Map<Long, LocalDate> = sessions.associate { s ->
-            s.id to java.time.Instant.ofEpochMilli(s.sleepStartMs).atZone(zone).toLocalDate()
-        }
+        // --- Sleep stages — groupés par date (du début de la session) ---
+        val sessions = runCatching { sleepRecordsInRange(fromMs, toMs) }.getOrDefault(emptyList())
         val stagesByDay: MutableMap<LocalDate, MutableList<StageInterval>> = HashMap()
-        allStages.forEach { stage ->
-            val day = sessionIdToDate[stage.sessionId] ?: return@forEach
-            val type = stageEnum(stage.stageType) ?: return@forEach
-            stagesByDay.getOrPut(day) { mutableListOf() }.add(
-                StageInterval(type = type, startMs = stage.stageStartMs, endMs = stage.stageEndMs)
-            )
+        sessions.forEach { session ->
+            val day = session.start.atZone(zone).toLocalDate()
+            session.stages.forEach { stage ->
+                // Même traduction que les autres écrans hérités (pont temporaire, Phase 4).
+                val type = stageEnum(legacyStageName(stage.type)) ?: return@forEach
+                stagesByDay.getOrPut(day) { mutableListOf() }.add(
+                    StageInterval(type = type, startMs = stage.start.toEpochMilli(), endMs = stage.end.toEpochMilli())
+                )
+            }
         }
 
         // --- Location ---

@@ -45,11 +45,6 @@ fun ImportScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { viewModel.startUpload(context.contentResolver, it) }
-    }
 
     val locationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -77,61 +72,11 @@ fun ImportScreen(
                     .padding(16.dp),
             ) {
                 IdleContent(
-                    onSelectSamsungArchive = { launcher.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) },
                     onSelectTimelineJson = {
                         locationLauncher.launch(
                             arrayOf("application/json", "application/zip", "*/*")
                         )
                     },
-                )
-            }
-            is ImportUiState.Selecting -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-            ) {
-                SelectingContent()
-            }
-            is ImportUiState.Uploading -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-            ) {
-                UploadingContent(
-                    currentType = stringResource(state.currentType.labelRes),
-                    progress = state.progress,
-                    completedCount = state.completedTypes.size,
-                    totalCount = state.completedTypes.size + state.skippedTypes.size + 1,
-                )
-            }
-            is ImportUiState.Success -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-            ) {
-                SuccessContent(
-                    results = state.results,
-                    missingTypes = state.missingTypes,
-                    onDone = {
-                        viewModel.reset()
-                        onNavigateBack()
-                    },
-                )
-            }
-            is ImportUiState.Error -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-            ) {
-                ErrorContent(
-                    message = state.message,
-                    retryable = state.retryable,
-                    onRetry = { viewModel.reset() },
-                    onBack = onNavigateBack,
                 )
             }
             is ImportUiState.LocationImporting -> Box(
@@ -175,7 +120,6 @@ fun ImportScreen(
 
 @Composable
 private fun IdleContent(
-    onSelectSamsungArchive: () -> Unit,
     onSelectTimelineJson: () -> Unit,
 ) {
     Column(
@@ -188,13 +132,6 @@ private fun IdleContent(
             style = MaterialTheme.typography.headlineSmall,
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(
-            onClick = onSelectSamsungArchive,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Samsung Health (archive .zip)")
-        }
-        Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = onSelectTimelineJson,
             modifier = Modifier.fillMaxWidth(),
@@ -272,94 +209,9 @@ private fun LocationSuccessContent(
 
 
 
-@Composable
-private fun SelectingContent() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("Sélectionnez l'archive Samsung Health…")
-    }
-}
 
-@Composable
-private fun UploadingContent(
-    currentType: String,
-    progress: Float,
-    completedCount: Int,
-    totalCount: Int,
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Import en cours : $currentType",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "$completedCount / $totalCount types traités",
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-}
 
-@Composable
-private fun SuccessContent(
-    results: List<fr.datasaillance.nightfall.domain.import_.ImportResult>,
-    missingTypes: List<fr.datasaillance.nightfall.domain.import_.ImportDataType>,
-    onDone: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Import terminé",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        results.forEach { result ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(result.type.name)
-                if (result.errorMessage != null) {
-                    Text("Erreur", color = MaterialTheme.colorScheme.error)
-                } else {
-                    Text("${result.inserted} nouveaux · ${result.skipped} déjà présents")
-                }
-            }
-        }
-        if (missingTypes.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            missingTypes.forEach { type ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(type.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Absent du ZIP", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onDone) {
-            Text("Terminer")
-        }
-    }
-}
+
 
 @Composable
 private fun ErrorContent(

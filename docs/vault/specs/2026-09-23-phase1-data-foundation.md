@@ -112,8 +112,8 @@ Trois fichiers CSV + un manifeste, UTF-8, séparateur virgule, une ligne d'en-t�
 - **Disponibilité** : vérifier `getSdkStatus` (Health Connect installé et à jour) puis `FEATURE_READ_HEALTH_DATA_HISTORY`.
 - **Jamais de troncature silencieuse** (c'est le bug d'origine) : si l'historique n'est pas accessible (fonctionnalité absente ou permission refusée), la lecture remonte `history_access = LIMITED_30_DAYS` et l'interface l'affiche explicitement. Sinon `FULL`.
 - **Lecture** : une seule plage (de l'époque Unix à maintenant), paginée via `pageToken` (taille de page 1000). Arrêt quand le token est vide ; un token déjà vu déclenche une erreur (pas de boucle infinie). On ne découpe en fenêtres temporelles que si les quotas de lecture de Health Connect l'imposent en pratique.
-- **Conversion** : fonction pure `SleepSessionRecord → SleepRecord` et `StepsRecord → StepsInterval`, côté `app` (elle dépend des classes Health Connect). Testable en JVM : `Metadata` a un constructeur public qui accepte identifiant, origine et méthode.
-- **Accès** : les lectures passent par une interface (source de pages), ce qui permet de tester pagination et dédup avec une fausse source, sans Health Connect.
+- **Conversion** : fonction pure `SleepSessionRecord → SleepRecord` et `StepsRecord → StepsInterval`, côté `app` (elle dépend des classes Health Connect). *Correction 2026-09-24 : le constructeur de `Metadata` est `internal` (le bytecode l'expose comme public, d'où une première lecture erronée). Health Connect interdit de fabriquer l'origine (`dataOrigin`) et la date de modification d'une donnée. Les tests de conversion passent par les fabriques publiques `Metadata.…WithId`, qui fixent identifiant et méthode (origine vide, date `EPOCH`) ; l'origine et la date réelles sont vérifiées sur téléphone (TA-13).*
+- **Accès** : les lectures passent par une interface (source de pages) qui renvoie **des objets du contrat** ; la vraie source (`HealthConnectReader`) lit une page Health Connect puis la convertit. Pagination, dédup et règle « pas de lecture avant d'être prêt » se testent ainsi sur des objets du contrat, avec une fausse source.
 
 ### DT-6 — Remplacement de l'import CSV (1.2)
 
@@ -162,7 +162,7 @@ Chaque tranche fait l'objet d'une PR séparée vers `dev`.
 
 ### `app/` (JVM)
 
-- **TA-7 — Conversion sommeil** : chaque champ d'un `SleepSessionRecord` est reporté ; les 8 constantes de stade et les 4 méthodes d'enregistrement correspondent 1:1.
+- **TA-7 — Conversion sommeil** : chaque champ d'un `SleepSessionRecord` est reporté (origine et date de modification : valeurs par défaut des fabriques, les vraies valeurs sont couvertes par TA-13) ; les 8 constantes de stade et les 4 méthodes d'enregistrement correspondent 1:1.
 - **TA-8 — Conversion pas** : idem pour `StepsRecord`.
 - **TA-9 — Pagination** : une fausse source à 3 pages → tous les enregistrements collectés, arrêt sur token vide ; un token répété → erreur explicite.
 - **TA-10 — Dédup par identifiant** : un même `id` sur deux pages n'est gardé qu'une fois.

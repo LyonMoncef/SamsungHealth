@@ -4,6 +4,9 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Écrans branchés sur Health Connect — Sommeil, Timeline, Hypnogramme, Cadran lisent le contrat via un pont temporaire (`HealthConnectSleepRepository`) ; import CSV Samsung supprimé (import Takeout conservé), 6 tests TDD | `data/sleep/HealthConnectSleepRepository.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/navigation/NavGraph.kt`, `ui/screens/import_/` | [`e4423e2`](#2026-09-24-e4423e2) |
+| Écran Health Connect — permissions lecture seule (sommeil, pas, historique), écran de justification exigé par Health Connect, état + autorisation + résumé de lecture (sessions, plus ancienne, historique complet/limité), cache partagé en mémoire, 6 tests TDD | `ui/screens/healthconnect/`, `viewmodel/healthconnect/`, `HealthConnectRationaleActivity.kt`, `AndroidManifest.xml` | [`92dffd4`](#2026-09-24-92dffd4) |
+| Couche données Health Connect — conversion vers le contrat v1, pagination sûre, dédup par identifiant, état d'accès (historique complet vs limité 30 j jamais silencieux), 15 tests TDD | `app/src/main/java/fr/datasaillance/nightfall/data/healthconnect/` | [`9ad602c`](#2026-09-24-9ad602c) |
 | Module `core/` (Kotlin pur) — contrat de données v1 (`SleepRecord`, `StepsInterval`, stades et méthodes Health Connect 1:1) + export CSV déterministe et manifeste, 9 tests TDD | `core/src/main/kotlin/fr/datasaillance/nightfall/core/{model,export}/`, `settings.gradle.kts` | [`08f7704`](#2026-09-23-08f7704) |
 | Cadran v2 — interaction sélection anneau/segment (remplace quadrant 6h) + focus mode + `LayerContextCard` contextuelle + intégration usage réel/timeline ancré + light mode + `TrajetMapRenderer` déférée, 18 tests TDD | `dataviz/radial/{MultiDonutClock,RadialClockScreen,TrajetMapRenderer}.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/screens/radial/RadialRoute.kt` | [`cadran-v2-impl`](#2026-05-27-cadran-v2-impl) |
 | Labeled Places — lieux labellisés configurables (domicile/travail/famille/vacances) + `PlaceResolver` haversine + écran config Compose (DB v5→v6), 15 tests TDD | `data/local/entity/location/{LabeledPlaceEntity,PlaceCategory}.kt`, `data/local/dao/LabeledPlaceDao.kt`, `data/local/location/{PlaceResolver,PlaceSuggestionService,LabeledPlace}.kt`, `ui/screens/places/`, `viewmodel/places/` | [`labeled-places-impl`](#2026-05-27-labeled-places-impl) |
@@ -48,6 +51,33 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `e4423e2`
+feat(healthconnect): ecrans existants branches sur Health Connect et retrait de l'import CSV Samsung (Phase 1.2c)
+- `HealthConnectSleepRepository` : pont TEMPORAIRE contrat → formes héritées (`SleepSessionResponse`), même format de dates (ISO UTC) et même fenêtre de filtrage que l'ancien dépôt Room ; lit le cache partagé, sinon Health Connect (qui remplit le cache), sinon liste vide tant que Health Connect n'est pas prêt. Stades traduits dans l'ancien vocabulaire : LIGHT/DEEP/REM tels quels, AWAKE/AWAKE_IN_BED/OUT_OF_BED → AWAKE, SLEEPING/UNKNOWN gardent leur nom brut. À supprimer avec la refonte (Phase 4).
+- Sommeil, Timeline, Hypnogramme branchés sur ce dépôt ; Cadran (`RadialClockViewModel`) reçoit une fonction « sessions du contrat dans la fenêtre » au lieu du `SleepDao`.
+- `loadIfReady` prend une fabrique de source : le client Health Connect n'est créé qu'une fois l'état vérifié (sa création échoue si Health Connect est absent).
+- Supprimés : import CSV Samsung (`LocalImportService`, `SamsungCsvParser`, `StageMaps`, `ImportRepository(Impl)`, `ImportDataType`, `ImportResult`, états et écrans CSV), `LocalSleepRepository`, chaînes orphelines (dont un second exemplaire de l'avis RGPD erroné). Import Google Takeout conservé ; ligne Profil renommée « Google Takeout (lieux) ». Tables Room sommeil laissées en place (pas de migration destructive).
+- Tests : 6 tests TDD du pont ; `ImportViewModelTest` réécrit autour de Takeout ; `NavGraphTest` passe entièrement (l'écran de démarrage ne touche plus la base chiffrée, et deux attentes obsolètes sont réalignées : onglet « Cadran », ligne « Sources de données » atteinte par défilement).
+- Suite complète : 156 tests app + 9 core, 8 échecs, tous Timeline et antérieurs au virage (13 → 8).
+
+### 2026-09-24 `92dffd4`
+feat(healthconnect): permissions, ecran de justification et ecran Health Connect (etat, autorisation, resume de lecture) (Phase 1.2b)
+- Manifeste : `READ_SLEEP`, `READ_STEPS`, `READ_HEALTH_DATA_HISTORY` (lecture seule) ; `<queries>` vers `com.google.android.apps.healthdata` ; `HealthConnectRationaleActivity` (`ACTION_SHOW_PERMISSIONS_RATIONALE`) + alias Android 14+ (`VIEW_PERMISSION_USAGE` / `HEALTH_PERMISSIONS`).
+- `HealthConnectViewModel` : vérifie l'état, lit tout quand c'est prêt, dépose la lecture dans `HealthDataCache` (mémoire uniquement) et résume (nombre de sessions, plus ancienne, pas, historique complet ou limité). Aucune lecture sans permissions ; erreur de lecture → état d'erreur ; revérification au retour des permissions.
+- `HealthConnectScreen` (accès depuis Profil) : bouton d'autorisation, avertissement explicite si l'historique est limité à 30 jours, relecture à la demande. Sert à la vérification terrain TA-13 (parité avec darkhour).
+- TDD : 6 tests du ViewModel rouges puis verts. Suite complète : 171 tests, 13 échecs connus inchangés.
+
+### 2026-09-24 `9ad602c`
+feat(healthconnect): couche donnees Health Connect (conversion vers le contrat, pagination, dedup par id, etat d'acces) (Phase 1.2a)
+- Dépendance `androidx.health.connect:connect-client:1.1.0`.
+- `HealthConnectMapper` : `SleepSessionRecord` / `StepsRecord` → `SleepRecord` / `StepsInterval`, stades et méthodes d'enregistrement 1:1 (code inconnu → UNKNOWN).
+- `readAllPages` : lecture de toutes les pages jusqu'au token vide ; un token déjà vu lève une erreur au lieu de boucler.
+- `loadHealthData` / `loadIfReady` : lit sommeil et pas via une `HealthRecordsSource` qui renvoie des objets du contrat, dédup par identifiant (version la plus récente), tri déterministe ; ne lit rien tant que Health Connect n'est pas prêt.
+- `decideHealthConnectState` : NotInstalled / UpdateRequired / PermissionsMissing / Ready(FULL ou LIMITED_30_DAYS) ; historique complet seulement si la fonctionnalité existe et que la permission est accordée.
+- `HealthConnectReader` + `currentHealthConnectState` : branchement réel sur Health Connect (plage unique 1970 → maintenant, pages de 1000), non testable en JVM, validé sur téléphone en 1.2b.
+- Spec corrigée : le constructeur de `Metadata` est `internal` (et non public comme écrit initialement) ; tests de conversion via les fabriques `Metadata.…WithId`.
+- TDD : 15 tests (TA-7 à TA-12) rouges puis verts. Suite complète : 165 tests, 13 échecs connus inchangés.
 
 ### 2026-09-24 `54fab9f`
 chore(git): impose CRLF pour les scripts .bat et LF pour gradlew
