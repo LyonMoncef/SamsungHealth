@@ -56,6 +56,11 @@
 
 ## Changelog
 
+### 2026-09-24 `29bd51d`
+feat(notebooks): annexe du notebook 01, repartition des episodes par heures dormies
+- Annexe : histogramme Plotly des 1134 épisodes (règle Nightfall) par tranche d'une heure, médiane marquée, résumé chiffré
+- Sur l'export du 24/09 : médiane 5,1 h, moyenne 5,9 h ; 38 % des épisodes < 4 h, 47 % entre 4 et 10 h, 14 % ≥ 10 h
+
 ### 2026-09-24 `6db5d1c`
 feat(notebooks): regle Nightfall, fusion des sessions bout a bout pour l'analyse (1134 episodes)
 - Constat terrain : l'utilisateur complète à la main les nuits coupées (batterie de la montre) par une session qui démarre pile à la fin de celle de la montre ; 12 des 13 sessions bout à bout de l'export ont cette forme (morceau avec stades + morceau sans stades)
