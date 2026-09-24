@@ -2,7 +2,7 @@
 title: "Phase 1 — Fondations données on-device (contrat, Health Connect, export)"
 slug: 2026-09-23-phase1-data-foundation
 phase: 1
-status: draft
+status: validated
 created: 2026-09-23
 branch: feat/phase1-data-foundation
 tags: [android, core, health-connect, contrat, export, rgpd]
