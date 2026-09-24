@@ -207,6 +207,36 @@ class HealthConnectDataTest {
         assertEquals(HistoryAccess.FULL, data.historyAccess)
     }
 
+    // ---------------------------------------------------------------- diagnostic des erreurs de lecture
+    private class FailingSource(private val failOnSleep: Boolean, private val error: Exception) : HealthRecordsSource {
+        override suspend fun sleepPage(pageToken: String?): RecordPage<SleepRecord> =
+            if (failOnSleep) throw error else RecordPage(emptyList(), null)
+        override suspend fun stepsPage(pageToken: String?): RecordPage<StepsInterval> = throw error
+    }
+
+    @Test
+    fun `une erreur pendant la lecture des pas indique l'etape et garde le message d'origine`() = runTest {
+        try {
+            loadHealthData(FailingSource(failOnSleep = false, IllegalArgumentException("startTime must be before endTime.")), HistoryAccess.FULL)
+            fail("une erreur de lecture aurait dû remonter")
+        } catch (error: HealthReadException) {
+            assertEquals("lecture des pas", error.step)
+            assertTrue(error.message ?: "", (error.message ?: "").contains("IllegalArgumentException"))
+            assertTrue(error.message ?: "", (error.message ?: "").contains("startTime must be before endTime."))
+            assertTrue(error.cause is IllegalArgumentException)
+        }
+    }
+
+    @Test
+    fun `une erreur pendant la lecture du sommeil indique cette etape`() = runTest {
+        try {
+            loadHealthData(FailingSource(failOnSleep = true, IllegalStateException("boom")), HistoryAccess.FULL)
+            fail("une erreur de lecture aurait dû remonter")
+        } catch (error: HealthReadException) {
+            assertEquals("lecture du sommeil", error.step)
+        }
+    }
+
     // ---------------------------------------------------------------- TA-11 historique limité jamais silencieux
     private val allPermissions = setOf(
         "android.permission.health.READ_SLEEP",

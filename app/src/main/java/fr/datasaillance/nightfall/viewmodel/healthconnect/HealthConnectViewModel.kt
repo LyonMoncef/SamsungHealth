@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.data.healthconnect.HealthConnectState
 import fr.datasaillance.nightfall.data.healthconnect.HealthDataCache
+import fr.datasaillance.nightfall.data.healthconnect.HealthReadException
 import fr.datasaillance.nightfall.data.healthconnect.HealthRecordsSource
 import fr.datasaillance.nightfall.data.healthconnect.loadHealthData
 import kotlinx.coroutines.CancellationException
@@ -71,8 +72,11 @@ class HealthConnectViewModel(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                Timber.w("scope=health_connect load_failed error=${error::class.simpleName}")
-                _uiState.value = HealthConnectUiState.Error("Lecture Health Connect impossible (${error::class.simpleName}).")
+                // Trace complète dans le logcat (Timber n'est actif qu'en debug) : le message peut citer
+                // des horodatages d'enregistrements, il ne quitte pas le téléphone.
+                Timber.w(error, "scope=health_connect load_failed")
+                val detail = if (error is HealthReadException) error.message else "${error::class.simpleName} — ${error.message}"
+                _uiState.value = HealthConnectUiState.Error("Lecture Health Connect impossible. $detail")
             }
         }
     }

@@ -3,6 +3,7 @@ package fr.datasaillance.nightfall.data.healthconnect
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.StepsInterval
+import kotlinx.coroutines.CancellationException
 import java.time.Instant
 
 /** Ce qui fournit les pages de données, déjà converties vers le contrat. En test : une fausse source. */
@@ -18,15 +19,33 @@ data class HealthData(
     val historyAccess: HistoryAccess,
 )
 
+/**
+ * Erreur de lecture Health Connect, avec l'étape en cause et le message d'origine,
+ * pour qu'un échec sur le téléphone soit diagnosticable sans deviner.
+ */
+class HealthReadException(val step: String, cause: Throwable) :
+    Exception("Échec pendant « $step » : ${cause::class.simpleName}${cause.message?.let { " — $it" } ?: ""}", cause)
+
 /** Lit toutes les pages de sommeil et de pas, retire les doublons d'identifiant, trie par début puis id. */
 suspend fun loadHealthData(source: HealthRecordsSource, historyAccess: HistoryAccess): HealthData {
-    val sleep = readAllPages { token -> source.sleepPage(token) }
-    val steps = readAllPages { token -> source.stepsPage(token) }
+    val sleep = readStep("lecture du sommeil") { readAllPages { token -> source.sleepPage(token) } }
+    val steps = readStep("lecture des pas") { readAllPages { token -> source.stepsPage(token) } }
     return HealthData(
         sleep = keepLatestById(sleep, { it.id }, { it.lastModified }).sortedWith(compareBy({ it.start }, { it.id })),
         steps = keepLatestById(steps, { it.id }, { it.lastModified }).sortedWith(compareBy({ it.start }, { it.id })),
         historyAccess = historyAccess,
     )
+}
+
+/** Exécute une étape de lecture ; toute erreur remonte étiquetée avec le nom de l'étape (l'annulation, elle, passe telle quelle). */
+private suspend fun <T> readStep(step: String, block: suspend () -> T): T {
+    try {
+        return block()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        throw HealthReadException(step, error)
+    }
 }
 
 /**

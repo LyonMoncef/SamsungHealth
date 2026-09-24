@@ -53,6 +53,13 @@
 
 ## Changelog
 
+### 2026-09-24 `d40219b`
+fix(healthconnect): erreurs de lecture diagnosticables (etape en cause, message complet, trace dans le logcat)
+- Sur téléphone, l'écran Health Connect affichait seulement « Lecture Health Connect impossible (IllegalArgumentException) », sans moyen de savoir quel appel échouait.
+- `HealthReadException` : chaque étape de `loadHealthData` (lecture du sommeil, lecture des pas) remonte ses erreurs étiquetées, avec la classe et le message d'origine ; l'annulation passe telle quelle.
+- `HealthConnectViewModel` et `ExportViewModel` : message complet à l'écran, trace complète dans le logcat via `Timber.w(error, …)` (Timber n'est actif qu'en debug ; rien ne quitte le téléphone).
+- 2 tests (étape « lecture des pas » / « lecture du sommeil », message d'origine conservé).
+
 ### 2026-09-24 `0a0d98b`
 feat(export): export ZIP des donnees brutes Health Connect (3 CSV + manifeste) depuis Profil (Phase 1.3)
 - `core` : `ExportArchive.write` écrit `sleep_sessions.csv`, `sleep_stages.csv`, `steps.csv`, `manifest.json` dans un ZIP ; date des entrées = date d'export (mêmes données → mêmes octets) ; le flux reste à fermer par l'appelant.
