@@ -1,0 +1,3 @@
+id,start_utc,end_utc,start_offset,end_offset,source,recording_method,last_modified_utc
+MONTRE,2030-01-01T23:00:00Z,2030-01-02T03:30:00Z,+01:00,+01:00,fixture,UNKNOWN,2030-01-02T03:30:00Z
+COMPLEMENT,2030-01-02T03:30:00Z,2030-01-02T07:30:00Z,+01:00,+01:00,fixture,UNKNOWN,2030-01-02T07:30:00Z

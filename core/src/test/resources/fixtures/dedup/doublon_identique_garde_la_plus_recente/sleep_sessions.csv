@@ -1,0 +1,3 @@
+id,start_utc,end_utc,start_offset,end_offset,source,recording_method,last_modified_utc
+ANCIENNE,2030-01-01T23:00:00Z,2030-01-02T07:00:00Z,+01:00,+01:00,fixture,UNKNOWN,2030-01-02T08:00:00Z
+RECENTE,2030-01-01T23:00:00Z,2030-01-02T07:00:00Z,+01:00,+01:00,fixture,UNKNOWN,2030-01-03T08:00:00Z
