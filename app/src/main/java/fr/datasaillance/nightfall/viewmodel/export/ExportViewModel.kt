@@ -65,8 +65,8 @@ class ExportViewModel(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                Timber.w("scope=export failed error=${error::class.simpleName}")
-                _uiState.value = ExportUiState.Error("L'export a échoué (${error::class.simpleName}).")
+                Timber.w(error, "scope=export failed")
+                _uiState.value = ExportUiState.Error("L'export a échoué. ${error::class.simpleName} — ${error.message}")
             }
         }
     }
