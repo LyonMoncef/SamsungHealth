@@ -29,17 +29,19 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 - [x] Toolchain Android sur S1 (JDK 21 + SDK, compilation et tests unitaires en local)
 - [ ] Venv Python minimal pour le notebook (Phase 2)
 
-## Phase 1 — Fondations données on-device
+## Phase 1 — Fondations données on-device (TERMINÉE, validée sur téléphone le 2026-09-24)
 
 - [x] 1.0 Purge du code lié au serveur (auth, Retrofit, flavor webview, ping backend)
 - [x] 1.2 Health Connect : `READ_HEALTH_DATA_HISTORY`, flux de permissions, écran de justification, écran Health Connect
 - [x] 1.2 Lecture sommeil + pas de **l'historique complet** (pagination), dédup par identifiant ; écrans existants branchés, import CSV supprimé. *La dédup multi-source devient un calcul (Phase 2/3).*
 - [x] 1.1 **Contrat de données** dans le module `core/` : `SleepRecord` (brut) + `HourlySteps` (v2, totaux horaires Health Connect) ; export CSV
-- [ ] **TA-13** : sur le téléphone, parité avec darkhour (≈ 1146 sessions depuis le 2024-07-08) via Profil → Health Connect
+- [x] **TA-13** : 1153 sessions depuis le 2024-07-09 05:52 local (~26 mois), historique complet. Écart avec darkhour (1146, « 8 juillet ») expliqué : 6 paires de sessions Samsung qui se chevauchent (darkhour les fusionne) + 1 nuit après son relevé ; darkhour range le sommeil de 05:52 dans la nuit du 8. 18 790 heures de pas (≈ 97 % des heures, 4 sources)
 - [x] 1.3 Export ZIP (3 CSV + manifeste) depuis Profil, pour le harnais
-- [ ] **TA-14** : sur le téléphone, l'archive s'ouvre et les 3 CSV se chargent tels quels dans pandas
+- [x] **TA-14** : archive exportée, les 3 CSV se chargent tels quels dans pandas, comptes identiques au manifeste
 
 ## Phase 2 — Harnais de validation (notebook)
+
+- [ ] **Premier calcul à valider : la dédup des sessions qui se chevauchent** (cible : parité avec darkhour, 1153 → 1147 à données égales)
 
 - [ ] Notebook Python : **algos dans les cellules**, plomberie dans `helpers.py`
 - [ ] Oracles : darkhour JVM (`core/` pur) sur données identiques + libs réf (`nparACT`/`pyActigraphy`, `astropy.LombScargle`, `filterpy`)
