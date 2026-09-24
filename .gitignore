@@ -57,3 +57,8 @@ coverage.json
 # Artefacts de build & imports desktop — jamais dans le repo (archivés hors-ligne sur S2:/data3/Projets/SamsungHealth)
 *.apk
 desktop-import/
+
+# Harnais notebook : venv local, caches Jupyter (les sorties sont retirées par nbstripout, voir notebooks/README.md)
+notebooks/.venv/
+notebooks/.ipynb_checkpoints/
+notebooks/__pycache__/
