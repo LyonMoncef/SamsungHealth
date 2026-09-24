@@ -7,6 +7,14 @@ Les calculs sont écrits dans les cellules ; `helpers.py` ne contient que la plo
 |---|---|---|
 | `01_dedup_chevauchements.ipynb` | Fusion des sessions de sommeil qui se chevauchent (analyse / affichage), puis règle Nightfall : fusion des sessions bout à bout (corrections manuelles) | cas synthétiques + parité darkhour (1146) + règle Nightfall (1134) |
 
+## Golden fixtures
+
+Un notebook validé **émet ses cas de test** pour le port Kotlin : `core/src/test/resources/fixtures/<calcul>/`.
+Chaque cas est une entrée au format du contrat d'export (`sleep_sessions.csv`, `sleep_stages.csv`) et ses sorties attendues (`expected_*.csv`), calculées puis vérifiées à la main dans le notebook.
+Le test Kotlin correspondant les rejoue toutes : le port doit redonner exactement les mêmes résultats.
+
+**Uniquement des cas inventés** : aucune donnée réelle dans les fixtures (C1). Relancer le notebook régénère les fichiers ; un diff git sur `fixtures/` signale un changement de comportement.
+
 ## Installation (une fois)
 
 ```bash

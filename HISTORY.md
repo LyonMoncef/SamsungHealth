@@ -4,6 +4,8 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Dédup des sessions dans le `core/` Kotlin — port du notebook 01 : épisodes d'analyse (règles darkhour / Nightfall) et sessions affichées, validé par 9 golden fixtures (27 cas) et identique au notebook sur l'export réel | `core/.../dedup/SleepDeduplication.kt`, `core/src/test/resources/fixtures/dedup/` | [`1587bed`](#2026-09-24-1587bed) |
+| Golden fixtures de dédup — émises par la section 8 du notebook 01 (cas inventés, format du contrat d'export) et rejouées par un test Kotlin paramétré | `notebooks/01_dedup_chevauchements.ipynb`, `core/src/test/.../dedup/SleepDeduplicationFixturesTest.kt` | [`f81d233`](#2026-09-24-f81d233) |
 | Règle Nightfall de dédup — fusion des sessions bout à bout (corrections manuelles après panne de montre) pour l'analyse, 1134 épisodes, écart volontaire avec darkhour documenté | `notebooks/01_dedup_chevauchements.ipynb` | [`6db5d1c`](#2026-09-24-6db5d1c) |
 | Harnais notebook + notebook 01 — dédup des sessions qui se chevauchent (épisodes d'analyse / sessions affichées), cas synthétiques + parité darkhour (1146), `nbstripout` pour garder les données de santé hors de git | `notebooks/01_dedup_chevauchements.ipynb`, `notebooks/helpers.py`, `notebooks/README.md` | [`d59ae47`](#2026-09-24-d59ae47) |
 | Contrat v2 — pas en totaux horaires (`HourlySteps`) lus par agrégation Health Connect, robustes aux enregistrements invalides ; échec des pas non bloquant et visible (écran + `steps_error` du manifeste) | `core/.../model/HourlySteps.kt`, `data/healthconnect/HealthConnectReader.kt`, `HealthDataLoader.kt` | [`b5484fc`](#2026-09-24-b5484fc) |
@@ -55,6 +57,21 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `1587bed`
+feat(core): dedup des sessions de sommeil, port du notebook 01 (regles darkhour et Nightfall, sessions affichees)
+- `core/.../dedup/SleepDeduplication.kt` : `analysisEpisodes(records, rule)` (`OVERLAP_ONLY` = darkhour, `OVERLAP_OR_TOUCH` = Nightfall, par défaut) et `displayedSessions(records, duplicateRatio = 0.8)`
+- Même découpage que le notebook, chaque brique renvoie à sa section : chevauchement, paires, paires bout à bout, regroupement, session la plus riche (stades, puis durée, puis dernière modification)
+- GREEN : 49 tests du `core/`, dont les 36 des fixtures (9 cas × 4)
+- Contrôle hors git sur l'export réel du 24/09 : 1147 / 1134 épisodes et 1148 sessions affichées, **mêmes identifiants** que le notebook
+- ROADMAP : golden fixtures cochées, dédup portée en Phase 3
+
+### 2026-09-24 `f81d233`
+test(core): golden fixtures de dedup emises par le notebook 01 et test Kotlin qui les rejoue
+- Section 8 du notebook 01 : 9 cas inventés datés de 2030 (session seule, 3 variantes de doublon, sieste collée, correction bout à bout, écart de 5 min, chaîne, journée corrigée à la main) écrits au format du contrat d'export, avec leurs sorties attendues calculées par le notebook puis vérifiées à la main
+- `core/src/test/resources/fixtures/dedup/<cas>/` : `sleep_sessions.csv`, `sleep_stages.csv`, `expected_episodes_darkhour.csv`, `expected_episodes_nightfall.csv`, `expected_displayed.csv`
+- `SleepDeduplicationFixturesTest` (JUnit paramétré, relit les cas via `CsvExport.readSleepRecords`) ; RED vérifié : 27 échecs, tous `NotImplementedError`
+- Les épisodes du notebook gardent la liste de leurs membres ; README du harnais : section golden fixtures
 
 ### 2026-09-24 `29bd51d`
 feat(notebooks): annexe du notebook 01, repartition des episodes par heures dormies
