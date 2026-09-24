@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Contrat v2 — pas en totaux horaires (`HourlySteps`) lus par agrégation Health Connect, robustes aux enregistrements invalides ; échec des pas non bloquant et visible (écran + `steps_error` du manifeste) | `core/.../model/HourlySteps.kt`, `data/healthconnect/HealthConnectReader.kt`, `HealthDataLoader.kt` | [`b5484fc`](#2026-09-24-b5484fc) |
 | Export ZIP des données brutes — `ExportArchive` (core, 3 CSV + manifeste, octets reproductibles) + écran « Exporter mes données » avec avertissement « non chiffré », relecture Health Connect à chaque export, 7 tests TDD | `core/.../export/ExportArchive.kt`, `ui/screens/export/`, `viewmodel/export/` | [`0a0d98b`](#2026-09-24-0a0d98b) |
 | Écrans branchés sur Health Connect — Sommeil, Timeline, Hypnogramme, Cadran lisent le contrat via un pont temporaire (`HealthConnectSleepRepository`) ; import CSV Samsung supprimé (import Takeout conservé), 6 tests TDD | `data/sleep/HealthConnectSleepRepository.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/navigation/NavGraph.kt`, `ui/screens/import_/` | [`e4423e2`](#2026-09-24-e4423e2) |
 | Écran Health Connect — permissions lecture seule (sommeil, pas, historique), écran de justification exigé par Health Connect, état + autorisation + résumé de lecture (sessions, plus ancienne, historique complet/limité), cache partagé en mémoire, 6 tests TDD | `ui/screens/healthconnect/`, `viewmodel/healthconnect/`, `HealthConnectRationaleActivity.kt`, `AndroidManifest.xml` | [`92dffd4`](#2026-09-24-92dffd4) |
@@ -52,6 +53,14 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `b5484fc`
+feat(healthconnect): pas lus en totaux horaires par agregation Health Connect (contrat v2) et pas facultatifs pour le sommeil
+- Cause (diagnostiquée grâce à la PR #113) : un enregistrement de pas écrit par Samsung a un début égal à sa fin ; `connect-client` refuse de le convertir (`IllegalArgumentException: startTime must be before endTime`) et toute la lecture des pas échouait, entraînant celle du sommeil.
+- Décision utilisateur (option B) : **contrat v2** — `StepsInterval` (enregistrements bruts) remplacé par `HourlySteps` (début, fin, offset, total, sources), lu via `aggregateGroupByDuration` : une passe par tranches d'un an pour trouver la première année avec des pas, puis heure par heure par blocs de 30 jours. Calcul côté plateforme (robuste), entrée naturelle de NPCRA, sources dédoublonnées par Health Connect.
+- `loadHealthData` : le sommeil reste obligatoire ; un échec des pas est consigné dans `HealthData.stepsError` (écran Health Connect, écran d'export, `steps_error` du manifeste) sans bloquer le sommeil.
+- Export v2 : `steps.csv` = `start_utc,end_utc,offset,count,sources` ; manifeste `contract_version` "2", `hourly_steps_count`, `steps_error`.
+- Spec mise à jour (DT-2, DT-3, DT-4, DT-5, TA-2, TA-8, TA-10). Tests : 13 core, 161 app, 8 échecs Timeline antérieurs.
 
 ### 2026-09-24 `d40219b`
 fix(healthconnect): erreurs de lecture diagnosticables (etape en cause, message complet, trace dans le logcat)
