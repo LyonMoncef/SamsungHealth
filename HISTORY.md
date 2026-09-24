@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Règle Nightfall de dédup — fusion des sessions bout à bout (corrections manuelles après panne de montre) pour l'analyse, 1134 épisodes, écart volontaire avec darkhour documenté | `notebooks/01_dedup_chevauchements.ipynb` | [`6db5d1c`](#2026-09-24-6db5d1c) |
 | Harnais notebook + notebook 01 — dédup des sessions qui se chevauchent (épisodes d'analyse / sessions affichées), cas synthétiques + parité darkhour (1146), `nbstripout` pour garder les données de santé hors de git | `notebooks/01_dedup_chevauchements.ipynb`, `notebooks/helpers.py`, `notebooks/README.md` | [`d59ae47`](#2026-09-24-d59ae47) |
 | Contrat v2 — pas en totaux horaires (`HourlySteps`) lus par agrégation Health Connect, robustes aux enregistrements invalides ; échec des pas non bloquant et visible (écran + `steps_error` du manifeste) | `core/.../model/HourlySteps.kt`, `data/healthconnect/HealthConnectReader.kt`, `HealthDataLoader.kt` | [`b5484fc`](#2026-09-24-b5484fc) |
 | Export ZIP des données brutes — `ExportArchive` (core, 3 CSV + manifeste, octets reproductibles) + écran « Exporter mes données » avec avertissement « non chiffré », relecture Health Connect à chaque export, 7 tests TDD | `core/.../export/ExportArchive.kt`, `ui/screens/export/`, `viewmodel/export/` | [`0a0d98b`](#2026-09-24-0a0d98b) |
@@ -54,6 +55,15 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `6db5d1c`
+feat(notebooks): regle Nightfall, fusion des sessions bout a bout pour l'analyse (1134 episodes)
+- Constat terrain : l'utilisateur complète à la main les nuits coupées (batterie de la montre) par une session qui démarre pile à la fin de celle de la montre ; 12 des 13 sessions bout à bout de l'export ont cette forme (morceau avec stades + morceau sans stades)
+- Le 26/09/2025 (« session fantôme » 10:57→20:40) est une correction légitime : sommeil continu de 9:37 à 05:40, ignoré par la règle darkhour
+- Nouvelle section 5 : `paires_bout_a_bout` (écart nul uniquement, pas de seuil arbitraire) + `episodes_nightfall` ; cas synthétique E-F ; 14 contacts → 1134 épisodes (un contact tombe dans un groupe déjà formé)
+- Contrôle des 10 plus longs épisodes : un seul vient d'une fusion ; histogramme des durées darkhour vs Nightfall
+- Frise par épisode passée sur la règle Nightfall (15 épisodes), ligne d'épisode en tête, espacement adapté au nombre de graphiques
+- La parité darkhour (1146) reste une étape validée ; l'affichage garde la règle des doublons ≥ 80 %
 
 ### 2026-09-24 `d59ae47`
 feat(notebooks): harnais de validation et notebook 01, dedup des sessions qui se chevauchent (parite darkhour 1146)

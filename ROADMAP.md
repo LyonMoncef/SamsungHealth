@@ -42,6 +42,7 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 ## Phase 2 — Harnais de validation (notebook)
 
 - [x] **Premier calcul validé : la dédup des sessions qui se chevauchent** (`notebooks/01_dedup_chevauchements.ipynb`). 6 paires dont 5 doublons ≥ 80 % (une chaîne de 3 le 26/09/2025) → **1147 épisodes d'analyse**, 1148 sessions affichées ; **parité darkhour : 1146** sur les données de son relevé du 23/09
+- [x] **Règle Nightfall (analyse)** : fusion aussi des sessions **bout à bout** (écart nul), signature des corrections manuelles après une panne de montre (12 des 13 cas : montre avec stades + complément sans stades) → **1134 épisodes**. Écart volontaire avec darkhour ; l'affichage garde la règle des doublons ≥ 80 %
 
 - [x] Notebook Python : **algos dans les cellules**, plomberie dans `helpers.py` ; `nbstripout` retire les sorties avant commit (C1)
 - [ ] Oracles : darkhour JVM (`core/` pur) sur données identiques + libs réf (`nparACT`/`pyActigraphy`, `astropy.LombScargle`, `filterpy`)

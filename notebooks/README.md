@@ -5,7 +5,7 @@ Les calculs sont écrits dans les cellules ; `helpers.py` ne contient que la plo
 
 | Notebook | Calcul | Validation |
 |---|---|---|
-| `01_dedup_chevauchements.ipynb` | Fusion des sessions de sommeil qui se chevauchent (analyse / affichage) | cas synthétiques + parité darkhour (1146) |
+| `01_dedup_chevauchements.ipynb` | Fusion des sessions de sommeil qui se chevauchent (analyse / affichage), puis règle Nightfall : fusion des sessions bout à bout (corrections manuelles) | cas synthétiques + parité darkhour (1146) + règle Nightfall (1134) |
 
 ## Installation (une fois)
 
