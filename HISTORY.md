@@ -54,6 +54,13 @@
 
 ## Changelog
 
+### 2026-09-24 `34bc87b`
+docs(phase1): validation terrain TA-13 et TA-14, spec Phase 1 validee
+- TA-13 (téléphone) : 1153 sessions de sommeil depuis le 2024-07-09 05:52 local (~26 mois), historique complet ; 18 790 heures de pas depuis le 2024-07-06 (≈ 97 % des heures, 4 sources : Samsung, Health Connect « téléphone », « android », Google Fit — l'agrégation Health Connect les dédoublonne).
+- Écart avec darkhour (1146 sessions, « 8 juillet ») entièrement expliqué par l'analyse de l'export : 6 paires de sessions Samsung qui se chevauchent, que darkhour fusionne ; 1 nuit enregistrée après le relevé darkhour ; darkhour range le sommeil de 05:52 dans la nuit du 8.
+- TA-14 : les 3 CSV de l'archive se chargent tels quels dans pandas, comptes identiques au manifeste.
+- Roadmap : Phase 1 terminée ; la dédup par chevauchement devient le premier calcul à valider en Phase 2. Spec Phase 1 passée en `validated`.
+
 ### 2026-09-24 `b5484fc`
 feat(healthconnect): pas lus en totaux horaires par agregation Health Connect (contrat v2) et pas facultatifs pour le sommeil
 - Cause (diagnostiquée grâce à la PR #113) : un enregistrement de pas écrit par Samsung a un début égal à sa fin ; `connect-client` refuse de le convertir (`IllegalArgumentException: startTime must be before endTime`) et toute la lecture des pas échouait, entraînant celle du sommeil.
