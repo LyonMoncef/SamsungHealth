@@ -47,13 +47,14 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 - [x] Notebook Python : **algos dans les cellules**, plomberie dans `helpers.py` ; `nbstripout` retire les sorties avant commit (C1)
 - [ ] Oracles : darkhour JVM (`core/` pur) sur données identiques + libs réf (`nparACT`/`pyActigraphy`, `astropy.LombScargle`, `filterpy`)
 - [ ] Deux modes : données synthétiques à vérité connue (justesse) + parité darkhour (données réelles)
-- [ ] Le notebook **émet des golden fixtures** → tests du `core/` Kotlin (garantit port == notebook validé)
+- [x] Le notebook **émet des golden fixtures** → tests du `core/` Kotlin (garantit port == notebook validé) : 9 cas inventés pour la dédup, au format du contrat d'export
 - [ ] Plotly = validation logique data→géométrie (≠ design UI)
 - [x] Emplacement : `notebooks/` versionné ; fixtures à venir dans `core/src/test/resources/`
 
 ## Phase 3 — Moteur d'analyse (`core/` Kotlin)
 
 Du plus simple au plus dur, chaque brique validée en Phase 2 avant port :
+- [x] **Dédup des sessions** (`core/.../dedup/SleepDeduplication.kt`) : épisodes d'analyse (règles darkhour et Nightfall) + sessions affichées ; 9 fixtures × 3 vues vertes, et identique au notebook sur l'export réel (1134 épisodes, 1148 sessions affichées, mêmes identifiants)
 - [ ] **NPCRA** (IS/IV/RA/M10/L5) sur pas Health Connect — *différenciateur vs darkhour* (qui ne fait que le sommeil)
 - [ ] **Périodogramme** (Lomb-Scargle / Sokolove-Bushell) — détection de période
 - [ ] **τ + Kalman/RTS** — estimation de la période circadienne et sa dérive (darkhour = oracle)
