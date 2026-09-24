@@ -66,8 +66,8 @@ fun ExportScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    "Crée une archive ZIP avec toutes vos données de sommeil et de pas lues dans Health Connect, " +
-                        "au format CSV (sessions, stades, pas) plus un fichier de description.",
+                    "Crée une archive ZIP avec toutes vos données de sommeil et vos pas heure par heure, lus dans Health Connect, " +
+                        "au format CSV (sessions, stades, pas horaires) plus un fichier de description.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 DsCard {
@@ -98,9 +98,16 @@ fun ExportScreen(
                     is ExportUiState.Done -> {
                         StatusChip(text = "Export terminé", tone = StatusTone.SUCCESS)
                         Text(
-                            "${state.sleepSessionsCount} sessions de sommeil et ${state.stepsCount} mesures de pas exportées.",
+                            "${state.sleepSessionsCount} sessions de sommeil et ${state.hourlyStepsCount} heures de pas exportées.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
+                        if (state.stepsError != null) {
+                            Text(
+                                "Les pas n'ont pas pu être lus, l'archive n'en contient pas (raison consignée dans le manifeste) : ${state.stepsError}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                         if (state.historyAccess == HistoryAccess.LIMITED_30_DAYS) {
                             Text(
                                 "Attention : seuls les 30 derniers jours étaient accessibles (historique Health Connect non autorisé).",

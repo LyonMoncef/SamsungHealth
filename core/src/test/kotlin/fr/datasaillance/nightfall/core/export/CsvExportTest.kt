@@ -5,14 +5,14 @@ import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.SleepStage
 import fr.datasaillance.nightfall.core.model.StageType
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.ZoneOffset
 
-// Tests d'acceptation TA-1 à TA-6 de la spec 2026-09-23-phase1-data-foundation.
+// Tests d'acceptation TA-1 à TA-6 de la spec 2026-09-23-phase1-data-foundation (contrat v2 pour les pas).
 class CsvExportTest {
 
     private fun t(text: String): Instant = Instant.parse(text)
@@ -54,28 +54,22 @@ class CsvExportTest {
         stages = emptyList(),
     )
 
-    private val stepsMorning = StepsInterval(
-        id = "p1",
+    // Une heure de pas avec deux sources (Health Connect a déjà dédoublonné) et fuseau connu.
+    private val stepsMorning = HourlySteps(
         start = t("2024-07-09T07:00:00Z"),
-        end = t("2024-07-09T07:15:00Z"),
-        startOffset = plus2,
-        endOffset = plus2,
+        end = t("2024-07-09T08:00:00Z"),
+        offset = plus2,
         count = 1234,
-        source = "com.sec.android.app.shealth",
-        recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED,
-        lastModified = t("2024-07-09T07:16:00Z"),
+        sources = listOf("com.sec.android.app.shealth", "com.example.watch"),
     )
 
-    private val stepsUnknownZone = StepsInterval(
-        id = "p2",
+    // Une heure sans pas mesurés comme tels (total 0), sans fuseau connu, une seule source.
+    private val stepsUnknownZone = HourlySteps(
         start = t("2024-07-09T12:00:00Z"),
-        end = t("2024-07-09T12:01:00Z"),
-        startOffset = null,
-        endOffset = null,
+        end = t("2024-07-09T13:00:00Z"),
+        offset = null,
         count = 0,
-        source = "com.example.pedometer",
-        recordingMethod = RecordingMethod.UNKNOWN,
-        lastModified = t("2024-07-09T12:02:00Z"),
+        sources = listOf("com.example.pedometer"),
     )
 
     // ---------------------------------------------------------------- TA-1
@@ -92,12 +86,14 @@ class CsvExportTest {
 
     // ---------------------------------------------------------------- TA-2
     @Test
-    fun `TA-2 ecrire puis relire les pas redonne exactement les memes intervalles`() {
-        val intervals = listOf(stepsMorning, stepsUnknownZone)
+    fun `TA-2 ecrire puis relire les pas horaires redonne exactement les memes tranches`() {
+        val hours = listOf(stepsMorning, stepsUnknownZone)
 
-        val readBack = CsvExport.readSteps(CsvExport.writeSteps(intervals))
+        val readBack = CsvExport.readSteps(CsvExport.writeSteps(hours))
 
-        assertEquals(intervals, readBack)
+        // Les sources sont relues dans l'ordre alphabétique (tri à l'écriture, pour le déterminisme).
+        val expected = listOf(stepsMorning.copy(sources = stepsMorning.sources.sorted()), stepsUnknownZone)
+        assertEquals(expected, readBack)
     }
 
     // ---------------------------------------------------------------- TA-3
@@ -146,11 +142,12 @@ class CsvExportTest {
     }
 
     @Test
-    fun `TA-4 format exact du fichier des pas`() {
+    fun `TA-4 format exact du fichier des pas horaires`() {
+        // Sources triées et séparées par ";" (les noms de paquets n'en contiennent jamais).
         val expected =
-            "id,start_utc,end_utc,start_offset,end_offset,count,source,recording_method,last_modified_utc\n" +
-                "p1,2024-07-09T07:00:00Z,2024-07-09T07:15:00Z,+02:00,+02:00,1234,com.sec.android.app.shealth,AUTOMATICALLY_RECORDED,2024-07-09T07:16:00Z\n" +
-                "p2,2024-07-09T12:00:00Z,2024-07-09T12:01:00Z,,,0,com.example.pedometer,UNKNOWN,2024-07-09T12:02:00Z\n"
+            "start_utc,end_utc,offset,count,sources\n" +
+                "2024-07-09T07:00:00Z,2024-07-09T08:00:00Z,+02:00,1234,com.example.watch;com.sec.android.app.shealth\n" +
+                "2024-07-09T12:00:00Z,2024-07-09T13:00:00Z,,0,com.example.pedometer\n"
 
         assertEquals(expected, CsvExport.writeSteps(listOf(stepsUnknownZone, stepsMorning)))
     }
@@ -184,18 +181,36 @@ class CsvExportTest {
 
         val expected = """
             {
-              "contract_version": "1",
+              "contract_version": "2",
               "exported_at": "2026-09-23T20:00:00Z",
               "app_version": "4.0.0",
               "sleep_sessions_count": 2,
               "sleep_stages_count": 8,
-              "steps_count": 2,
+              "hourly_steps_count": 2,
+              "steps_error": null,
               "history_access": "FULL",
               "oldest_sleep_start": "2024-07-08T22:31:00Z"
             }
         """.trimIndent() + "\n"
 
         assertEquals(expected, manifest.toJson())
+    }
+
+    @Test
+    fun `TA-6 un echec de lecture des pas est consigne dans le manifeste`() {
+        val manifest = buildExportManifest(
+            sleepRecords = listOf(night),
+            steps = emptyList(),
+            exportedAt = t("2026-09-23T20:00:00Z"),
+            appVersion = "4.0.0",
+            historyAccess = HistoryAccess.FULL,
+            stepsError = "Échec pendant « lecture des pas » : IllegalArgumentException",
+        )
+
+        val json = manifest.toJson()
+
+        assertTrue(json, json.contains("\"hourly_steps_count\": 0,"))
+        assertTrue(json, json.contains("\"steps_error\": \"Échec pendant « lecture des pas » : IllegalArgumentException\","))
     }
 
     @Test

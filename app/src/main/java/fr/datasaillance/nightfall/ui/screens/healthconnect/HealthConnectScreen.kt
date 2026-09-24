@@ -109,7 +109,15 @@ private fun Loaded(state: HealthConnectUiState.Loaded, onAskHistory: () -> Unit,
                 text = state.oldestSleepStart?.let { "La plus ancienne : ${formatDate(it)}" } ?: "Aucune session de sommeil",
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Text("${state.stepsIntervalsCount} mesures de pas", style = MaterialTheme.typography.bodyMedium)
+            if (state.stepsError == null) {
+                Text("${state.hourlyStepsCount} heures avec des pas", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Text(
+                    "Pas illisibles : ${state.stepsError}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
     when (state.historyAccess) {

@@ -5,7 +5,7 @@ import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.SleepStage
 import fr.datasaillance.nightfall.core.model.StageType
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -26,10 +26,9 @@ class ExportArchiveTest {
         stages = listOf(SleepStage(t("2024-07-08T22:31:00Z"), t("2024-07-08T23:00:00Z"), StageType.LIGHT)),
     )
 
-    private val steps = StepsInterval(
-        id = "p1", start = t("2024-07-09T07:00:00Z"), end = t("2024-07-09T07:15:00Z"), startOffset = null, endOffset = null,
-        count = 1234, source = "com.sec.android.app.shealth", recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED,
-        lastModified = t("2024-07-09T07:16:00Z"),
+    private val steps = HourlySteps(
+        start = t("2024-07-09T07:00:00Z"), end = t("2024-07-09T08:00:00Z"), offset = null,
+        count = 1234, sources = listOf("com.sec.android.app.shealth"),
     )
 
     private val manifest = buildExportManifest(listOf(night), listOf(steps), t("2026-09-24T10:00:00Z"), "4.0.0", HistoryAccess.FULL)

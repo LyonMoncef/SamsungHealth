@@ -1,13 +1,11 @@
 package fr.datasaillance.nightfall.data.healthconnect
 
 import androidx.health.connect.client.records.SleepSessionRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.SleepStage
 import fr.datasaillance.nightfall.core.model.StageType
-import fr.datasaillance.nightfall.core.model.StepsInterval
 
 // Conversion Health Connect → contrat v1 (spec 2026-09-23-phase1-data-foundation, DT-2 et DT-5).
 // On recopie les faits tels quels : aucune interprétation ici.
@@ -30,17 +28,6 @@ fun SleepSessionRecord.toSleepRecord(): SleepRecord {
     )
 }
 
-fun StepsRecord.toStepsInterval(): StepsInterval = StepsInterval(
-    id = metadata.id,
-    start = startTime,
-    end = endTime,
-    startOffset = startZoneOffset,
-    endOffset = endZoneOffset,
-    count = count,
-    source = metadata.dataOrigin.packageName,
-    recordingMethod = recordingMethodFrom(metadata.recordingMethod),
-    lastModified = metadata.lastModifiedTime,
-)
 
 /** Code de stade Health Connect → StageType. Un code inconnu (version future de Health Connect) donne UNKNOWN. */
 fun stageTypeFrom(code: Int): StageType = when (code) {

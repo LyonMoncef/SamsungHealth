@@ -2,21 +2,28 @@ package fr.datasaillance.nightfall.data.healthconnect
 
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.core.model.SleepRecord
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import kotlinx.coroutines.CancellationException
 import java.time.Instant
 
-/** Ce qui fournit les pages de données, déjà converties vers le contrat. En test : une fausse source. */
+/** Ce qui fournit les données, déjà converties vers le contrat. En test : une fausse source. */
 interface HealthRecordsSource {
+    /** Une page de sessions de sommeil (enregistrements bruts). */
     suspend fun sleepPage(pageToken: String?): RecordPage<SleepRecord>
-    suspend fun stepsPage(pageToken: String?): RecordPage<StepsInterval>
+
+    /** Tous les totaux de pas horaires, calculés par Health Connect (contrat v2). */
+    suspend fun hourlySteps(): List<HourlySteps>
 }
 
-/** Tout ce qu'on a lu, plus la profondeur d'historique réellement accessible (à afficher si limitée). */
+/**
+ * Tout ce qu'on a lu, plus la profondeur d'historique réellement accessible (à afficher si limitée).
+ * Si la lecture des pas a échoué, [steps] est vide et [stepsError] dit pourquoi : le sommeil reste utilisable.
+ */
 data class HealthData(
     val sleep: List<SleepRecord>,
-    val steps: List<StepsInterval>,
+    val steps: List<HourlySteps>,
     val historyAccess: HistoryAccess,
+    val stepsError: String? = null,
 )
 
 /**
@@ -26,14 +33,25 @@ data class HealthData(
 class HealthReadException(val step: String, cause: Throwable) :
     Exception("Échec pendant « $step » : ${cause::class.simpleName}${cause.message?.let { " — $it" } ?: ""}", cause)
 
-/** Lit toutes les pages de sommeil et de pas, retire les doublons d'identifiant, trie par début puis id. */
+/**
+ * Lit toutes les pages de sommeil (dédup par identifiant, tri par début puis id) et les pas horaires (tri par début).
+ * Le sommeil est indispensable : son échec remonte. Les pas ne le sont pas : leur échec est consigné dans
+ * `stepsError` (jamais silencieux) et le sommeil reste disponible.
+ */
 suspend fun loadHealthData(source: HealthRecordsSource, historyAccess: HistoryAccess): HealthData {
     val sleep = readStep("lecture du sommeil") { readAllPages { token -> source.sleepPage(token) } }
-    val steps = readStep("lecture des pas") { readAllPages { token -> source.stepsPage(token) } }
+    var steps: List<HourlySteps> = emptyList()
+    var stepsError: String? = null
+    try {
+        steps = readStep("lecture des pas") { source.hourlySteps() }.sortedBy { it.start }
+    } catch (error: HealthReadException) {
+        stepsError = error.message
+    }
     return HealthData(
         sleep = keepLatestById(sleep, { it.id }, { it.lastModified }).sortedWith(compareBy({ it.start }, { it.id })),
-        steps = keepLatestById(steps, { it.id }, { it.lastModified }).sortedWith(compareBy({ it.start }, { it.id })),
+        steps = steps,
         historyAccess = historyAccess,
+        stepsError = stepsError,
     )
 }
 

@@ -2,14 +2,13 @@ package fr.datasaillance.nightfall.data.healthconnect
 
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.SleepSessionRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.SleepStage
 import fr.datasaillance.nightfall.core.model.StageType
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -19,7 +18,7 @@ import org.junit.Test
 import java.time.Instant
 import java.time.ZoneOffset
 
-// Tests d'acceptation TA-7 à TA-12 de la spec 2026-09-23-phase1-data-foundation.
+// Tests d'acceptation TA-7 à TA-12 de la spec 2026-09-23-phase1-data-foundation (pas horaires : contrat v2).
 // JVM pur : on construit de vrais objets Health Connect et on remplace Health Connect par une fausse source.
 class HealthConnectDataTest {
 
@@ -38,29 +37,27 @@ class HealthConnectDataTest {
         lastModified = t(lastModified), stages = emptyList(),
     )
 
-    private fun steps(id: String, start: String, end: String, count: Long) = StepsInterval(
-        id = id, start = t(start), end = t(end), startOffset = plus2, endOffset = plus2, count = count,
-        source = "com.sec.android.app.shealth", recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED,
-        lastModified = t("2024-07-09T08:00:00Z"),
+    private fun hour(start: String, count: Long) = HourlySteps(
+        start = t(start), end = t(start).plusSeconds(3600), offset = plus2, count = count,
+        sources = listOf("com.sec.android.app.shealth"),
     )
 
-    /** Fausse source : renvoie des pages préparées à l'avance, dans l'ordre. */
+    /** Fausse source : renvoie des pages de sommeil préparées à l'avance, dans l'ordre, et des pas horaires. */
     private class FakeSource(
         private val sleepPages: List<RecordPage<SleepRecord>> = listOf(RecordPage(emptyList(), null)),
-        private val stepsPages: List<RecordPage<StepsInterval>> = listOf(RecordPage(emptyList(), null)),
+        private val hours: List<HourlySteps> = emptyList(),
     ) : HealthRecordsSource {
         private var sleepIndex = 0
-        private var stepsIndex = 0
 
         override suspend fun sleepPage(pageToken: String?): RecordPage<SleepRecord> = sleepPages[sleepIndex++]
 
-        override suspend fun stepsPage(pageToken: String?): RecordPage<StepsInterval> = stepsPages[stepsIndex++]
+        override suspend fun hourlySteps(): List<HourlySteps> = hours
     }
 
     /** Source qui échoue si on la touche : pour vérifier qu'aucune lecture n'est tentée. */
     private object ForbiddenSource : HealthRecordsSource {
         override suspend fun sleepPage(pageToken: String?): RecordPage<SleepRecord> = fail("lecture interdite") as Nothing
-        override suspend fun stepsPage(pageToken: String?): RecordPage<StepsInterval> = fail("lecture interdite") as Nothing
+        override suspend fun hourlySteps(): List<HourlySteps> = fail("lecture interdite") as Nothing
     }
 
     // ---------------------------------------------------------------- TA-7 conversion sommeil
@@ -120,27 +117,6 @@ class HealthConnectDataTest {
         assertEquals(RecordingMethod.UNKNOWN, recordingMethodFrom(99))
     }
 
-    // ---------------------------------------------------------------- TA-8 conversion pas
-    @Test
-    fun `TA-8 chaque champ d'un intervalle de pas Health Connect est reporte dans le contrat`() {
-        val hc = StepsRecord(
-            t("2024-07-09T07:00:00Z"), plus2, t("2024-07-09T07:15:00Z"), null, 1234,
-            Metadata.manualEntryWithId("p-1"),
-        )
-
-        val expected = StepsInterval(
-            id = "p-1",
-            start = t("2024-07-09T07:00:00Z"),
-            end = t("2024-07-09T07:15:00Z"),
-            startOffset = plus2,
-            endOffset = null,
-            count = 1234,
-            source = "",
-            recordingMethod = RecordingMethod.MANUAL_ENTRY,
-            lastModified = Instant.EPOCH,
-        )
-        assertEquals(expected, hc.toStepsInterval())
-    }
 
     // ---------------------------------------------------------------- TA-9 pagination
     @Test
@@ -187,44 +163,46 @@ class HealthConnectDataTest {
 
     // ---------------------------------------------------------------- TA-10 dédup par identifiant
     @Test
-    fun `TA-10 un meme identifiant lu sur deux pages n'est garde qu'une fois, dans sa version la plus recente`() = runTest {
+    fun `TA-10 une meme session lue sur deux pages n'est gardee qu'une fois, dans sa version la plus recente`() = runTest {
         val source = FakeSource(
             sleepPages = listOf(
                 RecordPage(listOf(sleep("s2", "2024-07-10T22:00:00Z", "2024-07-11T06:00:00Z"), sleep("s1", "2024-07-08T22:00:00Z", "2024-07-09T06:00:00Z", lastModified = "2024-07-09T07:00:00Z")), "t1"),
                 RecordPage(listOf(sleep("s1", "2024-07-08T22:00:00Z", "2024-07-09T06:00:00Z", lastModified = "2024-07-09T09:00:00Z")), null),
             ),
-            stepsPages = listOf(
-                RecordPage(listOf(steps("p1", "2024-07-09T07:00:00Z", "2024-07-09T07:15:00Z", 10)), "t1"),
-                RecordPage(listOf(steps("p1", "2024-07-09T07:00:00Z", "2024-07-09T07:15:00Z", 10)), null),
-            ),
+            hours = listOf(hour("2024-07-09T08:00:00Z", 20), hour("2024-07-09T07:00:00Z", 10)),
         )
 
         val data = loadHealthData(source, HistoryAccess.FULL)
 
         assertEquals(listOf("s1", "s2"), data.sleep.map { it.id })
         assertEquals(t("2024-07-09T09:00:00Z"), data.sleep.first { it.id == "s1" }.lastModified)
-        assertEquals(listOf("p1"), data.steps.map { it.id })
+        assertEquals(listOf(t("2024-07-09T07:00:00Z"), t("2024-07-09T08:00:00Z")), data.steps.map { it.start })
+        assertEquals(null, data.stepsError)
         assertEquals(HistoryAccess.FULL, data.historyAccess)
     }
 
     // ---------------------------------------------------------------- diagnostic des erreurs de lecture
     private class FailingSource(private val failOnSleep: Boolean, private val error: Exception) : HealthRecordsSource {
         override suspend fun sleepPage(pageToken: String?): RecordPage<SleepRecord> =
-            if (failOnSleep) throw error else RecordPage(emptyList(), null)
-        override suspend fun stepsPage(pageToken: String?): RecordPage<StepsInterval> = throw error
+            if (failOnSleep) throw error else RecordPage(listOf(SleepRecord(
+                id = "s1", start = Instant.parse("2024-07-08T22:00:00Z"), end = Instant.parse("2024-07-09T06:00:00Z"),
+                startOffset = null, endOffset = null, source = "com.sec.android.app.shealth",
+                recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED, lastModified = Instant.parse("2024-07-09T07:00:00Z"),
+                stages = emptyList(),
+            )), null)
+        override suspend fun hourlySteps(): List<HourlySteps> = throw error
     }
 
     @Test
-    fun `une erreur pendant la lecture des pas indique l'etape et garde le message d'origine`() = runTest {
-        try {
-            loadHealthData(FailingSource(failOnSleep = false, IllegalArgumentException("startTime must be before endTime.")), HistoryAccess.FULL)
-            fail("une erreur de lecture aurait dû remonter")
-        } catch (error: HealthReadException) {
-            assertEquals("lecture des pas", error.step)
-            assertTrue(error.message ?: "", (error.message ?: "").contains("IllegalArgumentException"))
-            assertTrue(error.message ?: "", (error.message ?: "").contains("startTime must be before endTime."))
-            assertTrue(error.cause is IllegalArgumentException)
-        }
+    fun `un echec des pas ne bloque pas le sommeil et reste visible avec l'etape et le message d'origine`() = runTest {
+        val data = loadHealthData(FailingSource(failOnSleep = false, IllegalArgumentException("startTime must be before endTime.")), HistoryAccess.FULL)
+
+        assertEquals(listOf("s1"), data.sleep.map { it.id })
+        assertEquals(emptyList<HourlySteps>(), data.steps)
+        val stepsError = data.stepsError ?: ""
+        assertTrue(stepsError, stepsError.contains("lecture des pas"))
+        assertTrue(stepsError, stepsError.contains("IllegalArgumentException"))
+        assertTrue(stepsError, stepsError.contains("startTime must be before endTime."))
     }
 
     @Test

@@ -3,7 +3,7 @@ package fr.datasaillance.nightfall.viewmodel.export
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import fr.datasaillance.nightfall.data.healthconnect.HealthData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,10 +45,9 @@ class ExportViewModelTest {
         recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED, lastModified = Instant.parse("2024-07-09T07:00:00Z"), stages = emptyList(),
     )
 
-    private val steps = StepsInterval(
-        id = "p1", start = Instant.parse("2024-07-09T07:00:00Z"), end = Instant.parse("2024-07-09T07:15:00Z"),
-        startOffset = null, endOffset = null, count = 10, source = "com.sec.android.app.shealth",
-        recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED, lastModified = Instant.parse("2024-07-09T07:16:00Z"),
+    private val steps = HourlySteps(
+        start = Instant.parse("2024-07-09T07:00:00Z"), end = Instant.parse("2024-07-09T08:00:00Z"),
+        offset = null, count = 10, sources = listOf("com.sec.android.app.shealth"),
     )
 
     private fun viewModel(loadData: suspend () -> HealthData?) = ExportViewModel(
@@ -77,7 +76,10 @@ class ExportViewModelTest {
         vm.export { output }
         scheduler.advanceUntilIdle()
 
-        assertEquals(ExportUiState.Done(sleepSessionsCount = 1, stepsCount = 1, historyAccess = HistoryAccess.FULL), vm.uiState.value)
+        assertEquals(
+            ExportUiState.Done(sleepSessionsCount = 1, hourlyStepsCount = 1, stepsError = null, historyAccess = HistoryAccess.FULL),
+            vm.uiState.value,
+        )
         assertEquals(listOf("sleep_sessions.csv", "sleep_stages.csv", "steps.csv", "manifest.json"), entryNames(output.toByteArray()))
     }
 
