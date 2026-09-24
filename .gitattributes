@@ -11,3 +11,6 @@
 # Scripts : fins de ligne imposées quel que soit le poste (gradlew.bat doit rester en CRLF pour cmd.exe)
 *.bat text eol=crlf
 gradlew text eol=lf
+
+*.ipynb filter=nbstripout
+*.ipynb diff=ipynb

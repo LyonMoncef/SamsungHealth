@@ -1,0 +1,6 @@
+pandas
+plotly
+jupyterlab
+nbconvert
+ipykernel
+nbstripout

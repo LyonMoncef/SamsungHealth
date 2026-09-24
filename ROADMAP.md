@@ -27,7 +27,7 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 - [x] Retirer de l'arbre de travail : `server/`, `alembic/`, `static/`, `docker*`, `.github/workflows/deploy-*` (historique conservé)
 - [x] **Décision structure** : projet Gradle promu à la racine (`app/` + futur `core/`), build validé
 - [x] Toolchain Android sur S1 (JDK 21 + SDK, compilation et tests unitaires en local)
-- [ ] Venv Python minimal pour le notebook (Phase 2)
+- [x] Venv Python minimal pour le notebook (`notebooks/.venv`, voir `notebooks/README.md`)
 
 ## Phase 1 — Fondations données on-device (TERMINÉE, validée sur téléphone le 2026-09-24)
 
@@ -41,14 +41,14 @@ Nightfall devient une **app Android on-device pure** (modèle [darkhour-android]
 
 ## Phase 2 — Harnais de validation (notebook)
 
-- [ ] **Premier calcul à valider : la dédup des sessions qui se chevauchent** (cible : parité avec darkhour, 1153 → 1147 à données égales)
+- [x] **Premier calcul validé : la dédup des sessions qui se chevauchent** (`notebooks/01_dedup_chevauchements.ipynb`). 6 paires dont 5 doublons ≥ 80 % (une chaîne de 3 le 26/09/2025) → **1147 épisodes d'analyse**, 1148 sessions affichées ; **parité darkhour : 1146** sur les données de son relevé du 23/09
 
-- [ ] Notebook Python : **algos dans les cellules**, plomberie dans `helpers.py`
+- [x] Notebook Python : **algos dans les cellules**, plomberie dans `helpers.py` ; `nbstripout` retire les sorties avant commit (C1)
 - [ ] Oracles : darkhour JVM (`core/` pur) sur données identiques + libs réf (`nparACT`/`pyActigraphy`, `astropy.LombScargle`, `filterpy`)
 - [ ] Deux modes : données synthétiques à vérité connue (justesse) + parité darkhour (données réelles)
 - [ ] Le notebook **émet des golden fixtures** → tests du `core/` Kotlin (garantit port == notebook validé)
 - [ ] Plotly = validation logique data→géométrie (≠ design UI)
-- [ ] Emplacement : `research/` ou `notebooks/` versionné, fixtures dans `core/src/test/resources/`
+- [x] Emplacement : `notebooks/` versionné ; fixtures à venir dans `core/src/test/resources/`
 
 ## Phase 3 — Moteur d'analyse (`core/` Kotlin)
 
@@ -76,4 +76,4 @@ Du plus simple au plus dur, chaque brique validée en Phase 2 avant port :
 - NPCRA sur pas HC = proxy d'activité plus grossier que l'actigraphie classique (à assumer dans l'interprétation).
 - Croisement circadien × GPS : piste de recherche récente (accéléromètre/GPS smartphone) à explorer en Phase 4.
 
-_Dernière mise à jour : 2026-09-23_
+_Dernière mise à jour : 2026-09-24_

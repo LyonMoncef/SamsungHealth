@@ -4,6 +4,7 @@
 
 | Feature | Files | Commit |
 |---------|-------|--------|
+| Harnais notebook + notebook 01 — dédup des sessions qui se chevauchent (épisodes d'analyse / sessions affichées), cas synthétiques + parité darkhour (1146), `nbstripout` pour garder les données de santé hors de git | `notebooks/01_dedup_chevauchements.ipynb`, `notebooks/helpers.py`, `notebooks/README.md` | [`d59ae47`](#2026-09-24-d59ae47) |
 | Contrat v2 — pas en totaux horaires (`HourlySteps`) lus par agrégation Health Connect, robustes aux enregistrements invalides ; échec des pas non bloquant et visible (écran + `steps_error` du manifeste) | `core/.../model/HourlySteps.kt`, `data/healthconnect/HealthConnectReader.kt`, `HealthDataLoader.kt` | [`b5484fc`](#2026-09-24-b5484fc) |
 | Export ZIP des données brutes — `ExportArchive` (core, 3 CSV + manifeste, octets reproductibles) + écran « Exporter mes données » avec avertissement « non chiffré », relecture Health Connect à chaque export, 7 tests TDD | `core/.../export/ExportArchive.kt`, `ui/screens/export/`, `viewmodel/export/` | [`0a0d98b`](#2026-09-24-0a0d98b) |
 | Écrans branchés sur Health Connect — Sommeil, Timeline, Hypnogramme, Cadran lisent le contrat via un pont temporaire (`HealthConnectSleepRepository`) ; import CSV Samsung supprimé (import Takeout conservé), 6 tests TDD | `data/sleep/HealthConnectSleepRepository.kt`, `viewmodel/radial/RadialClockViewModel.kt`, `ui/navigation/NavGraph.kt`, `ui/screens/import_/` | [`e4423e2`](#2026-09-24-e4423e2) |
@@ -53,6 +54,15 @@
 ---
 
 ## Changelog
+
+### 2026-09-24 `d59ae47`
+feat(notebooks): harnais de validation et notebook 01, dedup des sessions qui se chevauchent (parite darkhour 1146)
+- `notebooks/helpers.py` : `charger_export` (contrôle du contrat v2, dates UTC en ISO8601 car l'app omet les millisecondes nulles, comptes = manifeste), `vers_heure_locale`, `date_fr`
+- `notebooks/01_dedup_chevauchements.ipynb` : calcul dans les cellules (chevauchement, paires, regroupement, deux vues) ; épisodes d'analyse = tout chevauchement fusionné, affichage = doublons ≥ 80 % de la plus courte, session gardée = plus de stades, puis plus longue, puis plus récente
+- Validation : 4 cas synthétiques (doublon, sieste collée, bout à bout, chaîne) ; export du 24/09 : 6 paires dont 5 doublons, une chaîne de 3 le 26/09/2025 → 1147 épisodes, 1148 affichées ; parité darkhour 1146 sur les données de son relevé
+- Frise Plotly par épisode fusionné (heure locale, sessions gardées / masquées)
+- `nbstripout` installé en filtre git (`.gitattributes`) : les sorties ne sont jamais commitées (C1) ; venv `notebooks/.venv` ignoré
+- ROADMAP : Phase 2 démarrée, premier calcul validé
 
 ### 2026-09-24 `34bc87b`
 docs(phase1): validation terrain TA-13 et TA-14, spec Phase 1 validee
