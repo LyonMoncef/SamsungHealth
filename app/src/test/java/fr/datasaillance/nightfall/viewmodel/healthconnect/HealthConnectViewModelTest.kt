@@ -3,7 +3,7 @@ package fr.datasaillance.nightfall.viewmodel.healthconnect
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import fr.datasaillance.nightfall.data.healthconnect.HealthConnectState
 import fr.datasaillance.nightfall.data.healthconnect.HealthDataCache
 import fr.datasaillance.nightfall.data.healthconnect.HealthRecordsSource
@@ -46,16 +46,15 @@ class HealthConnectViewModelTest {
         recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED, lastModified = Instant.parse(start), stages = emptyList(),
     )
 
-    private fun steps(id: String, start: String) = StepsInterval(
-        id = id, start = Instant.parse(start), end = Instant.parse(start).plusSeconds(600), startOffset = null, endOffset = null,
-        count = 100, source = "com.sec.android.app.shealth", recordingMethod = RecordingMethod.AUTOMATICALLY_RECORDED,
-        lastModified = Instant.parse(start),
+    private fun hour(start: String) = HourlySteps(
+        start = Instant.parse(start), end = Instant.parse(start).plusSeconds(3600), offset = null,
+        count = 100, sources = listOf("com.sec.android.app.shealth"),
     )
 
     /** Source à une seule page ; compte combien de fois on la lit. */
     private class OnePageSource(
         private val sleep: List<SleepRecord>,
-        private val steps: List<StepsInterval>,
+        private val steps: List<HourlySteps>,
         private val failure: Exception? = null,
     ) : HealthRecordsSource {
         var reads = 0
@@ -66,7 +65,7 @@ class HealthConnectViewModelTest {
             return RecordPage(sleep, null)
         }
 
-        override suspend fun stepsPage(pageToken: String?): RecordPage<StepsInterval> = RecordPage(steps, null)
+        override suspend fun hourlySteps(): List<HourlySteps> = steps
     }
 
     private fun viewModel(state: HealthConnectState, source: OnePageSource, cache: HealthDataCache = HealthDataCache()) =
@@ -77,7 +76,7 @@ class HealthConnectViewModelTest {
         val cache = HealthDataCache()
         val source = OnePageSource(
             sleep = listOf(sleep("s2", "2024-08-01T22:00:00Z"), sleep("s1", "2024-07-08T22:31:00Z")),
-            steps = listOf(steps("p1", "2024-07-09T07:00:00Z")),
+            steps = listOf(hour("2024-07-09T07:00:00Z")),
         )
         val vm = viewModel(HealthConnectState.Ready(HistoryAccess.FULL), source, cache)
 
@@ -87,7 +86,8 @@ class HealthConnectViewModelTest {
         val expected = HealthConnectUiState.Loaded(
             sleepSessionsCount = 2,
             oldestSleepStart = Instant.parse("2024-07-08T22:31:00Z"),
-            stepsIntervalsCount = 1,
+            hourlyStepsCount = 1,
+            stepsError = null,
             historyAccess = HistoryAccess.FULL,
         )
         assertEquals(expected, vm.uiState.value)

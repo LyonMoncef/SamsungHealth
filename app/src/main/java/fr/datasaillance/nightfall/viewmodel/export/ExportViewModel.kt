@@ -23,7 +23,12 @@ sealed interface ExportUiState {
     data object Idle : ExportUiState
     data object Exporting : ExportUiState
     data object NotReady : ExportUiState
-    data class Done(val sleepSessionsCount: Int, val stepsCount: Int, val historyAccess: HistoryAccess) : ExportUiState
+    data class Done(
+        val sleepSessionsCount: Int,
+        val hourlyStepsCount: Int,
+        val stepsError: String?,
+        val historyAccess: HistoryAccess,
+    ) : ExportUiState
     data class Error(val message: String) : ExportUiState
 }
 
@@ -54,12 +59,17 @@ class ExportViewModel(
                     _uiState.value = ExportUiState.NotReady
                     return@launch
                 }
-                val manifest = buildExportManifest(data.sleep, data.steps, clock(), appVersion, data.historyAccess)
+                val manifest = buildExportManifest(data.sleep, data.steps, clock(), appVersion, data.historyAccess, data.stepsError)
                 withContext(ioDispatcher) {
                     val output = openOutput() ?: error("Impossible d'ouvrir le fichier choisi")
                     output.use { ExportArchive.write(it, data.sleep, data.steps, manifest) }
                 }
-                _uiState.value = ExportUiState.Done(data.sleep.size, data.steps.size, data.historyAccess)
+                _uiState.value = ExportUiState.Done(
+                    sleepSessionsCount = data.sleep.size,
+                    hourlyStepsCount = data.steps.size,
+                    stepsError = data.stepsError,
+                    historyAccess = data.historyAccess,
+                )
                 // Uniquement des comptes : aucune donnée de santé dans les logs.
                 Timber.i("scope=export done sleep=${data.sleep.size} steps=${data.steps.size}")
             } catch (cancelled: CancellationException) {

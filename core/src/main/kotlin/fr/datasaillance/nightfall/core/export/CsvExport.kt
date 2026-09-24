@@ -4,18 +4,18 @@ import fr.datasaillance.nightfall.core.model.RecordingMethod
 import fr.datasaillance.nightfall.core.model.SleepRecord
 import fr.datasaillance.nightfall.core.model.SleepStage
 import fr.datasaillance.nightfall.core.model.StageType
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import java.time.Instant
 import java.time.ZoneOffset
 
 /**
- * Écriture et relecture du format d'export CSV v1 (spec 2026-09-23-phase1-data-foundation, DT-4).
+ * Écriture et relecture du format d'export CSV (contrat v2 : pas horaires ; spec 2026-09-23-phase1-data-foundation, DT-4).
  *
  * Règles du format :
  * - une ligne d'en-tête, puis une ligne par enregistrement, chaque ligne terminée par "\n" ;
  * - instants en ISO-8601 UTC ("2024-07-08T22:31:00Z"), offsets au format "+02:00" ("Z" pour UTC), vide si inconnu ;
  * - énumérations écrites par leur nom ("LIGHT") ;
- * - lignes triées (sessions et pas : par début puis id ; stades : par session puis début),
+ * - lignes triées (sessions : par début puis id ; stades : par session puis début ; pas : par début),
  *   pour que les mêmes données donnent toujours exactement le même fichier.
  */
 object CsvExport {
@@ -25,7 +25,10 @@ object CsvExport {
     private const val STAGES_HEADER =
         "session_id,start_utc,end_utc,stage"
     private const val STEPS_HEADER =
-        "id,start_utc,end_utc,start_offset,end_offset,count,source,recording_method,last_modified_utc"
+        "start_utc,end_utc,offset,count,sources"
+
+    /** Séparateur des sources dans la colonne `sources` (les noms de paquets Android n'en contiennent jamais). */
+    private const val SOURCES_SEPARATOR = ";"
 
     // ------------------------------------------------------------------ écriture
 
@@ -72,21 +75,17 @@ object CsvExport {
         return joinLines(lines)
     }
 
-    fun writeSteps(intervals: List<StepsInterval>): String {
-        val sorted = intervals.sortedWith(compareBy({ it.start }, { it.id }))
+    fun writeSteps(hours: List<HourlySteps>): String {
+        val sorted = hours.sortedBy { it.start }
         val lines = mutableListOf(STEPS_HEADER)
-        for (interval in sorted) {
+        for (hour in sorted) {
             lines.add(
                 csvLine(
-                    interval.id,
-                    interval.start.toString(),
-                    interval.end.toString(),
-                    offsetToText(interval.startOffset),
-                    offsetToText(interval.endOffset),
-                    interval.count.toString(),
-                    interval.source,
-                    interval.recordingMethod.name,
-                    interval.lastModified.toString(),
+                    hour.start.toString(),
+                    hour.end.toString(),
+                    offsetToText(hour.offset),
+                    hour.count.toString(),
+                    hour.sources.sorted().joinToString(SOURCES_SEPARATOR),
                 ),
             )
         }
@@ -135,24 +134,20 @@ object CsvExport {
         return records.sortedWith(compareBy({ it.start }, { it.id }))
     }
 
-    fun readSteps(stepsCsv: String): List<StepsInterval> {
-        val intervals = mutableListOf<StepsInterval>()
+    fun readSteps(stepsCsv: String): List<HourlySteps> {
+        val hours = mutableListOf<HourlySteps>()
         for (fields in dataRows(stepsCsv, STEPS_HEADER)) {
-            intervals.add(
-                StepsInterval(
-                    id = fields[0],
-                    start = Instant.parse(fields[1]),
-                    end = Instant.parse(fields[2]),
-                    startOffset = textToOffset(fields[3]),
-                    endOffset = textToOffset(fields[4]),
-                    count = fields[5].toLong(),
-                    source = fields[6],
-                    recordingMethod = RecordingMethod.valueOf(fields[7]),
-                    lastModified = Instant.parse(fields[8]),
+            hours.add(
+                HourlySteps(
+                    start = Instant.parse(fields[0]),
+                    end = Instant.parse(fields[1]),
+                    offset = textToOffset(fields[2]),
+                    count = fields[3].toLong(),
+                    sources = if (fields[4].isEmpty()) emptyList() else fields[4].split(SOURCES_SEPARATOR),
                 ),
             )
         }
-        return intervals.sortedWith(compareBy({ it.start }, { it.id }))
+        return hours.sortedBy { it.start }
     }
 
     // ------------------------------------------------------------------ petits outils

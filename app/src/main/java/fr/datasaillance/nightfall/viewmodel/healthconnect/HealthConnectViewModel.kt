@@ -26,7 +26,9 @@ sealed interface HealthConnectUiState {
     data class Loaded(
         val sleepSessionsCount: Int,
         val oldestSleepStart: Instant?,
-        val stepsIntervalsCount: Int,
+        val hourlyStepsCount: Int,
+        /** Null si les pas ont été lus ; sinon pourquoi leur lecture a échoué (le sommeil reste valable). */
+        val stepsError: String?,
         val historyAccess: HistoryAccess,
     ) : HealthConnectUiState
     data class Error(val message: String) : HealthConnectUiState
@@ -62,7 +64,8 @@ class HealthConnectViewModel(
                         _uiState.value = HealthConnectUiState.Loaded(
                             sleepSessionsCount = data.sleep.size,
                             oldestSleepStart = data.sleep.minOfOrNull { it.start },
-                            stepsIntervalsCount = data.steps.size,
+                            hourlyStepsCount = data.steps.size,
+                            stepsError = data.stepsError,
                             historyAccess = data.historyAccess,
                         )
                         // Uniquement des comptes : aucune donnée de santé dans les logs.

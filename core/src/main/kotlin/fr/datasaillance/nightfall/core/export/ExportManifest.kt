@@ -2,10 +2,11 @@ package fr.datasaillance.nightfall.core.export
 
 import fr.datasaillance.nightfall.core.model.HistoryAccess
 import fr.datasaillance.nightfall.core.model.SleepRecord
-import fr.datasaillance.nightfall.core.model.StepsInterval
+import fr.datasaillance.nightfall.core.model.HourlySteps
 import java.time.Instant
 
-const val CONTRACT_VERSION = "1"
+/** v2 (2026-09-24) : les pas deviennent des totaux horaires calculés par Health Connect (`HourlySteps`). */
+const val CONTRACT_VERSION = "2"
 
 /** Contenu de `manifest.json` (spec DT-4). */
 data class ExportManifest(
@@ -14,7 +15,9 @@ data class ExportManifest(
     val appVersion: String,
     val sleepSessionsCount: Int,
     val sleepStagesCount: Int,
-    val stepsCount: Int,
+    val hourlyStepsCount: Int,
+    /** Null si les pas ont été lus ; sinon, pourquoi leur lecture a échoué (le fichier des pas est alors vide). */
+    val stepsError: String?,
     val historyAccess: HistoryAccess,
     val oldestSleepStart: Instant?,
 ) {
@@ -28,7 +31,8 @@ data class ExportManifest(
             "  \"app_version\": ${jsonString(appVersion)},",
             "  \"sleep_sessions_count\": $sleepSessionsCount,",
             "  \"sleep_stages_count\": $sleepStagesCount,",
-            "  \"steps_count\": $stepsCount,",
+            "  \"hourly_steps_count\": $hourlyStepsCount,",
+            "  \"steps_error\": ${if (stepsError == null) "null" else jsonString(stepsError)},",
             "  \"history_access\": ${jsonString(historyAccess.name)},",
             "  \"oldest_sleep_start\": $oldest",
             "}",
@@ -39,10 +43,11 @@ data class ExportManifest(
 
 fun buildExportManifest(
     sleepRecords: List<SleepRecord>,
-    steps: List<StepsInterval>,
+    steps: List<HourlySteps>,
     exportedAt: Instant,
     appVersion: String,
     historyAccess: HistoryAccess,
+    stepsError: String? = null,
 ): ExportManifest {
     var stagesCount = 0
     for (record in sleepRecords) {
@@ -54,7 +59,8 @@ fun buildExportManifest(
         appVersion = appVersion,
         sleepSessionsCount = sleepRecords.size,
         sleepStagesCount = stagesCount,
-        stepsCount = steps.size,
+        hourlyStepsCount = steps.size,
+        stepsError = stepsError,
         historyAccess = historyAccess,
         oldestSleepStart = sleepRecords.minOfOrNull { it.start },
     )
